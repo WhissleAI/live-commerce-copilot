@@ -61,7 +61,7 @@ export function Console() {
       if (decidable.length === 0) return;
       const i = decidable.findIndex((p) => p.id === focusedId);
       const next = Math.min(decidable.length - 1, Math.max(0, (i === -1 ? 0 : i) + dir));
-      setFocusedId(decidable[next].id);
+      setFocusedId(decidable[next]!.id);
       setEditingId(null);
     },
     [decidable, focusedId],

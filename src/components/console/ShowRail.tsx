@@ -293,8 +293,8 @@ export function ShowRail({
   const verifyChain = useCallback(() => {
     const chain = [...audit].sort((a, b) => a.seq - b.seq);
     for (let i = 1; i < chain.length; i++) {
-      if (chain[i].prevHash !== chain[i - 1].hash) {
-        setVerify({ ok: false, message: `mismatch at seq ${chain[i].seq}` });
+      if (chain[i]!.prevHash !== chain[i - 1]!.hash) {
+        setVerify({ ok: false, message: `mismatch at seq ${chain[i]!.seq}` });
         return;
       }
     }
@@ -342,7 +342,7 @@ export function ShowRail({
         <SectionHeader title="Audit">
           <span className="flex items-center gap-1 text-[11px] text-text-muted">
             <LinkIcon className="size-3" aria-hidden />
-            <span className="num">h{audit.length ? audit[audit.length - 1].seq : 0}</span>
+            <span className="num">h{audit.length ? audit[audit.length - 1]!.seq : 0}</span>
           </span>
           <ConsoleButton variant="ghost" className="h-6" onClick={verifyChain}>
             Verify chain

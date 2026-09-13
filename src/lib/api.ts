@@ -24,11 +24,9 @@ export const USE_MOCKS =
 const url = (path: string) => `${BASE}${path}`;
 
 async function post<T>(path: string, body?: unknown): Promise<T> {
-  const res = await fetch(url(path), {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
+  const init: RequestInit = { method: "POST", headers: { "content-type": "application/json" } };
+  if (body !== undefined) init.body = JSON.stringify(body);
+  const res = await fetch(url(path), init);
   if (!res.ok) throw new Error(`${path} failed: ${res.status}`);
   return (await res.json()) as T;
 }

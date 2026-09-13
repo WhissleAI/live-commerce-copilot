@@ -26,7 +26,7 @@ import { formatMoney } from "./format";
 let n = 1;
 const uid = (p: string) => `${p}_${(n++).toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 const nowIso = () => new Date().toISOString();
-const pick = <T,>(a: T[]): T => a[Math.floor(Math.random() * a.length)];
+const pick = <T,>(a: T[]): T => a[Math.floor(Math.random() * a.length)]!;
 const rnd = (min: number, max: number) => min + Math.random() * (max - min);
 
 function hash(input: string): string {
@@ -442,8 +442,8 @@ export class MockDriver {
   /* ---------------- seeding ---------------- */
 
   private seed() {
-    const aj1 = this.listings[0];
-    const panda = this.listings[3];
+    const aj1 = this.listings[0]!;
+    const panda = this.listings[3]!;
 
     const mk = (
       author: string,
@@ -622,7 +622,7 @@ export class MockDriver {
         at: new Date(Date.now() - i * 4200).toISOString(),
         intent: s.intent,
         admitted: !hype,
-        dropReason: hype ? "hype / no question detected" : undefined,
+        ...(hype ? { dropReason: "hype / no question detected" } : {}),
       });
     }
     this.backlogMessages = msgs;
@@ -659,7 +659,7 @@ export class MockDriver {
   }
 
   private pinned(): Listing {
-    return this.listings.find((l) => l.id === this.show.pinnedListingId) ?? this.listings[0];
+    return this.listings.find((l) => l.id === this.show.pinnedListingId) ?? this.listings[0]!;
   }
 
   private spawnChat() {
@@ -674,7 +674,11 @@ export class MockDriver {
       at: nowIso(),
       intent: null,
       admitted: !hype && !spam,
-      dropReason: spam ? "promo / spam pattern" : hype ? "hype / no question detected" : undefined,
+      ...(spam
+        ? { dropReason: "promo / spam pattern" }
+        : hype
+          ? { dropReason: "hype / no question detected" }
+          : {}),
     };
     this.emit({ type: "chat", data: msg });
 
@@ -965,10 +969,10 @@ export class MockDriver {
     const l = this.listings.find((x) => x.id === a.listingId);
     if (!l) return;
     let next: Listing = { ...l, version: l.version + 1, updatedAt: nowIso() };
-    if (a.kind === "markdown_price" && typeof a.params.priceCents === "number")
-      next = { ...next, priceCents: a.params.priceCents as number };
-    if (a.kind === "adjust_stock" && typeof a.params.qty === "number")
-      next = { ...next, qty: a.params.qty as number };
+    if (a.kind === "markdown_price" && typeof a.params['priceCents'] === "number")
+      next = { ...next, priceCents: a.params['priceCents'] as number };
+    if (a.kind === "adjust_stock" && typeof a.params['qty'] === "number")
+      next = { ...next, qty: a.params['qty'] as number };
     if (a.kind === "swap_pinned") {
       this.listings = this.listings.map((x) => ({ ...x, pinned: x.id === l.id }));
       this.show = { ...this.show, pinnedListingId: l.id };
@@ -998,8 +1002,8 @@ export class MockDriver {
     if (l) {
       const restored: Listing = {
         ...l,
-        priceCents: typeof a.before.priceCents === "number" ? (a.before.priceCents as number) : l.priceCents,
-        qty: typeof a.before.qty === "number" ? (a.before.qty as number) : l.qty,
+        priceCents: typeof a.before['priceCents'] === "number" ? (a.before['priceCents'] as number) : l.priceCents,
+        qty: typeof a.before['qty'] === "number" ? (a.before['qty'] as number) : l.qty,
         version: l.version + 1,
         updatedAt: nowIso(),
       };
@@ -1059,7 +1063,7 @@ export class MockDriver {
       size: pick([listing.size, "9.5", "10.5", "11"]),
     }));
     const sorted = comps.map((c) => c.soldPriceCents).sort((a, b) => a - b);
-    const median = Math.round((sorted[2] + sorted[3]) / 2);
+    const median = Math.round((sorted[2]! + sorted[3]!) / 2);
     return {
       query,
       listingId: listing.id,
