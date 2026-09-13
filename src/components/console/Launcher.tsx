@@ -65,7 +65,11 @@ export function Launcher({
     }
   }
 
-  const liveShows = existing.filter((s) => s.source === "ebaylive");
+  // Every show the server is holding, live or seeded. Filtering to `ebaylive`
+  // stranded the demo show: it is the one the walkthrough, the stale-price
+  // failure path and the whole write/rollback spike run on, and there was no
+  // way into it from the UI without a real eBay stream on air.
+  const liveShows = existing;
 
   return (
     <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-5 py-10">
@@ -207,7 +211,7 @@ export function Launcher({
         {liveShows.length > 0 && (
           <section className="mt-10 border-t border-border pt-6">
             <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mb-3">
-              Already monitoring
+              Open a show
             </div>
             <ul className="space-y-1.5">
               {liveShows.map((s) => (
@@ -217,7 +221,14 @@ export function Launcher({
                     className="w-full text-left rounded-md border border-border px-3 py-2.5 text-sm
                                hover:border-muted-foreground/40 flex items-center justify-between gap-3"
                   >
-                    <span className="truncate">{s.title}</span>
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span className="truncate">{s.title}</span>
+                      {s.source !== "ebaylive" && (
+                        <span className="shrink-0 rounded-[3px] border border-border px-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                          demo
+                        </span>
+                      )}
+                    </span>
                     <span className="shrink-0 font-mono tabular-nums text-[11px] text-muted-foreground">
                       {s.viewers} viewers · {s.listings} listings
                     </span>

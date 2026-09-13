@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Radio, Users, ArrowUp, ArrowDown, Link2Off, LogOut, Lock } from "lucide-react";
+import { Radio, Users, ArrowUp, ArrowDown, Link2Off, LogOut, Lock, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatMs, formatPct, formatSeconds } from "@/lib/format";
 import type { AutonomyLevel, ConnectionState, Metrics, SellerProfile, ShowState } from "@/lib/types";
@@ -180,6 +180,8 @@ export function TopBar({
   viewerDelta,
   onAutonomy,
   onEndSession,
+  onToggleCost,
+  costOpen,
 }: {
   show: ShowState;
   seller?: SellerProfile | null;
@@ -189,6 +191,8 @@ export function TopBar({
   onAutonomy: (l: AutonomyLevel) => void;
   /** Present only for a monitored live show; returns to the launcher. */
   onEndSession?: (() => void) | undefined;
+  onToggleCost: () => void;
+  costOpen: boolean;
 }) {
   const now = useNow();
   const elapsed = (now - new Date(show.startedAt).getTime()) / 1000;
@@ -252,6 +256,24 @@ export function TopBar({
       {metrics ? <LatencyMeter metrics={metrics} /> : null}
 
       <AutonomyLadder level={show.autonomyLevel} onChange={onAutonomy} />
+
+      {/* What the copilot is spending. Beside the autonomy ladder on purpose:
+          raising a rung raises the bill, and the two should be read together. */}
+      <button
+        type="button"
+        onClick={onToggleCost}
+        aria-pressed={costOpen}
+        title="Whissle balance, consumption and this show's gateway calls"
+        className={cn(
+          "flex shrink-0 items-center gap-1.5 rounded-[4px] border px-2 py-1 text-[11px] transition-colors duration-150",
+          costOpen
+            ? "border-accent bg-accent/10 text-accent"
+            : "border-hairline-strong text-text-secondary hover:text-text",
+        )}
+      >
+        <Wallet className="size-3" aria-hidden />
+        cost
+      </button>
 
       {connection !== "open" ? (
         <span className="flex items-center gap-1.5 rounded-[4px] border border-warn/40 bg-warn/10 px-2 py-1 text-[11px] text-warn">

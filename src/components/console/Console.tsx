@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PanelLeft } from "lucide-react";
 import { api, API_BASE, USE_MOCKS } from "@/lib/api";
+import { cn } from "@/lib/utils";
 import { useShowStream } from "@/hooks/useShowStream";
 import type { AutonomyLevel, ResearchCard } from "@/lib/types";
 import { TopBar } from "./TopBar";
@@ -11,6 +12,30 @@ import { CommandPalette } from "./CommandPalette";
 import { ShortcutsOverlay } from "./ShortcutsOverlay";
 import { TranscriptPanel } from "./TranscriptPanel";
 import { Launcher } from "./Launcher";
+import { CostPanel } from "./CostPanel";
+
+/** Survives the reload that both entry paths do. Per-tab, not per-browser: two
+ *  tabs on two shows should not fight over one flag. */
+const SESSION_KEY = "sidestage.session";
+
+function readSessionFlag(): boolean {
+  try {
+    return sessionStorage.getItem(SESSION_KEY) === "1";
+  } catch {
+    // Private windows and blocked site data throw on access. Falling back to
+    // the launcher is the safe direction: the operator picks again.
+    return false;
+  }
+}
+
+function setSessionFlag(on: boolean): void {
+  try {
+    if (on) sessionStorage.setItem(SESSION_KEY, "1");
+    else sessionStorage.removeItem(SESSION_KEY);
+  } catch {
+    /* the console still works, it just asks again after a reload */
+  }
+}
 
 function isTyping(): boolean {
   const el = document.activeElement;
@@ -27,7 +52,14 @@ export function Console() {
   // Mock mode is the standalone demo and has no backend to set a session up
   // against, so it goes straight to the console. Against a real backend the
   // operator picks a catalog and a show first.
-  const [sessionStarted, setSessionStarted] = useState(USE_MOCKS);
+  //
+  // The choice is remembered for the tab, because both entry paths reload the
+  // page — the stream's `hello` is what seeds console state, and re-subscribing
+  // is simpler than reconciling two shows in place. Without this, opening a
+  // show bounced straight back to the launcher.
+  const [sessionStarted, setSessionStarted] = useState(
+    () => USE_MOCKS || readSessionFlag(),
+  );
 
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -35,6 +67,7 @@ export function Console() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [costOpen, setCostOpen] = useState(false);
   const [viewerDelta, setViewerDelta] = useState(0);
   const prevViewers = useRef<number | null>(null);
 
@@ -187,10 +220,12 @@ export function Console() {
       <Launcher
         existing={shows}
         onStarted={() => {
+          setSessionFlag(true);
           setSessionStarted(true);
           window.location.reload();
         }}
         onResume={(showId) => {
+          setSessionFlag(true);
           void api.activateShow(showId).then(() => window.location.reload());
         }}
       />
@@ -216,13 +251,28 @@ export function Console() {
         onEndSession={
           liveSession
             ? () => {
+                setSessionFlag(false);
                 void api.endSession(show.id).finally(() => window.location.reload());
               }
             : undefined
         }
+        costOpen={costOpen}
+        onToggleCost={() => setCostOpen((v) => !v)}
       />
 
-      <div className="grid min-h-0 flex-1 grid-cols-[1fr_380px] xl:grid-cols-[300px_1fr_380px]">
+      {/* The cost rail is a COLUMN, not an overlay: it is read against the
+          latency meter and the action queue, and a panel that covers them
+          answers "what is this costing" while hiding "what is it doing".
+          Declared on the grid rather than by the child, or a fourth child
+          wraps onto a second row. */}
+      <div
+        className={cn(
+          "grid min-h-0 flex-1",
+          costOpen
+            ? "grid-cols-[1fr_320px] xl:grid-cols-[260px_1fr_340px_300px]"
+            : "grid-cols-[1fr_380px] xl:grid-cols-[300px_1fr_380px]",
+        )}
+      >
         {/* Left rail: what is coming IN — the buyers typing, and the host talking. */}
         <div className="hidden min-h-0 flex-col xl:flex">
           <div className="flex min-h-0 flex-[3] flex-col">
@@ -285,6 +335,10 @@ export function Console() {
           onReject={(id) => void api.rejectAction(id)}
           onRollback={(id) => void api.rollbackAction(id)}
         />
+
+        {/* Opened on demand rather than resident: cost is a question the seller
+            asks between lots, not something to watch while a buyer waits. */}
+        {costOpen && <CostPanel showId={show.id} onClose={() => setCostOpen(false)} />}
       </div>
 
       <CommandPalette

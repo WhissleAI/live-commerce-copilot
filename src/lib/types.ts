@@ -321,3 +321,60 @@ export type StreamEvent =
   | { type: "context"; data: ShowContext };
 
 export type ConnectionState = "connecting" | "open" | "reconnecting";
+
+// ── what the copilot is costing ──────────────────────────────────────────────
+//
+// Mirrors GET /api/billing. Three sources kept deliberately apart: the wallet
+// is dollars, usage is consumption, and the meter is this app's own per-show
+// call count — which exists because the platform's usage rows carry no agent_id
+// for text turns and so cannot attribute a cost to one show.
+
+export interface Wallet {
+  balanceUsd: number | null;
+  availableUsd: number | null;
+  heldUsd: number | null;
+  ratePerMinUsd: number | null;
+  freeTestRemainingUsd: number | null;
+  lowBalance: boolean;
+  paymentsEnabled: boolean;
+}
+
+export interface UsageTotal {
+  service: string;
+  quantity: number;
+  unit: string | null;
+  events: number;
+  promptTokens: number | null;
+  completionTokens: number | null;
+}
+
+export interface DoorReport {
+  calls: number;
+  failures: number;
+  totalMs: number;
+  contextChars: number;
+  lastStatus: number | null;
+  lastError: string | null;
+  lastErrorAt: string | null;
+  p50Ms: number;
+  p95Ms: number;
+  meanMs: number;
+}
+
+export type GatewayDoor = "chat_turn" | "utility_turn" | "voice_start" | "kb_upload" | "billing";
+
+export interface BillingSnapshot {
+  wallet: Wallet | null;
+  /** Why a read failed. A missing scope and a zero balance are different facts. */
+  walletError: { status: number; message: string } | null;
+  usage: { days: number; totals: UsageTotal[]; daily: { day: string; service: string; quantity: number }[] } | null;
+  usageError: { status: number; message: string } | null;
+  meter: {
+    since: string;
+    doors: Record<GatewayDoor, DoorReport>;
+    totals: { calls: number; failures: number; contextChars: number };
+    byShow: Record<string, { calls: number; failures: number; contextChars: number }>;
+  };
+  spend: Record<string, { openedAt: string; openingUsd: number; spentUsd: number }>;
+  attribution: { perShow: string; note: string };
+}

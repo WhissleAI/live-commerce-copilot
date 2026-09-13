@@ -5,6 +5,7 @@
  */
 import { getMockDriver } from "./mockStream";
 import type {
+  BillingSnapshot,
   CatalogSummary,
   SessionStart,
   ShowSummary,
@@ -182,6 +183,11 @@ export const api = {
 
   activateShow: (showId: string): Promise<ShowSummary> =>
     post(`/api/shows/${encodeURIComponent(showId)}/activate`),
+
+  /** Wallet + consumption + this app's own gateway meter. Mock mode has no
+   *  account behind it, so it reports nothing rather than inventing a balance. */
+  billing: (days = 7): Promise<BillingSnapshot | null> =>
+    USE_MOCKS ? Promise.resolve(null) : get(`/api/billing?days=${days}`),
 };
 
 /** Chat backlog for mock mode only — the real stream sends it in `hello`. */

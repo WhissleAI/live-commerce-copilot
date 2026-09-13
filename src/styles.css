@@ -54,23 +54,36 @@
 }
 
 :root {
+  /* Tells the browser to paint form controls, scrollbars and the space behind
+     the page in light, instead of leaving a dark band around a light app. */
+  color-scheme: light;
+
   --radius: 6px;
 
-  --canvas: oklch(0.1493 0.0046 264.47);
-  --panel: oklch(0.1818 0.0088 264.33);
-  --elevated: oklch(0.2135 0.0146 266.89);
-  --hairline: oklch(0.269 0.0155 269.1);
-  --hairline-strong: oklch(0.3085 0.0193 264.24);
+  /* Light. The ramp is inverted, not recoloured: every token keeps the role it
+     had, so `canvas` is still the furthest-back surface and `elevated` is still
+     the one that comes forward under a cursor. The console is read at a glance
+     while a show is on air, so separation between the three surfaces has to
+     survive on a bright screen without turning into visible boxes. */
+  --canvas: oklch(1 0 0);
+  --panel: oklch(0.9848 0.0018 264.5);
+  --elevated: oklch(0.9642 0.0038 264.5);
+  --hairline: oklch(0.9154 0.0055 264.5);
+  --hairline-strong: oklch(0.8558 0.0082 264.5);
 
-  --text-primary: oklch(0.9364 0.0046 258.33);
-  --text-secondary: oklch(0.7076 0.0174 262.73);
-  --text-muted: oklch(0.526 0.0207 261.3);
+  --text-primary: oklch(0.2359 0.0118 264.5);
+  --text-secondary: oklch(0.4518 0.0151 262.7);
+  --text-muted: oklch(0.6012 0.0163 261.3);
 
-  --accent: oklch(0.6578 0.1822 260.74);
+  /* The status colours are darkened rather than reused: the dark theme's greens
+     and ambers were tuned against a near-black canvas and fail contrast on
+     white, which matters here because a guardrail pill's COLOUR is the whole
+     signal. */
+  --accent: oklch(0.5487 0.1908 262.3);
   --accent-foreground: oklch(0.99 0 0);
-  --ok: oklch(0.6951 0.1809 145.62);
-  --warn: oklch(0.7196 0.1401 79.91);
-  --bad: oklch(0.6651 0.2046 26.96);
+  --ok: oklch(0.5421 0.1489 147.8);
+  --warn: oklch(0.5812 0.1264 71.5);
+  --bad: oklch(0.5468 0.2093 27.4);
 
   --background: var(--canvas);
   --foreground: var(--text-primary);
