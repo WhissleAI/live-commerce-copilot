@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Mic, MicOff, ExternalLink } from "lucide-react";
-import type { ShowContext, TranscriptSegment } from "@/lib/types";
+import type { ShowContext, SignalDistribution, TranscriptSegment } from "@/lib/types";
 
 /**
  * What the HOST is saying, live.
@@ -80,11 +80,14 @@ export function TranscriptPanel({
               <li key={`${t.at}-${i}`} className="text-xs leading-relaxed">
                 <p className="text-foreground">{t.text}</p>
                 {(t.emotion || t.intent || t.speechRate !== null) && (
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    {t.emotion && <MetaChip label="emotion" value={t.emotion.label} p={t.emotion.p} />}
-                    {t.intent && <MetaChip label="intent" value={t.intent.label} p={t.intent.p} />}
+                  <div className="mt-1.5 space-y-1">
+                    {t.emotion && <Distribution kind="emotion" d={t.emotion} />}
+                    {t.intent && <Distribution kind="intent" d={t.intent} />}
                     {t.speechRate !== null && (
-                      <MetaChip label="wpm" value={String(Math.round(t.speechRate))} />
+                      <div className="text-[10px] font-mono tabular-nums text-muted-foreground">
+                        <span className="opacity-60">wpm </span>
+                        <span className="text-foreground">{Math.round(t.speechRate)}</span>
+                      </div>
                     )}
                   </div>
                 )}
@@ -98,14 +101,64 @@ export function TranscriptPanel({
   );
 }
 
-/** One piece of Whissle voice metadata. Monospace, because the operator is
- *  comparing these across segments, not reading them as prose. */
-function MetaChip({ label, value, p }: { label: string; value: string; p?: number | undefined }) {
+/**
+ * One Whissle acoustic distribution, rendered as a spread rather than a verdict.
+ *
+ * The gateway ships emotion and intent as a top-k distribution and says plainly
+ * that accuracy on low-arousal states tops out around 63%. A single confident
+ * word would be a lie of presentation; the bars let an operator see when the
+ * model is genuinely sure versus splitting hairs between two labels.
+ *
+ * A FLIP — the top read changing — is called out, because that is the thing
+ * worth noticing. A needle that twitches is not.
+ */
+function Distribution({ kind, d }: { kind: string; d: SignalDistribution }) {
+  const top = d.topK.slice(0, 3);
+  // A near-tie between the top two labels means the head is guessing; say so by
+  // dimming the headline rather than asserting it.
+  const spread = top.length > 1 ? (top[0]?.p ?? 0) - (top[1]?.p ?? 0) : 1;
+  const decisive = spread >= 0.2;
+
   return (
-    <span className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-[10px] font-mono tabular-nums text-muted-foreground">
-      <span className="opacity-60">{label}</span>
-      <span className="text-foreground">{value}</span>
-      {typeof p === "number" && <span className="opacity-60">{p.toFixed(2)}</span>}
-    </span>
+    <div className="font-mono text-[10px] tabular-nums">
+      <div className="flex items-center gap-1.5">
+        <span className="w-[52px] shrink-0 text-muted-foreground opacity-60">{kind}</span>
+        <span className={decisive ? "text-foreground" : "text-muted-foreground"}>{d.topLabel}</span>
+        {d.topP > 0 && <span className="text-muted-foreground opacity-60">{d.topP.toFixed(2)}</span>}
+        {d.changed && d.prevLabel && (
+          <span
+            title={`Top read flipped from "${d.prevLabel}"${d.flips !== null ? ` · ${d.flips} flips this session` : ""}`}
+            className="rounded border border-warn/40 px-1 text-warn"
+          >
+            flip
+          </span>
+        )}
+        {!d.trusted && (
+          <span title="Low-confidence reading from the metadata head" className="opacity-50">
+            weak
+          </span>
+        )}
+      </div>
+
+      {/* The spread itself. Two near-equal bars say "it does not know". */}
+      {top.length > 1 && (
+        <div className="mt-0.5 ml-[58px] space-y-[2px]">
+          {top.map((k) => (
+            <div key={k.label} className="flex items-center gap-1.5">
+              <span className="w-[68px] shrink-0 truncate text-muted-foreground opacity-70">{k.label}</span>
+              <span className="h-[3px] flex-1 overflow-hidden rounded-sm bg-border">
+                <span
+                  className={k.label === d.topLabel ? "block h-full bg-primary" : "block h-full bg-muted-foreground/50"}
+                  style={{ width: `${Math.round(Math.min(1, Math.max(0, k.p)) * 100)}%` }}
+                />
+              </span>
+              <span className="w-[26px] shrink-0 text-right text-muted-foreground opacity-70">
+                {k.p.toFixed(2)}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

@@ -29,10 +29,21 @@ export const USE_MOCKS =
 const url = (path: string) => `${BASE}${path}`;
 
 async function post<T>(path: string, body?: unknown): Promise<T> {
-  const init: RequestInit = { method: "POST", headers: { "content-type": "application/json" } };
-  if (body !== undefined) init.body = JSON.stringify(body);
+  // Declaring `content-type: application/json` with NO body makes Fastify reject
+  // the request as malformed JSON — a 400 on every bodyless command the console
+  // sends: regenerate, dismiss, approve, reject, rollback, detach, activate.
+  // Send the header only when there is something to parse.
+  const init: RequestInit = body === undefined
+    ? { method: "POST" }
+    : { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) };
+
   const res = await fetch(url(path), init);
-  if (!res.ok) throw new Error(`${path} failed: ${res.status}`);
+  if (!res.ok) {
+    // Surface what the server said. A bare status code sent us chasing the
+    // wrong layer for an afternoon.
+    const detail = await res.text().catch(() => "");
+    throw new Error(`${path} failed: ${res.status}${detail ? ` — ${detail.slice(0, 200)}` : ""}`);
+  }
   return (await res.json()) as T;
 }
 

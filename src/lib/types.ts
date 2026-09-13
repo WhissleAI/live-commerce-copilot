@@ -67,13 +67,32 @@ export interface ShowSummary {
   proposals: number;
 }
 
+/**
+ * An acoustic distribution from Whissle's metadata head.
+ *
+ * Never a bare label. The gateway's own note on this head says accuracy
+ * degrades sharply on low-arousal states, so showing one word as fact would
+ * present a coin flip as certainty. Render the spread, and mark the FLIP —
+ * the moment the top read changed is the thing an operator can act on.
+ */
+export interface SignalDistribution {
+  topLabel: string;
+  topP: number;
+  topK: { label: string; p: number }[];
+  changed: boolean;
+  prevLabel: string | null;
+  heldMs: number | null;
+  flips: number | null;
+  trusted: boolean;
+}
+
 /** One finalized segment of the HOST's speech, from the Whissle listen-only
  *  session, with whatever voice metadata rode alongside it. */
 export interface TranscriptSegment {
   showId?: string;
   text: string;
-  emotion: { label: string; p?: number } | null;
-  intent: { label: string; p?: number } | null;
+  emotion: SignalDistribution | null;
+  intent: SignalDistribution | null;
   speechRate: number | null;
   at: string;
 }
