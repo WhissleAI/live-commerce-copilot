@@ -1,6 +1,60 @@
-# Live Commerce Copilot
-
 # SideStage — Live Selling Copilot (Operator Console)
+
+The seller-facing console for **SideStage**, a real-time AI copilot for a solo live-commerce
+seller. It shows the buyer-chat firehose, the copilot's grounded reply proposals with their
+provenance and guardrail verdicts, and the operational actions it proposes — markdowns, stock
+fixes, swapping the lot on screen — each with a preflight checklist, an undo window and a
+hash-chained audit trail.
+
+**Backend:** [`WhissleAI/sidestage-copilot`](https://github.com/WhissleAI/sidestage-copilot) —
+ingestion, catalog grounding, guardrails, actions, audit and the API this console consumes.
+Its `docs/PRD.md`, `docs/TDD.md` and `docs/EVALS.md` are the product and design documents for
+the whole system.
+
+## Running it
+
+```sh
+npm i
+npm run dev        # http://localhost:8080
+```
+
+Out of the box it runs in **mock mode** — a simulated live show, no backend needed. That is the
+fastest way to see the whole surface, including the states you would otherwise have to wait for.
+
+### Against the real backend
+
+Start the backend first (see its README — `npm run seed`, `npm run seed:agent`, `npm run dev`),
+then point this at it:
+
+```sh
+cat > .env.local <<'ENV'
+VITE_API_BASE=http://localhost:8790
+VITE_USE_MOCKS=false
+ENV
+npm run dev
+```
+
+Nothing else changes — the same components run against the live SSE stream and REST endpoints.
+`src/lib/api.ts` is the only file that knows a URL exists, and the mock driver in
+`src/lib/mockStream.ts` implements the identical surface.
+
+### Driving the core workflow
+
+- `J` / `K` move between proposals, `Enter` sends, `E` edits inline, `X` dismisses.
+- Hover a **provenance chip** to see the exact catalog or policy fact the reply is grounded in.
+- The **guardrail strip** is always six pills in a fixed order — hover any non-green one for the
+  reason, including what it expected versus what it found.
+- Approve a markdown in the right rail, read its preflight checklist, then press `U` to roll it
+  back. Hit **Verify chain** on the audit log.
+- `Cmd/Ctrl+K` opens product research — comps, median, and where the lot sits against it.
+
+---
+
+# Design specification
+
+The rest of this document is the original UI specification the console was built to. It is kept
+because it records design intent — why the layout, the density, and the trust surface are the
+way they are.
 
 Build a **dark, dense, keyboard-first operator console** for a real-time AI copilot that
 assists a **solo live-commerce seller** while they run a live selling show.
