@@ -60,7 +60,7 @@ export function ChatColumn({
   };
 
   return (
-    <section className="flex min-h-0 flex-col border-r border-hairline bg-panel">
+    <section className="flex h-full min-h-0 flex-col border-r border-hairline bg-panel">
       <SectionHeader title="Buyer chat">
         <span className="num text-[11px] text-text-muted">{rate}/min</span>
         <div className="flex overflow-hidden rounded-[4px] border border-hairline-strong">

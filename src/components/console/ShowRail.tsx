@@ -308,7 +308,7 @@ export function ShowRail({
   }, [verifyChain]);
 
   return (
-    <aside className="flex min-h-0 flex-col border-l border-hairline bg-panel">
+    <aside className="flex h-full min-h-0 flex-col border-l border-hairline bg-panel">
       <PinnedLot
         listing={pinned}
         queue={queue}
