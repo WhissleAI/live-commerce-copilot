@@ -1,7 +1,6 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   AlertTriangle,
-  ArrowUpRight,
   Check,
   Link as LinkIcon,
   Loader2,
@@ -291,7 +290,7 @@ export function ShowRail({
   const pendingCount = actions.filter((a) => a.status === "proposed" && a.preflight.ok).length;
   const ordered = [...audit].sort((a, b) => b.seq - a.seq);
 
-  const verifyChain = () => {
+  const verifyChain = useCallback(() => {
     const chain = [...audit].sort((a, b) => a.seq - b.seq);
     for (let i = 1; i < chain.length; i++) {
       if (chain[i].prevHash !== chain[i - 1].hash) {
@@ -300,7 +299,13 @@ export function ShowRail({
       }
     }
     setVerify({ ok: true, message: `chain intact (${chain.length} entries)` });
-  };
+  }, [audit]);
+
+  useEffect(() => {
+    const handler = () => verifyChain();
+    window.addEventListener("sidestage:verify-chain", handler);
+    return () => window.removeEventListener("sidestage:verify-chain", handler);
+  }, [verifyChain]);
 
   return (
     <aside className="flex min-h-0 flex-col border-l border-hairline bg-panel">
@@ -369,5 +374,3 @@ export function ShowRail({
     </aside>
   );
 }
-
-export { ArrowUpRight };

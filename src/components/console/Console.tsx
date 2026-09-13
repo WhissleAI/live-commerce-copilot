@@ -29,7 +29,6 @@ export function Console() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [viewerDelta, setViewerDelta] = useState(0);
   const prevViewers = useRef<number | null>(null);
-  const verifyRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     if (!show) return;
@@ -253,15 +252,13 @@ export function Console() {
         onResearch={research}
         pinnedTitle={pinned?.title ?? null}
         onQuickAction={(a) => {
-          if (a === "research_pinned" && pinned) {
-            void research(pinned.title);
-          }
           if (a === "autonomy") {
             setPaletteOpen(false);
+            setShortcutsOpen(false);
           }
           if (a === "verify") {
             setPaletteOpen(false);
-            verifyRef.current?.click();
+            window.dispatchEvent(new Event("sidestage:verify-chain"));
           }
         }}
       />

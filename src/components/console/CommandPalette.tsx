@@ -87,7 +87,13 @@ export function CommandPalette({
               <li key={q.id}>
                 <button
                   type="button"
-                  onClick={() => onQuickAction(q.id)}
+                  onClick={() => {
+                    if (q.id === "research_pinned" && pinnedTitle) {
+                      void run(pinnedTitle);
+                      return;
+                    }
+                    onQuickAction(q.id);
+                  }}
                   className="flex w-full items-center gap-2 rounded-[4px] px-2 py-1.5 text-left text-[12px] text-text-secondary hover:bg-elevated hover:text-text"
                 >
                   <q.icon className="size-3.5 text-text-muted" aria-hidden />
