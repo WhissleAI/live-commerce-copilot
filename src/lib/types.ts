@@ -26,6 +26,70 @@ export interface ShowState {
   lotQueue: string[];
   autonomyLevel: AutonomyLevel;
   undoWindowS: number;
+  /** Where buyer chat comes from. */
+  source?: "simulated" | "ebaylive";
+  /** The eBay Live event id, when source is "ebaylive". */
+  externalId?: string | null;
+  /** A monitored stream we do not own: every write action is refused. */
+  readOnly?: boolean;
+  status?: "live" | "ended";
+}
+
+/** Who is selling, from the catalog chosen at setup. */
+export interface SellerProfile {
+  handle: string;
+  name: string;
+  about: string;
+  voice: string;
+}
+
+/** A seller inventory the operator can run a session against. */
+export interface CatalogSummary {
+  id: string;
+  name: string;
+  seller: SellerProfile;
+  itemCount: number;
+  policyCount: number;
+  sample: { title: string; priceCents: number }[];
+}
+
+/** A show this backend is watching. */
+export interface ShowSummary {
+  showId: string;
+  title: string;
+  sellerHandle: string;
+  source: "simulated" | "ebaylive";
+  externalId: string | null;
+  readOnly: boolean;
+  status: "live" | "ended";
+  viewers: number;
+  listings: number;
+  proposals: number;
+}
+
+/** One finalized segment of the HOST's speech, from the Whissle listen-only
+ *  session, with whatever voice metadata rode alongside it. */
+export interface TranscriptSegment {
+  showId?: string;
+  text: string;
+  emotion: { label: string; p?: number } | null;
+  intent: { label: string; p?: number } | null;
+  speechRate: number | null;
+  at: string;
+}
+
+/** Result of starting a monitoring session. */
+export interface SessionStart {
+  showId: string;
+  show: ShowState;
+  catalog: {
+    catalogId: string;
+    catalogName: string;
+    created: number;
+    updated: number;
+    policies: number;
+    seller: SellerProfile;
+  } | null;
 }
 
 export interface Listing {
@@ -212,6 +276,9 @@ export interface ResearchCard {
 
 /** Payload of the `hello` SSE event. */
 export interface HelloPayload {
+  showId?: string;
+  seller?: SellerProfile | null;
+  catalogId?: string | null;
   show: ShowState;
   listings: Listing[];
   proposals: ReplyProposal[];
@@ -223,6 +290,9 @@ export interface HelloPayload {
 
 export type StreamEvent =
   | { type: "hello"; data: HelloPayload }
+  | { type: "transcript"; data: TranscriptSegment }
+  | { type: "shows"; data: ShowSummary[] }
+  | { type: "show"; data: ShowState }
   | { type: "chat"; data: ChatMessage }
   | { type: "proposal"; data: ReplyProposal }
   | { type: "action"; data: ActionProposal }

@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Radio, Users, ArrowUp, ArrowDown, Link2Off } from "lucide-react";
+import { Radio, Users, ArrowUp, ArrowDown, Link2Off, LogOut, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatMs, formatPct, formatSeconds } from "@/lib/format";
-import type { AutonomyLevel, ConnectionState, Metrics, ShowState } from "@/lib/types";
+import type { AutonomyLevel, ConnectionState, Metrics, SellerProfile, ShowState } from "@/lib/types";
 import { Bar, ConsoleButton, Hover } from "./primitives";
 import { useNow } from "@/hooks/useNow";
 
@@ -174,16 +174,21 @@ function AutonomyLadder({
 
 export function TopBar({
   show,
+  seller,
   metrics,
   connection,
   viewerDelta,
   onAutonomy,
+  onEndSession,
 }: {
   show: ShowState;
+  seller?: SellerProfile | null;
   metrics: Metrics | null;
   connection: ConnectionState;
   viewerDelta: number;
   onAutonomy: (l: AutonomyLevel) => void;
+  /** Present only for a monitored live show; returns to the launcher. */
+  onEndSession?: (() => void) | undefined;
 }) {
   const now = useNow();
   const elapsed = (now - new Date(show.startedAt).getTime()) / 1000;
@@ -192,7 +197,32 @@ export function TopBar({
     <header className="flex h-14 shrink-0 items-center gap-4 border-b border-hairline bg-panel px-3">
       <div className="flex min-w-0 items-baseline gap-2">
         <h1 className="truncate text-[13px] font-semibold text-text">{show.title}</h1>
-        <span className="truncate text-[12px] text-text-muted">{show.sellerHandle}</span>
+        <span className="truncate text-[12px] text-text-muted">
+          {seller?.name ?? show.sellerHandle}
+        </span>
+        {show.source === "ebaylive" && (
+          <span className="flex shrink-0 items-center gap-1 rounded-[4px] border border-hairline-strong px-1.5 py-0.5 text-[10px] font-mono text-text-muted">
+            eBay Live
+          </span>
+        )}
+        {show.readOnly && (
+          <span
+            title="A monitored stream. The copilot drafts replies but cannot write to the listing."
+            className="flex shrink-0 items-center gap-1 rounded-[4px] border border-hairline-strong px-1.5 py-0.5 text-[10px] font-mono text-text-muted"
+          >
+            <Lock className="size-2.5" aria-hidden /> read-only
+          </span>
+        )}
+        {onEndSession && (
+          <button
+            type="button"
+            onClick={onEndSession}
+            title="Stop monitoring and pick a different show"
+            className="flex shrink-0 items-center gap-1 rounded-[4px] border border-hairline-strong px-1.5 py-0.5 text-[10px] text-text-muted hover:text-text"
+          >
+            <LogOut className="size-2.5" aria-hidden /> end session
+          </button>
+        )}
       </div>
 
       <div className="flex items-center gap-1.5 rounded-[4px] border border-bad/40 bg-bad/10 px-2 py-1">

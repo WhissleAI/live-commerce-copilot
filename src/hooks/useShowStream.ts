@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { mockChatBacklog, subscribeStream } from "@/lib/api";
 import type {
+  SellerProfile,
+  ShowSummary,
+  TranscriptSegment,
   ActionProposal,
   AuditEntry,
   ChatMessage,
@@ -14,6 +17,7 @@ import type {
 } from "@/lib/types";
 
 const MAX_CHAT = 220;
+const MAX_TRANSCRIPT = 120;
 const MAX_RECENT = 20;
 
 export interface ShowStore {
@@ -26,6 +30,12 @@ export interface ShowStore {
   audit: AuditEntry[];
   metrics: Metrics | null;
   context: ShowContext | null;
+  /** Host speech from the Whissle listen-only session, oldest first. */
+  transcript: TranscriptSegment[];
+  /** Who is selling, from the catalog loaded at setup. */
+  seller: SellerProfile | null;
+  /** Every show this backend is watching. */
+  shows: ShowSummary[];
   /** ids of listings whose fields changed recently, for the flash highlight */
   flashed: Record<string, number>;
 }
@@ -48,6 +58,9 @@ export function useShowStream() {
   const [audit, setAudit] = useState<AuditEntry[]>([]);
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [context, setContext] = useState<ShowContext | null>(null);
+  const [transcript, setTranscript] = useState<TranscriptSegment[]>([]);
+  const [seller, setSeller] = useState<SellerProfile | null>(null);
+  const [shows, setShows] = useState<ShowSummary[]>([]);
   const [flashed, setFlashed] = useState<Record<string, number>>({});
   const listingsRef = useRef<Listing[]>([]);
   listingsRef.current = listings;
@@ -55,15 +68,28 @@ export function useShowStream() {
   const apply = useCallback((e: StreamEvent) => {
     switch (e.type) {
       case "hello": {
+        // A `hello` after a reconnect, or after switching shows, must REPLACE
+        // rather than preserve: keeping the previous arrays was leaking one
+        // show's proposals into another's console.
         setShow(e.data.show);
-        setListings((prev) => (prev.length ? prev : e.data.listings));
-        setProposals((prev) => (prev.length ? prev : e.data.proposals));
-        setActions((prev) => (prev.length ? prev : e.data.actions));
-        setAudit((prev) => (prev.length ? prev : e.data.audit));
+        setSeller(e.data.seller ?? null);
+        setListings(e.data.listings);
+        setProposals(e.data.proposals);
+        setActions(e.data.actions);
+        setAudit(e.data.audit);
         setMetrics(e.data.metrics);
         setContext(e.data.context);
         break;
       }
+      case "show":
+        setShow(e.data);
+        break;
+      case "shows":
+        setShows(e.data);
+        break;
+      case "transcript":
+        setTranscript((prev) => [...prev, e.data].slice(-MAX_TRANSCRIPT));
+        break;
       case "chat":
         setChat((prev) => upsert(prev, e.data).slice(-MAX_CHAT));
         break;
@@ -121,6 +147,9 @@ export function useShowStream() {
     audit,
     metrics,
     context,
+    transcript,
+    seller,
+    shows,
     flashed,
   };
 

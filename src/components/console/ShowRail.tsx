@@ -23,21 +23,35 @@ function PinnedLot({
         <span className="num text-[11px] text-text-muted">v{listing.version}</span>
       </SectionHeader>
       <div className="flex gap-3 p-3">
-        <img
-          src={listing.imageUrl}
-          alt={listing.title}
-          loading="lazy"
-          className="size-16 shrink-0 rounded-[4px] border border-hairline object-cover"
-        />
+        {/* A lot observed on a live stream has no image of its own — eBay renders
+            it in video, not as a listing photo. Show a placeholder rather than a
+            broken image icon. */}
+        {listing.imageUrl ? (
+          <img
+            src={listing.imageUrl}
+            alt={listing.title}
+            loading="lazy"
+            className="size-16 shrink-0 rounded-[4px] border border-hairline object-cover"
+          />
+        ) : (
+          <div
+            aria-hidden
+            className="grid size-16 shrink-0 place-items-center rounded-[4px] border border-hairline bg-elevated text-text-muted"
+          >
+            <Tag className="size-5" />
+          </div>
+        )}
         <div className="min-w-0 flex-1">
           <div className="flex items-start gap-1">
             <Pin className="mt-0.5 size-3 shrink-0 text-accent" aria-hidden />
             <p className="text-[12px] leading-snug font-medium text-text">{listing.title}</p>
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-1">
-            <span className="rounded-[4px] border border-hairline-strong px-1.5 text-[10px] text-text-secondary">
-              size {listing.size}
-            </span>
+            {listing.size ? (
+              <span className="rounded-[4px] border border-hairline-strong px-1.5 text-[10px] text-text-secondary">
+                size {listing.size}
+              </span>
+            ) : null}
             <span className="rounded-[4px] border border-hairline-strong px-1.5 text-[10px] text-text-secondary">
               {listing.condition}
             </span>
@@ -77,7 +91,7 @@ function PinnedLot({
           >
             <span tabIndex={0} className="block w-14 shrink-0">
               <img
-                src={l.imageUrl}
+                src={l.imageUrl || undefined}
                 alt={l.title}
                 loading="lazy"
                 className="h-10 w-14 rounded-[3px] border border-hairline object-cover"

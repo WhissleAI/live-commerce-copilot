@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PanelLeft } from "lucide-react";
-import { api } from "@/lib/api";
+import { api, API_BASE, USE_MOCKS } from "@/lib/api";
 import { useShowStream } from "@/hooks/useShowStream";
 import type { AutonomyLevel, ResearchCard } from "@/lib/types";
 import { TopBar } from "./TopBar";
@@ -9,6 +9,8 @@ import { ProposalQueue } from "./ProposalQueue";
 import { ShowRail } from "./ShowRail";
 import { CommandPalette } from "./CommandPalette";
 import { ShortcutsOverlay } from "./ShortcutsOverlay";
+import { TranscriptPanel } from "./TranscriptPanel";
+import { Launcher } from "./Launcher";
 
 function isTyping(): boolean {
   const el = document.activeElement;
@@ -19,8 +21,13 @@ function isTyping(): boolean {
 
 export function Console() {
   const store = useShowStream();
-  const { show, listings, chat, live, recent, actions, audit, metrics, flashed, connection } =
-    store;
+  const { show, listings, chat, live, recent, actions, audit, metrics, flashed, connection,
+    transcript, seller, shows } = store;
+
+  // Mock mode is the standalone demo and has no backend to set a session up
+  // against, so it goes straight to the console. Against a real backend the
+  // operator picks a catalog and a show first.
+  const [sessionStarted, setSessionStarted] = useState(USE_MOCKS);
 
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -170,6 +177,26 @@ export function Console() {
     return () => window.removeEventListener("keydown", onKey);
   }, [actions, decidable, editingId, focusedId, move, paletteOpen, send, shortcutsOpen]);
 
+  const liveSession = show?.source === "ebaylive";
+
+  // The launcher owns the screen until a live show is being monitored. Resuming
+  // is `activate` + reload: the stream's `hello` is what re-seeds the console,
+  // and re-subscribing is simpler than reconciling two shows' state in place.
+  if (!USE_MOCKS && !sessionStarted && !liveSession) {
+    return (
+      <Launcher
+        existing={shows}
+        onStarted={() => {
+          setSessionStarted(true);
+          window.location.reload();
+        }}
+        onResume={(showId) => {
+          void api.activateShow(showId).then(() => window.location.reload());
+        }}
+      />
+    );
+  }
+
   if (!show)
     return (
       <div className="grid h-screen place-items-center text-[12px] text-text-muted">
@@ -181,20 +208,38 @@ export function Console() {
     <div className="flex h-screen flex-col overflow-hidden bg-canvas">
       <TopBar
         show={show}
+        seller={seller}
         metrics={metrics}
         connection={connection}
         viewerDelta={viewerDelta}
         onAutonomy={setAutonomy}
+        onEndSession={
+          liveSession
+            ? () => {
+                void api.endSession(show.id).finally(() => window.location.reload());
+              }
+            : undefined
+        }
       />
 
       <div className="grid min-h-0 flex-1 grid-cols-[1fr_380px] xl:grid-cols-[300px_1fr_380px]">
-        <div className="hidden min-h-0 xl:block">
-          <ChatColumn
-            chat={chat}
-            onInject={(text) => void api.injectChat("you", text)}
-            onHoverProposal={setHighlightedId}
-            linkedProposalIds={new Set(live.map((p) => p.id))}
-          />
+        {/* Left rail: what is coming IN — the buyers typing, and the host talking. */}
+        <div className="hidden min-h-0 flex-col xl:flex">
+          <div className="flex min-h-0 flex-[3] flex-col">
+            <ChatColumn
+              chat={chat}
+              onInject={(text) => void api.injectChat("you", text)}
+              onHoverProposal={setHighlightedId}
+              linkedProposalIds={new Set(live.map((p) => p.id))}
+            />
+          </div>
+          <div className="flex min-h-0 flex-[2] flex-col">
+            <TranscriptPanel
+              transcript={transcript}
+              context={store.context}
+              bridgeUrl={USE_MOCKS ? null : `${API_BASE}/audio-bridge?showId=${encodeURIComponent(show.id)}`}
+            />
+          </div>
         </div>
 
         <div className="relative flex min-h-0 flex-col">

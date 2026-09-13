@@ -5,6 +5,9 @@
  */
 import { getMockDriver } from "./mockStream";
 import type {
+  CatalogSummary,
+  SessionStart,
+  ShowSummary,
   ActionProposal,
   AuditEntry,
   AutonomyLevel,
@@ -18,6 +21,8 @@ import type {
 } from "./types";
 
 const BASE = (import.meta.env["VITE_API_BASE"] as string | undefined) ?? "http://localhost:8790";
+/** Exported so the console can link to backend-served pages (the audio bridge). */
+export const API_BASE = BASE;
 export const USE_MOCKS =
   ((import.meta.env["VITE_USE_MOCKS"] as string | undefined) ?? "true") === "true";
 
@@ -46,6 +51,11 @@ const STREAM_EVENTS = [
   "audit",
   "metrics",
   "context",
+  // Host speech from the Whissle listen-only session, and the set of shows this
+  // backend is watching.
+  "transcript",
+  "shows",
+  "show",
 ] as const;
 
 /**
@@ -144,6 +154,23 @@ export const api = {
     USE_MOCKS ? getMockDriver().getAudit() : get(`/api/audit?limit=${limit}`),
 
   metrics: (): Promise<Metrics> => (USE_MOCKS ? getMockDriver().getMetrics() : get(`/api/metrics`)),
+
+  // ── session setup ─────────────────────────────────────────────────────────
+  // Mock mode has no backend to ask, so it reports no catalogs and the console
+  // skips the launcher entirely.
+  catalogs: (): Promise<CatalogSummary[]> => (USE_MOCKS ? Promise.resolve([]) : get(`/api/catalogs`)),
+
+  shows: (): Promise<ShowSummary[]> => (USE_MOCKS ? Promise.resolve([]) : get(`/api/shows`)),
+
+  /** Attach to a live eBay show AND load the catalog being sold from, in one call. */
+  startSession: (input: { url: string; catalogId: string }): Promise<SessionStart> =>
+    post(`/api/shows/attach`, input),
+
+  endSession: (showId: string): Promise<{ ok: boolean; shows: ShowSummary[] }> =>
+    post(`/api/shows/${encodeURIComponent(showId)}/detach`),
+
+  activateShow: (showId: string): Promise<ShowSummary> =>
+    post(`/api/shows/${encodeURIComponent(showId)}/activate`),
 };
 
 /** Chat backlog for mock mode only — the real stream sends it in `hello`. */
