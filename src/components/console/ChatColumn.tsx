@@ -119,8 +119,7 @@ export function ChatColumn({
                   panelClassName="w-56"
                   content={
                     <span>
-                      Not admitted —{" "}
-                      <span className="text-text">{m.dropReason ?? "filtered"}</span>
+                      Not admitted — <span className="text-text">{m.dropReason ?? "filtered"}</span>
                     </span>
                   }
                 >

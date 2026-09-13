@@ -43,8 +43,7 @@ function LatencyMeter({ metrics }: { metrics: Metrics }) {
   const { p50, p95, p99, budgetMs, breaches } = metrics.latency;
   const ratio = p95 / budgetMs;
   const tone = ratio < 0.6 ? "ok" : ratio <= 1 ? "warn" : "bad";
-  const color =
-    tone === "ok" ? "text-ok" : tone === "warn" ? "text-warn" : "text-bad";
+  const color = tone === "ok" ? "text-ok" : tone === "warn" ? "text-warn" : "text-bad";
   return (
     <Hover
       side="bottom"

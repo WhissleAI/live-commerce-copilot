@@ -17,9 +17,9 @@ import type {
   StreamEvent,
 } from "./types";
 
-const BASE = (import.meta.env['VITE_API_BASE'] as string | undefined) ?? "http://localhost:8790";
+const BASE = (import.meta.env["VITE_API_BASE"] as string | undefined) ?? "http://localhost:8790";
 export const USE_MOCKS =
-  ((import.meta.env['VITE_USE_MOCKS'] as string | undefined) ?? "true") === "true";
+  ((import.meta.env["VITE_USE_MOCKS"] as string | undefined) ?? "true") === "true";
 
 const url = (path: string) => `${BASE}${path}`;
 
@@ -131,16 +131,19 @@ export const api = {
     USE_MOCKS ? getMockDriver().setAutonomy(level) : post(`/api/autonomy`, { level }),
 
   injectChat: (author: string, text: string): Promise<ChatMessage> =>
-    USE_MOCKS ? getMockDriver().injectChat(author, text) : post(`/api/chat/inject`, { author, text }),
+    USE_MOCKS
+      ? getMockDriver().injectChat(author, text)
+      : post(`/api/chat/inject`, { author, text }),
 
   research: (query: string, listingId?: string): Promise<ResearchCard> =>
-    USE_MOCKS ? getMockDriver().research(query, listingId) : post(`/api/research`, { query, listingId }),
+    USE_MOCKS
+      ? getMockDriver().research(query, listingId)
+      : post(`/api/research`, { query, listingId }),
 
   audit: (limit = 200): Promise<AuditEntry[]> =>
     USE_MOCKS ? getMockDriver().getAudit() : get(`/api/audit?limit=${limit}`),
 
-  metrics: (): Promise<Metrics> =>
-    USE_MOCKS ? getMockDriver().getMetrics() : get(`/api/metrics`),
+  metrics: (): Promise<Metrics> => (USE_MOCKS ? getMockDriver().getMetrics() : get(`/api/metrics`)),
 };
 
 /** Chat backlog for mock mode only — the real stream sends it in `hello`. */

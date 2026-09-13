@@ -1,9 +1,5 @@
 export type AutonomyLevel =
-  | "L0_OBSERVE"
-  | "L1_SUGGEST"
-  | "L2_ONE_TAP"
-  | "L3_AUTO_REPLY"
-  | "L4_AUTO_ACT";
+  "L0_OBSERVE" | "L1_SUGGEST" | "L2_ONE_TAP" | "L3_AUTO_REPLY" | "L4_AUTO_ACT";
 
 export type ChatIntent =
   | "price_question"
@@ -120,11 +116,7 @@ export interface ReplyProposal {
 }
 
 export type ActionKind =
-  | "push_listing"
-  | "swap_pinned"
-  | "markdown_price"
-  | "adjust_stock"
-  | "end_listing";
+  "push_listing" | "swap_pinned" | "markdown_price" | "adjust_stock" | "end_listing";
 
 export interface PreflightCheck {
   name: string;

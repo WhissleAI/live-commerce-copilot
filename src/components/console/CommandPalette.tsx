@@ -46,7 +46,11 @@ export function CommandPalette({
   };
 
   const quick = [
-    { id: "research_pinned" as const, icon: Tag, label: `Research the pinned lot${pinnedTitle ? ` — ${pinnedTitle}` : ""}` },
+    {
+      id: "research_pinned" as const,
+      icon: Tag,
+      label: `Research the pinned lot${pinnedTitle ? ` — ${pinnedTitle}` : ""}`,
+    },
     { id: "autonomy" as const, icon: Sliders, label: "Set autonomy level" },
     { id: "verify" as const, icon: ShieldCheck, label: "Verify audit chain" },
   ];
@@ -143,7 +147,9 @@ export function CommandPalette({
                     <td className="num">{c.size}</td>
                     <td>{c.condition}</td>
                     <td className="num text-right text-text">{formatMoney(c.soldPriceCents)}</td>
-                    <td className="num text-right">{new Date(c.soldAt).toISOString().slice(0, 10)}</td>
+                    <td className="num text-right">
+                      {new Date(c.soldAt).toISOString().slice(0, 10)}
+                    </td>
                   </tr>
                 ))}
               </tbody>

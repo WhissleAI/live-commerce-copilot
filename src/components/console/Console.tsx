@@ -19,7 +19,8 @@ function isTyping(): boolean {
 
 export function Console() {
   const store = useShowStream();
-  const { show, listings, chat, live, recent, actions, audit, metrics, flashed, connection } = store;
+  const { show, listings, chat, live, recent, actions, audit, metrics, flashed, connection } =
+    store;
 
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -37,10 +38,7 @@ export function Console() {
     prevViewers.current = show.viewers;
   }, [show]);
 
-  const decidable = useMemo(
-    () => live.filter((p) => p.status !== "drafting"),
-    [live],
-  );
+  const decidable = useMemo(() => live.filter((p) => p.status !== "drafting"), [live]);
 
   useEffect(() => {
     if (focusedId && decidable.some((p) => p.id === focusedId)) return;
@@ -67,16 +65,14 @@ export function Console() {
     [decidable, focusedId],
   );
 
-  const send = useCallback(
-    (id: string, text?: string) => {
-      setEditingId(null);
-      void api.sendProposal(id, text);
-    },
-    [],
-  );
+  const send = useCallback((id: string, text?: string) => {
+    setEditingId(null);
+    void api.sendProposal(id, text);
+  }, []);
 
   const research = useCallback(
-    (query: string): Promise<ResearchCard> => api.research(query, show?.pinnedListingId ?? undefined),
+    (query: string): Promise<ResearchCard> =>
+      api.research(query, show?.pinnedListingId ?? undefined),
     [show],
   );
 

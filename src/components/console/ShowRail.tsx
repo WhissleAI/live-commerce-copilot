@@ -1,14 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import {
-  AlertTriangle,
-  Check,
-  Link as LinkIcon,
-  Loader2,
-  Pin,
-  Tag,
-  Undo2,
-  X,
-} from "lucide-react";
+import { AlertTriangle, Check, Link as LinkIcon, Loader2, Pin, Tag, Undo2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatClock, formatMoney, formatMoneyShort } from "@/lib/format";
 import type { ActionProposal, AuditEntry, Listing } from "@/lib/types";
@@ -25,10 +16,7 @@ function PinnedLot({
   flashedAt: number | undefined;
 }) {
   const flashing = flashedAt !== undefined && Date.now() - flashedAt < 1200;
-  if (!listing)
-    return (
-      <div className="p-3 text-[12px] text-text-muted">No lot pinned.</div>
-    );
+  if (!listing) return <div className="p-3 text-[12px] text-text-muted">No lot pinned.</div>;
   return (
     <div className="shrink-0 border-b border-hairline">
       <SectionHeader title="Pinned lot">
@@ -60,7 +48,10 @@ function PinnedLot({
             ) : null}
           </div>
           <div
-            className={cn("num mt-1.5 rounded-[3px] text-[20px] leading-none text-text", flashing && "anim-flash")}
+            className={cn(
+              "num mt-1.5 rounded-[3px] text-[20px] leading-none text-text",
+              flashing && "anim-flash",
+            )}
           >
             {formatMoney(listing.priceCents)}
           </div>
@@ -79,7 +70,11 @@ function PinnedLot({
       </div>
       <div className="flex gap-1.5 border-t border-hairline px-3 py-2">
         {queue.slice(0, 4).map((l) => (
-          <Hover key={l.id} panelClassName="w-56" content={<span className="text-text">{l.title}</span>}>
+          <Hover
+            key={l.id}
+            panelClassName="w-56"
+            content={<span className="text-text">{l.title}</span>}
+          >
             <span tabIndex={0} className="block w-14 shrink-0">
               <img
                 src={l.imageUrl}
@@ -147,7 +142,10 @@ function ActionCard({
         {a.preflight.checks.map((c) => (
           <li
             key={c.name}
-            className={cn("flex items-center gap-1.5 text-[11px]", c.ok ? "text-text-secondary" : "text-bad")}
+            className={cn(
+              "flex items-center gap-1.5 text-[11px]",
+              c.ok ? "text-text-secondary" : "text-bad",
+            )}
           >
             {c.ok ? (
               <Check className="size-3 shrink-0 text-ok" aria-hidden />
@@ -225,7 +223,9 @@ function AuditRow({ e }: { e: AuditEntry }) {
       ? "text-ok"
       : e.kind === "action_rolled_back"
         ? "text-warn"
-        : e.kind === "action_failed" || e.kind === "reply_blocked" || e.kind === "action_preflight_failed"
+        : e.kind === "action_failed" ||
+            e.kind === "reply_blocked" ||
+            e.kind === "action_preflight_failed"
           ? "text-bad"
           : "text-text-secondary";
   return (
@@ -309,7 +309,11 @@ export function ShowRail({
 
   return (
     <aside className="flex min-h-0 flex-col border-l border-hairline bg-panel">
-      <PinnedLot listing={pinned} queue={queue} flashedAt={pinned ? flashed[pinned.id] : undefined} />
+      <PinnedLot
+        listing={pinned}
+        queue={queue}
+        flashedAt={pinned ? flashed[pinned.id] : undefined}
+      />
 
       <div className="flex min-h-0 flex-[1.2] flex-col border-b border-hairline">
         <SectionHeader title="Actions">

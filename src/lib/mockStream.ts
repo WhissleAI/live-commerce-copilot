@@ -26,7 +26,7 @@ import { formatMoney } from "./format";
 let n = 1;
 const uid = (p: string) => `${p}_${(n++).toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 const nowIso = () => new Date().toISOString();
-const pick = <T,>(a: T[]): T => a[Math.floor(Math.random() * a.length)]!;
+const pick = <T>(a: T[]): T => a[Math.floor(Math.random() * a.length)]!;
 const rnd = (min: number, max: number) => min + Math.random() * (max - min);
 
 function hash(input: string): string {
@@ -514,7 +514,8 @@ export class MockDriver {
 
     const blocked = mk("grailhunter", "what's the lowest on the chicagos", "price_question", {
       status: "blocked",
-      draft: "I can let the Chicagos go for $412 tonight — that's the lowest I can do on this pair.",
+      draft:
+        "I can let the Chicagos go for $412 tonight — that's the lowest I can do on this pair.",
       guards: guards({
         price: {
           guard: "price",
@@ -580,7 +581,8 @@ export class MockDriver {
         listingId: panda.id,
         listingTitle: panda.title,
         summary: "Fix stock on Nike Dunk Low Panda · size 11 — 2 → 3 available",
-        rationale: "A cancelled order left the lot understated; two buyers were told it was sold out.",
+        rationale:
+          "A cancelled order left the lot understated; two buyers were told it was sold out.",
         params: { qty: 3 },
         before: { qty: 2 },
         status: "committed",
@@ -598,13 +600,55 @@ export class MockDriver {
     ];
 
     // Seed audit chain (no emit — part of hello).
-    this.pushAudit("autonomy_changed", "seller", "Autonomy set to L2 One-tap", { level: "L2_ONE_TAP" }, false);
-    this.pushAudit("reply_sent", "seller", `Reply sent to @dunkdaddy — price on ${panda.title}`, { proposalId: sent.id }, false);
-    this.pushAudit("reply_blocked", "system", "Reply blocked by price guard — stale listing version 12", { guard: "price", expected: "$370.00 (v13)" }, false);
-    this.pushAudit("action_proposed", "copilot", "Proposed stock fix on Nike Dunk Low Panda", { kind: "adjust_stock" }, false);
-    this.pushAudit("action_committed", "seller", "Committed stock fix — Panda size 11 now 3 available", { kind: "adjust_stock", qty: 3 }, false);
-    this.pushAudit("action_rolled_back", "seller", "Rolled back markdown on Yeezy Slide Bone", { kind: "markdown_price" }, false);
-    this.pushAudit("action_failed", "system", "Push listing failed — marketplace rate limit", { retryable: true }, false);
+    this.pushAudit(
+      "autonomy_changed",
+      "seller",
+      "Autonomy set to L2 One-tap",
+      { level: "L2_ONE_TAP" },
+      false,
+    );
+    this.pushAudit(
+      "reply_sent",
+      "seller",
+      `Reply sent to @dunkdaddy — price on ${panda.title}`,
+      { proposalId: sent.id },
+      false,
+    );
+    this.pushAudit(
+      "reply_blocked",
+      "system",
+      "Reply blocked by price guard — stale listing version 12",
+      { guard: "price", expected: "$370.00 (v13)" },
+      false,
+    );
+    this.pushAudit(
+      "action_proposed",
+      "copilot",
+      "Proposed stock fix on Nike Dunk Low Panda",
+      { kind: "adjust_stock" },
+      false,
+    );
+    this.pushAudit(
+      "action_committed",
+      "seller",
+      "Committed stock fix — Panda size 11 now 3 available",
+      { kind: "adjust_stock", qty: 3 },
+      false,
+    );
+    this.pushAudit(
+      "action_rolled_back",
+      "seller",
+      "Rolled back markdown on Yeezy Slide Bone",
+      { kind: "markdown_price" },
+      false,
+    );
+    this.pushAudit(
+      "action_failed",
+      "system",
+      "Push listing failed — marketplace rate limit",
+      { retryable: true },
+      false,
+    );
 
     // Seed chat backlog.
     this.backlog();
@@ -720,7 +764,10 @@ export class MockDriver {
           guard: "price",
           verdict: "block",
           reason: `Reply quotes a price from listing version ${listing.version}; the live listing is version ${stale} after a markdown.`,
-          detail: { expected: `${formatMoney(listing.priceCents - 4200)} (v${stale})`, found: formatMoney(listing.priceCents) },
+          detail: {
+            expected: `${formatMoney(listing.priceCents - 4200)} (v${stale})`,
+            found: formatMoney(listing.priceCents),
+          },
         },
       });
       verdict = "block";
@@ -741,7 +788,13 @@ export class MockDriver {
       message: linked,
       status: "drafting",
       draft: "",
-      claims: [{ text: text.slice(0, 34), factId: `fact_price_${listing.id}_v${listing.version}`, supported: finalStatus !== "blocked" }],
+      claims: [
+        {
+          text: text.slice(0, 34),
+          factId: `fact_price_${listing.id}_v${listing.version}`,
+          supported: finalStatus !== "blocked",
+        },
+      ],
       evidence: Math.random() < 0.07 ? [] : evidenceFor(listing, intent),
       guards: guards(),
       verdict: "allow",
@@ -775,14 +828,24 @@ export class MockDriver {
       };
       this.upsertProposal(done);
       if (finalStatus === "blocked")
-        this.pushAudit("reply_blocked", "system", `Reply blocked by price guard — ${listing.title}`, { proposalId: id });
-      if (this.show.autonomyLevel === "L3_AUTO_REPLY" || this.show.autonomyLevel === "L4_AUTO_ACT") {
+        this.pushAudit(
+          "reply_blocked",
+          "system",
+          `Reply blocked by price guard — ${listing.title}`,
+          { proposalId: id },
+        );
+      if (
+        this.show.autonomyLevel === "L3_AUTO_REPLY" ||
+        this.show.autonomyLevel === "L4_AUTO_ACT"
+      ) {
         if (finalStatus === "ready")
           this.after(600, () => {
             this.upsertProposal({ ...done, status: "auto_sent", sentText: text });
             this.metrics = { ...this.metrics, autoSent: this.metrics.autoSent + 1 };
             this.emit({ type: "metrics", data: this.metrics });
-            this.pushAudit("reply_sent", "copilot", `Auto-sent reply to @${message.author}`, { proposalId: id });
+            this.pushAudit("reply_sent", "copilot", `Auto-sent reply to @${message.author}`, {
+              proposalId: id,
+            });
           });
       }
     });
@@ -801,7 +864,12 @@ export class MockDriver {
 
   private spawnAction() {
     const listing = pick(this.listings);
-    const kinds: ActionKindLocal[] = ["markdown_price", "adjust_stock", "swap_pinned", "push_listing"];
+    const kinds: ActionKindLocal[] = [
+      "markdown_price",
+      "adjust_stock",
+      "swap_pinned",
+      "push_listing",
+    ];
     const kind = pick(kinds);
     const failing = Math.random() < 0.25;
     const newPrice = Math.round(listing.priceCents * 0.9);
@@ -812,9 +880,19 @@ export class MockDriver {
       push_listing: `Push ${listing.title} to the front of the lot queue`,
     };
     const checks = [
-      { name: "above floor price", ok: newPrice >= listing.floorPriceCents, detail: `floor ${formatMoney(listing.floorPriceCents)}` },
+      {
+        name: "above floor price",
+        ok: newPrice >= listing.floorPriceCents,
+        detail: `floor ${formatMoney(listing.floorPriceCents)}`,
+      },
       { name: "within 15% max discount", ok: true, detail: "−10.0% requested" },
-      { name: "show action budget", ok: !failing, detail: failing ? "12 of 12 actions used" : `${this.metrics.actionsCommitted + 5} of 12 actions used` },
+      {
+        name: "show action budget",
+        ok: !failing,
+        detail: failing
+          ? "12 of 12 actions used"
+          : `${this.metrics.actionsCommitted + 5} of 12 actions used`,
+      },
     ];
     const ok = checks.every((c) => c.ok);
     const action: ActionProposal = {
@@ -895,7 +973,10 @@ export class MockDriver {
     this.upsertProposal(next);
     this.metrics = { ...this.metrics, sent: this.metrics.sent + 1 };
     this.emit({ type: "metrics", data: this.metrics });
-    this.pushAudit("reply_sent", "seller", `Reply sent to @${p.message.author}`, { proposalId: id, text: next.sentText });
+    this.pushAudit("reply_sent", "seller", `Reply sent to @${p.message.author}`, {
+      proposalId: id,
+      text: next.sentText,
+    });
     return next;
   }
 
@@ -923,7 +1004,10 @@ export class MockDriver {
     const duration = rnd(500, 1100);
     for (let i = 1; i <= steps; i++) {
       this.after((duration / steps) * i, () => {
-        this.upsertProposal({ ...drafting, draft: text.slice(0, Math.ceil((text.length * i) / steps)) });
+        this.upsertProposal({
+          ...drafting,
+          draft: text.slice(0, Math.ceil((text.length * i) / steps)),
+        });
       });
     }
     this.after(duration + 100, () => {
@@ -947,7 +1031,11 @@ export class MockDriver {
     this.after(rnd(700, 1500), () => {
       const fail = Math.random() < 0.15;
       if (fail) {
-        this.upsertAction({ ...a, status: "failed", error: "Marketplace rejected the update (429 rate limited)" });
+        this.upsertAction({
+          ...a,
+          status: "failed",
+          error: "Marketplace rejected the update (429 rate limited)",
+        });
         this.pushAudit("action_failed", "system", `Failed — ${a.summary}`, { error: "429" });
         return;
       }
@@ -959,7 +1047,10 @@ export class MockDriver {
       this.upsertAction(committed);
       this.metrics = { ...this.metrics, actionsCommitted: this.metrics.actionsCommitted + 1 };
       this.emit({ type: "metrics", data: this.metrics });
-      this.pushAudit("action_committed", "seller", `Committed — ${a.summary}`, { kind: a.kind, params: a.params });
+      this.pushAudit("action_committed", "seller", `Committed — ${a.summary}`, {
+        kind: a.kind,
+        params: a.params,
+      });
       this.applyAction(committed);
     });
     return committing;
@@ -969,10 +1060,10 @@ export class MockDriver {
     const l = this.listings.find((x) => x.id === a.listingId);
     if (!l) return;
     let next: Listing = { ...l, version: l.version + 1, updatedAt: nowIso() };
-    if (a.kind === "markdown_price" && typeof a.params['priceCents'] === "number")
-      next = { ...next, priceCents: a.params['priceCents'] as number };
-    if (a.kind === "adjust_stock" && typeof a.params['qty'] === "number")
-      next = { ...next, qty: a.params['qty'] as number };
+    if (a.kind === "markdown_price" && typeof a.params["priceCents"] === "number")
+      next = { ...next, priceCents: a.params["priceCents"] as number };
+    if (a.kind === "adjust_stock" && typeof a.params["qty"] === "number")
+      next = { ...next, qty: a.params["qty"] as number };
     if (a.kind === "swap_pinned") {
       this.listings = this.listings.map((x) => ({ ...x, pinned: x.id === l.id }));
       this.show = { ...this.show, pinnedListingId: l.id };
@@ -1002,8 +1093,11 @@ export class MockDriver {
     if (l) {
       const restored: Listing = {
         ...l,
-        priceCents: typeof a.before['priceCents'] === "number" ? (a.before['priceCents'] as number) : l.priceCents,
-        qty: typeof a.before['qty'] === "number" ? (a.before['qty'] as number) : l.qty,
+        priceCents:
+          typeof a.before["priceCents"] === "number"
+            ? (a.before["priceCents"] as number)
+            : l.priceCents,
+        qty: typeof a.before["qty"] === "number" ? (a.before["qty"] as number) : l.qty,
         version: l.version + 1,
         updatedAt: nowIso(),
       };
@@ -1016,7 +1110,15 @@ export class MockDriver {
   async setAutonomy(level: AutonomyLevel): Promise<ShowState> {
     this.show = { ...this.show, autonomyLevel: level };
     this.emit({ type: "hello", data: this.hello() });
-    this.pushAudit("autonomy_changed", "seller", `Autonomy set to ${level.replace(/^L\d_/, (m) => m.slice(0, 2) + " ").replace(/_/g, " ").toLowerCase()}`, { level });
+    this.pushAudit(
+      "autonomy_changed",
+      "seller",
+      `Autonomy set to ${level
+        .replace(/^L\d_/, (m) => m.slice(0, 2) + " ")
+        .replace(/_/g, " ")
+        .toLowerCase()}`,
+      { level },
+    );
     return this.show;
   }
 

@@ -79,7 +79,8 @@ function GuardStrip({ guards }: { guards: GuardResult[] }) {
               : verdict === "block"
                 ? "border-bad/50 bg-bad/12 text-bad"
                 : "border-hairline-strong bg-canvas text-text-muted";
-        const mark = verdict === "allow" ? "✓" : verdict === "revise" ? "!" : verdict === "block" ? "✕" : "–";
+        const mark =
+          verdict === "allow" ? "✓" : verdict === "revise" ? "!" : verdict === "block" ? "✕" : "–";
         return (
           <Hover
             key={name}
@@ -147,9 +148,7 @@ function SentLine({ p }: { p: ReplyProposal }) {
   return (
     <li className="anim-in flex items-center gap-2 border-b border-hairline px-3 py-1.5 text-[12px]">
       <Check className="size-3.5 shrink-0 text-ok" aria-hidden />
-      <span className="min-w-0 flex-1 truncate text-text-secondary">
-        {p.sentText ?? p.draft}
-      </span>
+      <span className="min-w-0 flex-1 truncate text-text-secondary">{p.sentText ?? p.draft}</span>
       {p.status === "auto_sent" ? (
         <span className="rounded-[4px] border border-accent/40 px-1 text-[10px] text-accent">
           auto
@@ -247,10 +246,7 @@ function ProposalCard({
         <span className="ml-auto flex items-center gap-2">
           <Confidence value={p.confidence} />
           <span
-            className={cn(
-              "num text-[11px]",
-              p.spans.overBudget ? "text-bad" : "text-text-muted",
-            )}
+            className={cn("num text-[11px]", p.spans.overBudget ? "text-bad" : "text-text-muted")}
           >
             {formatMs(p.spans.totalMs)}
           </span>
@@ -332,7 +328,13 @@ function ProposalCard({
                   onClick={() => onSend(editing ? value : undefined)}
                 >
                   {needsReview ? "Send anyway" : "Send"}
-                  <Kbd className={needsReview ? "" : "border-accent-foreground/40 bg-transparent text-accent-foreground/80"}>
+                  <Kbd
+                    className={
+                      needsReview
+                        ? ""
+                        : "border-accent-foreground/40 bg-transparent text-accent-foreground/80"
+                    }
+                  >
                     ⏎
                   </Kbd>
                 </ConsoleButton>
