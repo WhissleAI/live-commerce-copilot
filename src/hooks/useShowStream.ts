@@ -18,6 +18,8 @@ import type {
 
 const MAX_CHAT = 220;
 const MAX_TRANSCRIPT = 120;
+/** ~2 minutes at 10 Hz. The strip shows recent audio, not the whole show. */
+const MAX_LEVELS = 1200;
 const MAX_RECENT = 20;
 
 export interface ShowStore {
@@ -32,6 +34,7 @@ export interface ShowStore {
   context: ShowContext | null;
   /** Host speech from the Whissle listen-only session, oldest first. */
   transcript: TranscriptSegment[];
+  levels: number[];
   /** Who is selling, from the catalog loaded at setup. */
   seller: SellerProfile | null;
   /** Every show this backend is watching. */
@@ -59,6 +62,7 @@ export function useShowStream() {
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [context, setContext] = useState<ShowContext | null>(null);
   const [transcript, setTranscript] = useState<TranscriptSegment[]>([]);
+  const [levels, setLevels] = useState<number[]>([]);
   const [seller, setSeller] = useState<SellerProfile | null>(null);
   const [shows, setShows] = useState<ShowSummary[]>([]);
   const [flashed, setFlashed] = useState<Record<string, number>>({});
@@ -89,6 +93,11 @@ export function useShowStream() {
         break;
       case "transcript":
         setTranscript((prev) => [...prev, e.data].slice(-MAX_TRANSCRIPT));
+        break;
+      case "levels":
+        // A rolling window, not a log. This is 10 Hz and its only consumer is a
+        // strip showing the last couple of minutes.
+        setLevels((prev) => [...prev, ...e.data.levels].slice(-MAX_LEVELS));
         break;
       case "chat":
         setChat((prev) => upsert(prev, e.data).slice(-MAX_CHAT));
@@ -148,6 +157,7 @@ export function useShowStream() {
     metrics,
     context,
     transcript,
+    levels,
     seller,
     shows,
     flashed,

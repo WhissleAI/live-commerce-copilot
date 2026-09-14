@@ -47,7 +47,7 @@ function isTyping(): boolean {
 export function Console() {
   const store = useShowStream();
   const { show, listings, chat, live, recent, actions, audit, metrics, flashed, connection,
-    transcript, seller, shows } = store;
+    transcript, levels, seller, shows } = store;
 
   // Mock mode is the standalone demo and has no backend to set a session up
   // against, so it goes straight to the console. Against a real backend the
@@ -312,6 +312,7 @@ export function Console() {
           <div className="flex min-h-0 flex-[2] flex-col">
             <TranscriptPanel
               transcript={transcript}
+              levels={levels}
               context={store.context}
               bridgeUrl={USE_MOCKS ? null : `${API_BASE}/audio-bridge?showId=${encodeURIComponent(show.id)}`}
             />

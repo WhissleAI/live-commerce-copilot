@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Mic, MicOff, ExternalLink, Eye } from "lucide-react";
 import type { ShowContext, SignalDistribution, TranscriptSegment } from "@/lib/types";
+import { AudioTimeline } from "./AudioTimeline";
 import { cn } from "@/lib/utils";
 
 /**
@@ -21,10 +22,12 @@ import { cn } from "@/lib/utils";
  */
 export function TranscriptPanel({
   transcript,
+  levels,
   context,
   bridgeUrl,
 }: {
   transcript: TranscriptSegment[];
+  levels: number[];
   context: ShowContext | null;
   bridgeUrl: string | null;
 }) {
@@ -69,6 +72,13 @@ export function TranscriptPanel({
           </a>
         )}
       </header>
+
+      {/* Loudness over time, tinted by how the host sounded. Above the words
+          because it is the thing you read at a glance; the words are what you
+          read when the strip makes you look. */}
+      <div className="shrink-0 border-b border-hairline px-2 pb-1 pt-1.5">
+        <AudioTimeline levels={levels} transcript={transcript} />
+      </div>
 
       {/* The distilled state, above the raw stream: what the show is ABOUT right
           now, how it sounds, and what is on camera. Three lines, not three
@@ -143,15 +153,10 @@ export function TranscriptPanel({
  * away and nothing below the fold.
  */
 function Utterance({ seg }: { seg: TranscriptSegment }) {
-  const [open, setOpen] = useState(false);
   const has = Boolean(seg.emotion || seg.intent || seg.speechRate !== null);
 
   return (
-    <li
-      className="group relative flex gap-2 px-3 py-1.5 hover:bg-elevated/50"
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
-    >
+    <li className="group relative flex gap-2 px-3 py-1.5 hover:bg-elevated/50">
       <time className="num w-9 shrink-0 pt-[1px] text-[10px] tabular-nums text-text-muted">
         {new Date(seg.at).toLocaleTimeString([], { hour12: false, minute: "2-digit", second: "2-digit" })}
       </time>
@@ -171,18 +176,6 @@ function Utterance({ seg }: { seg: TranscriptSegment }) {
         )}
       </div>
 
-      {/* The full distributions, on demand. Anchored right and clamped so a long
-          label cannot push it off a narrow rail. */}
-      {open && has && (
-        <div className="anim-in absolute right-2 top-full z-30 w-64 rounded-[6px] border border-hairline bg-panel p-2 shadow-lg">
-          {seg.emotion && <Distribution kind="emotion" d={seg.emotion} />}
-          {seg.intent && <Distribution kind="intent" d={seg.intent} />}
-          <p className="mt-1.5 border-t border-hairline pt-1.5 text-[10px] leading-snug text-text-muted">
-            Measured from the audio, as a spread rather than a verdict — accuracy on
-            low-arousal states tops out near 63%.
-          </p>
-        </div>
-      )}
     </li>
   );
 }

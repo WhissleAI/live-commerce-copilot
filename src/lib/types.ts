@@ -88,6 +88,13 @@ export interface SignalDistribution {
 
 /** One finalized segment of the HOST's speech, from the Whissle listen-only
  *  session, with whatever voice metadata rode alongside it. */
+export interface AudioLevels {
+  showId: string;
+  at: string;
+  /** RMS per ~100ms window, 0..1. */
+  levels: number[];
+}
+
 export interface TranscriptSegment {
   showId?: string;
   text: string;
@@ -95,6 +102,8 @@ export interface TranscriptSegment {
   intent: SignalDistribution | null;
   speechRate: number | null;
   at: string;
+  /** Loudness envelope measured while this was being said, 0..1 per ~100ms. */
+  levels?: number[] | null;
 }
 
 /** Result of starting a monitoring session. */
@@ -326,6 +335,7 @@ export type StreamEvent =
   | { type: "transcript"; data: TranscriptSegment }
   | { type: "shows"; data: ShowSummary[] }
   | { type: "show"; data: ShowState }
+  | { type: "levels"; data: AudioLevels }
   | { type: "chat"; data: ChatMessage }
   | { type: "proposal"; data: ReplyProposal }
   | { type: "action"; data: ActionProposal }
