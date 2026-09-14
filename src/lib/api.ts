@@ -6,7 +6,10 @@
 import { getMockDriver } from "./mockStream";
 import type {
   Account,
+  Analytics,
   BillingSnapshot,
+  SellerGuardrailPolicy,
+  SettingsView,
   CatalogSummary,
   SessionStart,
   ShowSummary,
@@ -106,6 +109,19 @@ async function post<T>(path: string, body?: unknown): Promise<T> {
     // wrong layer for an afternoon.
     const detail = await res.text().catch(() => "");
     throw new Error(`${path} failed: ${res.status}${detail ? ` — ${detail.slice(0, 200)}` : ""}`);
+  }
+  return (await res.json()) as T;
+}
+
+async function put<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(url(path), {
+    method: "PUT",
+    headers: { "content-type": "application/json", ...bearer() },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(detail ? detail.slice(0, 400) : `${path} failed: ${res.status}`);
   }
   return (await res.json()) as T;
 }
@@ -250,6 +266,16 @@ export const api = {
    *  account behind it, so it reports nothing rather than inventing a balance. */
   billing: (days = 7): Promise<BillingSnapshot | null> =>
     USE_MOCKS ? Promise.resolve(null) : get(`/api/billing?days=${days}`),
+
+  analytics: (days = 7): Promise<Analytics> => get(`/api/analytics?days=${days}`),
+
+  settings: (): Promise<SettingsView> => get(`/api/settings`),
+
+  /** Saving re-arms Layer B here AND re-pushes Layer A to the agent, then reads
+   *  back what the gateway says is armed — which is what comes back in `armed`. */
+  saveSettings: (p: Partial<SellerGuardrailPolicy>): Promise<SettingsView> => put(`/api/settings`, p),
+
+  resetSettings: (): Promise<SettingsView> => post(`/api/settings/reset`),
 };
 
 /** Chat backlog for mock mode only — the real stream sends it in `hello`. */

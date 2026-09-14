@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Radio, Users, ArrowUp, ArrowDown, Link2Off, LogOut, Lock, Wallet, Eye, UserRound } from "lucide-react";
+import { Radio, Users, ArrowUp, ArrowDown, Link2Off, LogOut, Lock, Wallet, Eye, UserRound, BarChart3, SlidersHorizontal } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 import { formatMs, formatPct, formatSeconds } from "@/lib/format";
 import type { Account, AutonomyLevel, ConnectionState, Metrics, SellerProfile, ShowState } from "@/lib/types";
@@ -262,6 +263,24 @@ export function TopBar({
       {metrics ? <LatencyMeter metrics={metrics} /> : null}
 
       <AutonomyLadder level={show.autonomyLevel} onChange={onAutonomy} />
+
+      {/* The two PAGES. Links, not panels: both are read between lots, and a
+          rail that competes with the proposal queue during a show is a rail
+          that gets ignored during a show. */}
+      <Link
+        to="/analytics"
+        title="Answered rate, guard blocks, what the agent did per turn, and what it cost"
+        className="flex shrink-0 items-center gap-1.5 rounded-[4px] border border-hairline-strong px-2 py-1 text-[11px] text-text-secondary hover:text-text"
+      >
+        <BarChart3 className="size-3" aria-hidden /> analytics
+      </Link>
+      <Link
+        to="/settings"
+        title="Edit the guardrail policy — re-armed here and re-pushed to the agent"
+        className="flex shrink-0 items-center gap-1.5 rounded-[4px] border border-hairline-strong px-2 py-1 text-[11px] text-text-secondary hover:text-text"
+      >
+        <SlidersHorizontal className="size-3" aria-hidden /> guardrails
+      </Link>
 
       {/* What the copilot is spending. Beside the autonomy ladder on purpose:
           raising a rung raises the bill, and the two should be read together. */}

@@ -386,3 +386,93 @@ export interface Account {
   handle: string;
   displayName: string;
 }
+
+// ── settings ────────────────────────────────────────────────────────────────
+
+export interface NeverSayRule {
+  pattern: string;
+  regex?: boolean;
+  why: string;
+  /** Stays app-side: the gateway matcher has no catalog access, so this rule
+   *  cannot be pushed without blanket-blocking a phrase that is true for a
+   *  certified listing. */
+  unlessCertified?: boolean;
+}
+
+export interface SellerGuardrailPolicy {
+  neverSay: NeverSayRule[];
+  redactPii: boolean;
+  onViolation: string;
+  maxDiscountPct: number;
+  maxReplyChars: number;
+  allowMarkdown: boolean;
+  allowEmoji: boolean;
+  hypePhrases: string[];
+  languageMode: "auto" | "fixed";
+  holdForApproval: string[];
+}
+
+/** What the gateway reports as armed after a push — read back, not assumed. */
+export interface ArmedReport {
+  ok: boolean;
+  items: { label: string; value: unknown }[];
+  error?: string;
+  agentId?: string;
+}
+
+export interface SettingsView {
+  policy: SellerGuardrailPolicy;
+  defaults: SellerGuardrailPolicy;
+  overrides: Partial<SellerGuardrailPolicy>;
+  armed: ArmedReport | null;
+  updatedAt: string | null;
+}
+
+// ── analytics ───────────────────────────────────────────────────────────────
+
+export interface TurnEvent {
+  hop: number;
+  provider: string;
+  model: string;
+  ok: boolean;
+  latencyMs: number;
+  failedOver: boolean;
+  inputTokens: number;
+  outputTokens: number;
+  stopReason: string | null;
+  sessionId: string;
+  title: string;
+  at: string;
+}
+
+export interface AgentActivity {
+  sessions: number;
+  turns: number;
+  failovers: number;
+  errors: number;
+  inputTokens: number;
+  outputTokens: number;
+  latency: { p50: number; p95: number; max: number };
+  byModel: { model: string; provider: string; turns: number; tokens: number; p50Ms: number }[];
+  recent: TurnEvent[];
+  error?: string;
+}
+
+export interface Analytics {
+  showId: string;
+  agentId: string | null;
+  copilot: Metrics & {
+    auditChain: { ok: boolean; height: number; brokenAt?: number; reason?: string };
+    actionsByStatus: Record<string, number>;
+  };
+  agent: AgentActivity | null;
+  cost: {
+    wallet: Wallet | null;
+    walletError: { status: number; message: string } | null;
+    usage: { days: number; totals: UsageTotal[] } | null;
+    usageError: { status: number; message: string } | null;
+    meter: BillingSnapshot["meter"];
+    spend: BillingSnapshot["spend"];
+  };
+  policy: { maxDiscountPct: number; neverSayRules: number; armedOnAgent: number };
+}
