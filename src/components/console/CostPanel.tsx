@@ -131,7 +131,7 @@ export function CostPanel({ showId, onClose }: { showId: string | null; onClose:
   return (
     <aside className="flex h-full min-h-0 flex-col overflow-hidden border-l border-hairline bg-panel">
       <div className="flex items-center justify-between border-b border-hairline px-3 py-2">
-        <h2 className="text-[12px] font-medium text-text">Cost</h2>
+        <h2 className="text-[12px] font-medium text-text">This session</h2>
         <div className="flex items-center gap-1">
           <ConsoleButton onClick={load} aria-label="Refresh cost" disabled={loading}>
             <RefreshCw className={cn("size-3", loading && "animate-spin")} aria-hidden />
@@ -147,8 +147,37 @@ export function CostPanel({ showId, onClose }: { showId: string | null; onClose:
           <p className="mt-3 text-[11px] text-bad">Could not reach the backend — {failed}</p>
         )}
 
+        {/* ── what THIS session cost ──────────────────────────────────────────────────── */}
+        <SectionHeader title="Spent this session" className="-mx-3" />
+        {showCalls ? (
+          <>
+            <Row label="Whissle calls" value={String(showCalls.calls)} />
+            <Row
+              label="Failed"
+              value={String(showCalls.failures)}
+              tone={showCalls.failures ? "warn" : undefined}
+            />
+            <Row label="Context sent" value={`${compact(showCalls.contextChars)} chars`} />
+            {showSpend && (
+              <>
+                <Row label="Wallet moved" value={`≤ ${usd(showSpend.spentUsd)}`} />
+                {/* The caveat travels with the number, never only in the docs. */}
+                <p className="mt-1 text-[10px] leading-relaxed text-text-muted">
+                  Measured from the wallet since this session started at{" "}
+                  {new Date(showSpend.openedAt).toLocaleTimeString()}. An upper bound:
+                  the wallet is account-wide, so anything else running under this
+                  account is inside it. Account totals are on{" "}
+                  <a href="/analytics" className="text-accent hover:underline">Analytics</a>.
+                </p>
+              </>
+            )}
+          </>
+        ) : (
+          <p className="py-1 text-[11px] text-text-muted">No gateway calls yet this show.</p>
+        )}
+
         {/* ── the money ──────────────────────────────────────────────────── */}
-        <SectionHeader title="Balance" className="-mx-3" />
+        <SectionHeader title="Balance" className="-mx-3 mt-4" />
         {data?.walletError ? (
           <ReadFailure what="Wallet" error={data.walletError} />
         ) : (
@@ -173,33 +202,6 @@ export function CostPanel({ showId, onClose }: { showId: string | null; onClose:
           </>
         )}
 
-        {/* ── this show ──────────────────────────────────────────────────── */}
-        <SectionHeader title="This show" className="-mx-3 mt-4" />
-        {showCalls ? (
-          <>
-            <Row label="Gateway calls" value={String(showCalls.calls)} />
-            <Row
-              label="Failed"
-              value={String(showCalls.failures)}
-              tone={showCalls.failures ? "warn" : undefined}
-            />
-            <Row label="Context sent" value={`${compact(showCalls.contextChars)} chars`} />
-            {showSpend && (
-              <>
-                <Row label="Wallet moved" value={`≤ ${usd(showSpend.spentUsd)}`} />
-                {/* The caveat travels with the number, never only in the docs. */}
-                <p className="mt-1 text-[10px] leading-relaxed text-text-muted">
-                  An upper bound: the wallet is workspace-wide, so anything else
-                  running in this workspace since{" "}
-                  {new Date(showSpend.openedAt).toLocaleTimeString()} is inside it.
-                </p>
-              </>
-            )}
-          </>
-        ) : (
-          <p className="py-1 text-[11px] text-text-muted">No gateway calls yet this show.</p>
-        )}
-
         {/* ── our own calls, by door ─────────────────────────────────────── */}
         <SectionHeader title="Calls by purpose" className="-mx-3 mt-4" />
         {meter && meter.totals.calls > 0 ? (
@@ -213,7 +215,7 @@ export function CostPanel({ showId, onClose }: { showId: string | null; onClose:
         )}
 
         {/* ── org-wide consumption ───────────────────────────────────────── */}
-        <SectionHeader title="Workspace, last 7 days" className="-mx-3 mt-4" />
+        <SectionHeader title="Account, last 7 days" className="-mx-3 mt-4" />
         {data?.usageError ? (
           <ReadFailure what="Usage" error={data.usageError} />
         ) : llm ? (

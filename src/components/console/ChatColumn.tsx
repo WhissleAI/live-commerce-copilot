@@ -149,30 +149,11 @@ export function ChatColumn({
         ) : null}
       </div>
 
-      <form
-        className="flex items-center gap-1 border-t border-hairline p-2"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (!draft.trim()) return;
-          onInject(draft.trim());
-          setDraft("");
-        }}
-      >
-        <input
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder="Inject a buyer message…"
-          aria-label="Inject a buyer message"
-          className="h-7 min-w-0 flex-1 rounded-[4px] border border-hairline bg-canvas px-2 text-[12px] text-text placeholder:text-text-muted focus:border-accent focus:outline-none"
-        />
-        <button
-          type="submit"
-          aria-label="Inject message"
-          className="grid size-7 shrink-0 place-items-center rounded-[4px] border border-hairline-strong text-text-secondary hover:border-accent hover:text-accent"
-        >
-          <Send className="size-3.5" aria-hidden />
-        </button>
-      </form>
+      {/* The "inject a buyer message" box lived here. It is a test affordance —
+          a way to fake a comment — and on a real show it occupied permanent
+          space in the narrowest column to do something the operator never wants
+          to do while a stranger's buyers are actually typing. It is still on the
+          API (`POST /api/chat/inject`) for demos and the walkthrough. */}
     </section>
   );
 }

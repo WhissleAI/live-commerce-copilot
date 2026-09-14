@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Radio, Users, ArrowUp, ArrowDown, Link2Off, LogOut, Lock, Wallet } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Radio, Users, ArrowUp, ArrowDown, Link2Off, LogOut, Lock, Wallet, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatMs, formatPct, formatSeconds } from "@/lib/format";
 import type { Account, AutonomyLevel, ConnectionState, Metrics, SellerProfile, ShowState } from "@/lib/types";
@@ -92,6 +92,18 @@ function LatencyMeter({ metrics }: { metrics: Metrics }) {
   );
 }
 
+/**
+ * The copilot→automation ladder, as a menu.
+ *
+ * It was five segmented buttons wide enough to need two lines of label, taking
+ * a third of the show bar to display four rungs the operator changes maybe
+ * twice a session. A menu shows the one that is ACTIVE — which is the thing
+ * they check at a glance — and puts the rest one click away with room for the
+ * definition that makes each rung meaningful.
+ *
+ * The confirmation on the auto rungs survives the change: L3 and L4 let the
+ * copilot act without a human, and that is not a thing to enable by mis-click.
+ */
 function AutonomyLadder({
   level,
   onChange,
@@ -99,75 +111,109 @@ function AutonomyLadder({
   level: AutonomyLevel;
   onChange: (l: AutonomyLevel) => void;
 }) {
-  const selectedIndex = LEVELS.findIndex((l) => l.level === level);
-  const [pendingConfirm, setPendingConfirm] = useState<AutonomyLevel | null>(null);
+  const [open, setOpen] = useState(false);
+  const [confirming, setConfirming] = useState<AutonomyLevel | null>(null);
+  const box = useRef<HTMLDivElement | null>(null);
+  const current = LEVELS.find((l) => l.level === level) ?? LEVELS[0]!;
+
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: MouseEvent) => {
+      if (!box.current?.contains(e.target as Node)) {
+        setOpen(false);
+        setConfirming(null);
+      }
+    };
+    const esc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { setOpen(false); setConfirming(null); }
+    };
+    document.addEventListener("mousedown", away);
+    document.addEventListener("keydown", esc);
+    return () => {
+      document.removeEventListener("mousedown", away);
+      document.removeEventListener("keydown", esc);
+    };
+  }, [open]);
+
+  const auto = level === "L3_AUTO_REPLY" || level === "L4_AUTO_ACT";
 
   return (
-    <div
-      className="flex items-center overflow-hidden rounded-[4px] border border-hairline-strong"
-      role="radiogroup"
-      aria-label="Autonomy level"
-    >
-      {LEVELS.map((l, i) => {
-        const selected = i === selectedIndex;
-        const dimmed = i > selectedIndex;
-        const needsConfirm = l.level === "L3_AUTO_REPLY" || l.level === "L4_AUTO_ACT";
-        return (
-          <Hover
-            key={l.level}
-            side="bottom"
-            align={i > 2 ? "end" : "start"}
-            interactive={needsConfirm}
-            content={
-              <div>
-                <div className="mb-1 text-text">
-                  <span className="num">{l.short}</span> {l.name}
-                </div>
-                <p>{l.def}</p>
-                {needsConfirm && !selected ? (
-                  <div className="mt-2 flex items-center gap-2 border-t border-hairline pt-2">
-                    <span className="text-text-muted">Requires confirmation.</span>
+    <div ref={box} className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        title={`${current.name} — ${current.def}`}
+        className={cn(
+          "flex h-7 items-center gap-1.5 rounded-[4px] border px-2 text-[11px] transition-colors",
+          // An autonomy level that can act without a human reads as a state, not
+          // a setting — so it is coloured while the manual rungs are quiet.
+          auto
+            ? "border-warn/50 bg-warn/10 text-warn"
+            : "border-hairline-strong bg-panel text-text-secondary hover:text-text",
+        )}
+      >
+        <span className="num">{current.short}</span>
+        <span className="hidden lg:inline">{current.name}</span>
+        <ChevronDown className="size-3 opacity-60" aria-hidden />
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          className="anim-in absolute right-0 z-50 mt-1 w-72 overflow-hidden rounded-[6px] border border-hairline bg-panel shadow-lg"
+        >
+          {LEVELS.map((l) => {
+            const selected = l.level === level;
+            const needsConfirm = l.level === "L3_AUTO_REPLY" || l.level === "L4_AUTO_ACT";
+            return (
+              <div key={l.level} className="border-b border-hairline last:border-b-0">
+                <button
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={selected}
+                  onClick={() => {
+                    if (needsConfirm && !selected) { setConfirming(l.level); return; }
+                    onChange(l.level);
+                    setOpen(false);
+                  }}
+                  className={cn(
+                    "flex w-full items-start gap-2 px-3 py-2 text-left hover:bg-elevated",
+                    selected && "bg-accent/5",
+                  )}
+                >
+                  <span className={cn("num mt-[1px] w-5 shrink-0 text-[11px]", selected ? "text-accent" : "text-text-muted")}>
+                    {l.short}
+                  </span>
+                  <span className="min-w-0">
+                    <span className={cn("block text-[12px]", selected ? "text-accent" : "text-text")}>
+                      {l.name}
+                      {selected && <span className="ml-1.5 text-[10px] text-text-muted">active</span>}
+                    </span>
+                    <span className="mt-0.5 block text-[10px] leading-snug text-text-muted">{l.def}</span>
+                  </span>
+                </button>
+
+                {confirming === l.level && (
+                  <div className="flex items-center gap-2 border-t border-hairline bg-warn/5 px-3 py-2">
+                    <span className="text-[10px] leading-snug text-warn">
+                      This lets the copilot act without you. Sure?
+                    </span>
                     <ConsoleButton
                       variant="primary"
-                      className="h-6"
-                      onClick={() => {
-                        setPendingConfirm(null);
-                        onChange(l.level);
-                      }}
+                      className="ml-auto h-6"
+                      onClick={() => { onChange(l.level); setConfirming(null); setOpen(false); }}
                     >
                       Enable
                     </ConsoleButton>
                   </div>
-                ) : null}
+                )}
               </div>
-            }
-          >
-            <button
-              type="button"
-              role="radio"
-              aria-checked={selected}
-              onClick={() => {
-                if (needsConfirm && !selected) {
-                  setPendingConfirm(l.level);
-                  return;
-                }
-                onChange(l.level);
-              }}
-              className={cn(
-                "flex h-7 items-center gap-1 border-r border-hairline px-2 text-[11px] transition-colors duration-150 ease-out last:border-r-0",
-                selected
-                  ? "bg-accent text-accent-foreground"
-                  : "bg-panel text-text-secondary hover:bg-elevated hover:text-text",
-                dimmed && !selected && "hatch text-text-muted",
-                pendingConfirm === l.level && "ring-1 ring-accent ring-inset",
-              )}
-            >
-              <span className="num">{l.short}</span>
-              <span className="hidden xl:inline">{l.name}</span>
-            </button>
-          </Hover>
-        );
-      })}
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -209,24 +255,26 @@ export function TopBar({
     // renders OVER the panes below. No overflow here on purpose: a clipping
     // context would cut that menu off at the header's own edge.
     <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-4 border-b border-hairline bg-panel px-3">
+      {/* The show's name gets the room. Two chips used to sit here saying "eBay
+          Live" and "read-only" — one restating the source already implied by the
+          title, the other a permanent state that never changes during a session.
+          Both are now the title's own tooltip and a single lock glyph, which
+          leaves the one thing that differs between shows actually readable. */}
       <div className="flex min-w-0 items-baseline gap-2">
-        <h1 className="truncate text-[13px] font-semibold text-text">{show.title}</h1>
-        <span className="truncate text-[12px] text-text-muted">
+        <h1
+          title={
+            (show.readOnly
+              ? "A monitored stream — the copilot drafts replies and proposes actions, but cannot write to the listing and never posts to eBay. "
+              : "") + (show.source === "ebaylive" ? "Source: eBay Live." : "")
+          }
+          className="flex min-w-0 items-baseline gap-1.5 text-[13px] font-semibold text-text"
+        >
+          {show.readOnly && <Lock className="size-3 shrink-0 text-text-muted" aria-hidden />}
+          <span className="truncate">{show.title}</span>
+        </h1>
+        <span className="shrink-0 truncate text-[12px] text-text-muted">
           {seller?.name ?? show.sellerHandle}
         </span>
-        {show.source === "ebaylive" && (
-          <span className="flex shrink-0 items-center gap-1 rounded-[4px] border border-hairline-strong px-1.5 py-0.5 text-[10px] font-mono text-text-muted">
-            eBay Live
-          </span>
-        )}
-        {show.readOnly && (
-          <span
-            title="A monitored stream. The copilot drafts replies but cannot write to the listing."
-            className="flex shrink-0 items-center gap-1 rounded-[4px] border border-hairline-strong px-1.5 py-0.5 text-[10px] font-mono text-text-muted"
-          >
-            <Lock className="size-2.5" aria-hidden /> read-only
-          </span>
-        )}
         {onEndSession && (
           <button
             type="button"

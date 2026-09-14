@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Mic, MicOff, ExternalLink, Eye } from "lucide-react";
 import type { ShowContext, SignalDistribution, TranscriptSegment } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -50,13 +50,12 @@ export function TranscriptPanel({
 }) {
   const canvas = useRef<HTMLCanvasElement | null>(null);
   const wrap = useRef<HTMLDivElement | null>(null);
-  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
 
-  // The strip shows the last N samples; the utterances that fall inside that
-  // window are the ones a hover can land on.
-  const recent = useMemo(() => transcript.slice(-24), [transcript]);
-  const shown = hoverIdx !== null ? recent[hoverIdx] : recent[recent.length - 1];
-  const live = hoverIdx === null;
+  // The LATEST utterance, always. A hover-to-scrub affordance was here and it
+  // was the wrong trade for this rail: during a show the operator wants the
+  // thing that was just said, and scrubbing back is a thing they do afterwards,
+  // in the report, where there is room for it.
+  const shown = transcript[transcript.length - 1];
 
   useEffect(() => {
     const c = canvas.current;
@@ -129,22 +128,6 @@ export function TranscriptPanel({
             </span>
           </div>
         )}
-        {recent.length > 0 && (
-          <div className="absolute inset-x-2 inset-y-1.5 flex" onMouseLeave={() => setHoverIdx(null)}>
-            {recent.map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                aria-label={`utterance ${i + 1}`}
-                onMouseEnter={() => setHoverIdx(i)}
-                className={cn(
-                  "h-full flex-1",
-                  hoverIdx === i && "bg-accent/10 ring-1 ring-inset ring-accent/30",
-                )}
-              />
-            ))}
-          </div>
-        )}
       </div>
 
       {/* The moment. Inline, never an overlay — which is why nothing clips it. */}
@@ -155,11 +138,7 @@ export function TranscriptPanel({
               <span className="num text-[10px] tabular-nums text-text-muted">
                 {new Date(shown.at).toLocaleTimeString([], { hour12: false })}
               </span>
-              {live ? (
-                <span className="text-[10px] text-ok">live</span>
-              ) : (
-                <span className="text-[10px] text-accent">held</span>
-              )}
+              <span className="text-[10px] text-ok">live</span>
               {shown.speechRate != null && (
                 <span className="num ml-auto text-[10px] tabular-nums text-text-muted">
                   {Math.round(shown.speechRate)} wpm
@@ -168,16 +147,14 @@ export function TranscriptPanel({
             </div>
             <p className="mt-0.5 text-[12px] leading-relaxed text-text">{shown.text}</p>
 
+            {/* The 63% caveat lives on the section titles now. As a paragraph it
+                was three lines in the narrowest column on screen and got clipped
+                by the panel every time. */}
             <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1.5">
               {shown.emotion && <Bars kind="emotion" d={shown.emotion} />}
               {shown.intent && <Bars kind="intent" d={shown.intent} />}
             </div>
-            {(shown.emotion || shown.intent) && (
-              <p className="mt-1.5 text-[9px] leading-snug text-text-muted">
-                Measured from the audio as a spread, not a verdict — accuracy on low-arousal
-                states tops out near 63%.
-              </p>
-            )}
+
           </>
         ) : (
           <p className="text-[11px] leading-relaxed text-text-muted">
@@ -227,7 +204,12 @@ function Bars({ kind, d }: { kind: string; d: SignalDistribution }) {
   return (
     <div className="min-w-0">
       <div className="flex items-baseline justify-between gap-1">
-        <span className="text-[9px] uppercase tracking-wider text-text-muted">{kind}</span>
+        <span
+          title="Measured from the audio as a spread, not a verdict — accuracy on low-arousal states tops out near 63%."
+          className="cursor-help text-[9px] uppercase tracking-wider text-text-muted"
+        >
+          {kind}
+        </span>
         {d.changed && d.prevLabel && (
           <span
             title={`flipped from ${pretty(d.prevLabel)}`}
