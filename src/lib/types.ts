@@ -378,3 +378,11 @@ export interface BillingSnapshot {
   spend: Record<string, { openedAt: string; openingUsd: number; spentUsd: number }>;
   attribution: { perShow: string; note: string };
 }
+
+/** Who the console is acting as. A guest watches; a seller acts. */
+export interface Account {
+  id: string;
+  kind: "guest" | "seller";
+  handle: string;
+  displayName: string;
+}

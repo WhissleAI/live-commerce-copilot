@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PanelLeft } from "lucide-react";
-import { api, API_BASE, USE_MOCKS } from "@/lib/api";
+import { api, API_BASE, USE_MOCKS, ensureSession, claimConsole } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useShowStream } from "@/hooks/useShowStream";
-import type { AutonomyLevel, ResearchCard } from "@/lib/types";
+import type { Account, AutonomyLevel, ResearchCard } from "@/lib/types";
 import { TopBar } from "./TopBar";
 import { ChatColumn } from "./ChatColumn";
 import { ProposalQueue } from "./ProposalQueue";
@@ -68,6 +68,19 @@ export function Console() {
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [costOpen, setCostOpen] = useState(false);
+
+  // Who this console is acting as. Minted on first load so the audit chain can
+  // answer "who approved that markdown" — it could not, when every write was
+  // anonymous.
+  const [account, setAccount] = useState<Account | null>(null);
+  useEffect(() => {
+    void ensureSession().then(setAccount).catch(() => setAccount(null));
+  }, []);
+
+  const claim = useCallback(async () => {
+    const a = await claimConsole().catch(() => null);
+    if (a) setAccount(a);
+  }, []);
   const [viewerDelta, setViewerDelta] = useState(0);
   const prevViewers = useRef<number | null>(null);
 
@@ -248,16 +261,27 @@ export function Console() {
         connection={connection}
         viewerDelta={viewerDelta}
         onAutonomy={setAutonomy}
-        onEndSession={
-          liveSession
-            ? () => {
-                setSessionFlag(false);
-                void api.endSession(show.id).finally(() => window.location.reload());
-              }
-            : undefined
-        }
+        // Always present. Gating this on `liveSession` meant a seeded show had
+        // no way out of the console at all, and once the choice persisted
+        // across reloads the operator was simply stuck in it. Leaving a show is
+        // not a live-stream feature, it is how you get back to your shows.
+        //
+        // Detaching, though, IS live-only: a monitored eBay stream holds a
+        // browser page that should be released, while a seeded show is just
+        // left where it is so you can walk back into it.
+        onEndSession={() => {
+          setSessionFlag(false);
+          if (liveSession) {
+            void api.endSession(show.id).finally(() => window.location.reload());
+          } else {
+            window.location.reload();
+          }
+        }}
+        endSessionLabel={liveSession ? "end session" : "switch show"}
         costOpen={costOpen}
         onToggleCost={() => setCostOpen((v) => !v)}
+        account={account}
+        onClaim={claim}
       />
 
       {/* The cost rail is a COLUMN, not an overlay: it is read against the

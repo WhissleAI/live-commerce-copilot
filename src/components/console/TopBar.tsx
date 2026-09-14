@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Radio, Users, ArrowUp, ArrowDown, Link2Off, LogOut, Lock, Wallet } from "lucide-react";
+import { Radio, Users, ArrowUp, ArrowDown, Link2Off, LogOut, Lock, Wallet, Eye, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatMs, formatPct, formatSeconds } from "@/lib/format";
-import type { AutonomyLevel, ConnectionState, Metrics, SellerProfile, ShowState } from "@/lib/types";
+import type { Account, AutonomyLevel, ConnectionState, Metrics, SellerProfile, ShowState } from "@/lib/types";
 import { Bar, ConsoleButton, Hover } from "./primitives";
 import { useNow } from "@/hooks/useNow";
 
@@ -180,8 +180,11 @@ export function TopBar({
   viewerDelta,
   onAutonomy,
   onEndSession,
+  endSessionLabel,
   onToggleCost,
   costOpen,
+  account,
+  onClaim,
 }: {
   show: ShowState;
   seller?: SellerProfile | null;
@@ -189,10 +192,13 @@ export function TopBar({
   connection: ConnectionState;
   viewerDelta: number;
   onAutonomy: (l: AutonomyLevel) => void;
-  /** Present only for a monitored live show; returns to the launcher. */
+  /** Leaves the console for the show picker. Always available. */
   onEndSession?: (() => void) | undefined;
+  endSessionLabel?: string;
   onToggleCost: () => void;
   costOpen: boolean;
+  account?: Account | null;
+  onClaim?: () => void;
 }) {
   const now = useNow();
   const elapsed = (now - new Date(show.startedAt).getTime()) / 1000;
@@ -221,10 +227,10 @@ export function TopBar({
           <button
             type="button"
             onClick={onEndSession}
-            title="Stop monitoring and pick a different show"
+            title="Leave this show and pick another"
             className="flex shrink-0 items-center gap-1 rounded-[4px] border border-hairline-strong px-1.5 py-0.5 text-[10px] text-text-muted hover:text-text"
           >
-            <LogOut className="size-2.5" aria-hidden /> end session
+            <LogOut className="size-2.5" aria-hidden /> {endSessionLabel ?? "end session"}
           </button>
         )}
       </div>
@@ -274,6 +280,31 @@ export function TopBar({
         <Wallet className="size-3" aria-hidden />
         cost
       </button>
+
+      {/* Acting as. A guest can watch everything and change nothing, so it says
+          so plainly and offers the one step that changes it — rather than
+          letting the operator discover the limit by clicking Send. */}
+      {account ? (
+        account.kind === "guest" ? (
+          <button
+            type="button"
+            onClick={onClaim}
+            title="Take control of this console — you will be able to send replies and approve actions"
+            className="flex shrink-0 items-center gap-1.5 rounded-[4px] border border-warn/50 bg-warn/10 px-2 py-1 text-[11px] text-warn hover:bg-warn/15"
+          >
+            <Eye className="size-3" aria-hidden />
+            watching · take control
+          </button>
+        ) : (
+          <span
+            title={`Signed in as ${account.displayName}`}
+            className="flex shrink-0 items-center gap-1.5 rounded-[4px] border border-hairline-strong px-2 py-1 text-[11px] text-text-secondary"
+          >
+            <UserRound className="size-3" aria-hidden />
+            {account.displayName}
+          </span>
+        )
+      ) : null}
 
       {connection !== "open" ? (
         <span className="flex items-center gap-1.5 rounded-[4px] border border-warn/40 bg-warn/10 px-2 py-1 text-[11px] text-warn">

@@ -5,6 +5,7 @@
  */
 import { getMockDriver } from "./mockStream";
 import type {
+  Account,
   BillingSnapshot,
   CatalogSummary,
   SessionStart,
@@ -29,14 +30,75 @@ export const USE_MOCKS =
 
 const url = (path: string) => `${BASE}${path}`;
 
+// ── session ─────────────────────────────────────────────────────────────────
+//
+// The backend attributes every write to an account, so the console holds a
+// bearer token. A guest is minted on first load and can WATCH everything; the
+// operator claims the console to send replies and approve actions.
+//
+// localStorage, not sessionStorage: the token identifies the seller across
+// tabs and reloads, and losing it on every refresh would mean a new anonymous
+// account in the audit log each time.
+const TOKEN_KEY = "sidestage.token";
+
+export function authToken(): string | null {
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function setToken(t: string): void {
+  try {
+    localStorage.setItem(TOKEN_KEY, t);
+  } catch {
+    /* a private window still works for the length of this page */
+  }
+}
+
+let memoryToken: string | null = null;
+
+function bearer(): Record<string, string> {
+  const t = authToken() ?? memoryToken;
+  return t ? { authorization: `Bearer ${t}` } : {};
+}
+
+/** Mint a guest session if this browser has none. Called once on boot. */
+export async function ensureSession(): Promise<Account | null> {
+  if (USE_MOCKS) return null;
+  const existing = authToken();
+  if (existing) {
+    const me = await get<{ account: Account | null }>("/api/auth/me").catch(() => ({ account: null }));
+    // A token the server no longer knows (expired, or a rebuilt database) is
+    // not a session. Fall through and mint a fresh one rather than leaving the
+    // console silently unable to act.
+    if (me.account) return me.account;
+  }
+  const s = await post<{ token: string; account: Account }>("/api/auth/guest");
+  setToken(s.token);
+  memoryToken = s.token;
+  return s.account;
+}
+
+/** "This is my show" — promote the guest holding this session to operator. */
+export async function claimConsole(displayName?: string): Promise<Account | null> {
+  const r = await post<{ account: Account | null }>("/api/auth/claim", { displayName });
+  return r.account;
+}
+
 async function post<T>(path: string, body?: unknown): Promise<T> {
   // Declaring `content-type: application/json` with NO body makes Fastify reject
   // the request as malformed JSON — a 400 on every bodyless command the console
   // sends: regenerate, dismiss, approve, reject, rollback, detach, activate.
   // Send the header only when there is something to parse.
   const init: RequestInit = body === undefined
-    ? { method: "POST" }
-    : { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) };
+    ? { method: "POST", headers: bearer() }
+    : {
+        method: "POST",
+        headers: { "content-type": "application/json", ...bearer() },
+        body: JSON.stringify(body),
+      };
 
   const res = await fetch(url(path), init);
   if (!res.ok) {
@@ -49,7 +111,7 @@ async function post<T>(path: string, body?: unknown): Promise<T> {
 }
 
 async function get<T>(path: string): Promise<T> {
-  const res = await fetch(url(path));
+  const res = await fetch(url(path), { headers: bearer() });
   if (!res.ok) throw new Error(`${path} failed: ${res.status}`);
   return (await res.json()) as T;
 }
