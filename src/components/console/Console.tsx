@@ -231,6 +231,8 @@ export function Console() {
   if (!USE_MOCKS && !sessionStarted && !liveSession) {
     return (
       <Launcher
+        account={account}
+        onClaim={claim}
         existing={shows}
         onStarted={() => {
           setSessionFlag(true);

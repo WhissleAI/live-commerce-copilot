@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Radio, Users, ArrowUp, ArrowDown, Link2Off, LogOut, Lock, Wallet, Eye, UserRound, BarChart3, SlidersHorizontal } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import { Radio, Users, ArrowUp, ArrowDown, Link2Off, LogOut, Lock } from "lucide-react";
+import { AppMenu } from "@/components/app/AppMenu";
 import { cn } from "@/lib/utils";
 import { formatMs, formatPct, formatSeconds } from "@/lib/format";
 import type { Account, AutonomyLevel, ConnectionState, Metrics, SellerProfile, ShowState } from "@/lib/types";
@@ -264,66 +264,14 @@ export function TopBar({
 
       <AutonomyLadder level={show.autonomyLevel} onChange={onAutonomy} />
 
-      {/* The two PAGES. Links, not panels: both are read between lots, and a
-          rail that competes with the proposal queue during a show is a rail
-          that gets ignored during a show. */}
-      <Link
-        to="/analytics"
-        title="Answered rate, guard blocks, what the agent did per turn, and what it cost"
-        className="flex shrink-0 items-center gap-1.5 rounded-[4px] border border-hairline-strong px-2 py-1 text-[11px] text-text-secondary hover:text-text"
-      >
-        <BarChart3 className="size-3" aria-hidden /> analytics
-      </Link>
-      <Link
-        to="/settings"
-        title="Edit the guardrail policy — re-armed here and re-pushed to the agent"
-        className="flex shrink-0 items-center gap-1.5 rounded-[4px] border border-hairline-strong px-2 py-1 text-[11px] text-text-secondary hover:text-text"
-      >
-        <SlidersHorizontal className="size-3" aria-hidden /> guardrails
-      </Link>
-
-      {/* What the copilot is spending. Beside the autonomy ladder on purpose:
-          raising a rung raises the bill, and the two should be read together. */}
-      <button
-        type="button"
-        onClick={onToggleCost}
-        aria-pressed={costOpen}
-        title="Whissle balance, consumption and this show's gateway calls"
-        className={cn(
-          "flex shrink-0 items-center gap-1.5 rounded-[4px] border px-2 py-1 text-[11px] transition-colors duration-150",
-          costOpen
-            ? "border-accent bg-accent/10 text-accent"
-            : "border-hairline-strong text-text-secondary hover:text-text",
-        )}
-      >
-        <Wallet className="size-3" aria-hidden />
-        cost
-      </button>
-
-      {/* Acting as. A guest can watch everything and change nothing, so it says
-          so plainly and offers the one step that changes it — rather than
-          letting the operator discover the limit by clicking Send. */}
-      {account ? (
-        account.kind === "guest" ? (
-          <button
-            type="button"
-            onClick={onClaim}
-            title="Take control of this console — you will be able to send replies and approve actions"
-            className="flex shrink-0 items-center gap-1.5 rounded-[4px] border border-warn/50 bg-warn/10 px-2 py-1 text-[11px] text-warn hover:bg-warn/15"
-          >
-            <Eye className="size-3" aria-hidden />
-            watching · take control
-          </button>
-        ) : (
-          <span
-            title={`Signed in as ${account.displayName}`}
-            className="flex shrink-0 items-center gap-1.5 rounded-[4px] border border-hairline-strong px-2 py-1 text-[11px] text-text-secondary"
-          >
-            <UserRound className="size-3" aria-hidden />
-            {account.displayName}
-          </span>
-        )
-      ) : null}
+      {/* Everything that is not the live show lives behind the identity — see
+          AppMenu. The bar keeps only what changes second to second. */}
+      <AppMenu
+        account={account ?? null}
+        onClaim={onClaim}
+        onToggleCost={onToggleCost}
+        costOpen={costOpen}
+      />
 
       {connection !== "open" ? (
         <span className="flex items-center gap-1.5 rounded-[4px] border border-warn/40 bg-warn/10 px-2 py-1 text-[11px] text-warn">

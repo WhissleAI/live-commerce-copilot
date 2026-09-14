@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Radio, Package, ArrowRight, AlertTriangle } from "lucide-react";
+import { Loader2, Package, ArrowRight, AlertTriangle } from "lucide-react";
+import { AppHeader } from "@/components/app/AppHeader";
 import { api } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
-import type { CatalogSummary, ShowSummary } from "@/lib/types";
+import type { Account, CatalogSummary, ShowSummary } from "@/lib/types";
 
 /**
  * Session setup.
@@ -18,10 +19,14 @@ export function Launcher({
   onStarted,
   existing,
   onResume,
+  account,
+  onClaim,
 }: {
   onStarted: (showId: string) => void;
   existing: ShowSummary[];
   onResume: (showId: string) => void;
+  account: Account | null;
+  onClaim?: (() => void) | undefined;
 }) {
   const [catalogs, setCatalogs] = useState<CatalogSummary[] | null>(null);
   const [catalogId, setCatalogId] = useState<string | null>(null);
@@ -72,13 +77,13 @@ export function Launcher({
   const liveShows = existing;
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-5 py-10">
-      <div className="w-full max-w-3xl">
+    <div className="min-h-screen bg-background text-foreground">
+      {/* The same header every non-console screen carries, so the account and
+          the two pages do not appear only after a show is open — which is
+          exactly when an operator has least attention to find them. */}
+      <AppHeader account={account} onClaim={onClaim} />
+      <div className="mx-auto w-full max-w-3xl px-5 py-10">
         <header className="mb-8">
-          <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-muted-foreground mb-2">
-            <Radio className="h-3.5 w-3.5" />
-            SideStage
-          </div>
           <h1 className="text-[22px] font-semibold leading-tight">Start a monitoring session</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Pick what you are selling, then the live show to listen to.

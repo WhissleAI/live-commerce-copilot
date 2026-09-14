@@ -1,7 +1,10 @@
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { claimConsole, ensureSession } from "@/lib/api";
+import type { Account } from "@/lib/types";
+import { AppMenu } from "@/components/app/AppMenu";
 
 /**
  * The frame for the two surfaces that are PAGES rather than rails.
@@ -22,6 +25,13 @@ export function PageShell({
   actions?: ReactNode;
   children: ReactNode;
 }) {
+  // These pages are reachable directly by URL, so they resolve their own
+  // session rather than assuming the console ran first.
+  const [account, setAccount] = useState<Account | null>(null);
+  useEffect(() => {
+    void ensureSession().then(setAccount).catch(() => setAccount(null));
+  }, []);
+
   return (
     <div className="min-h-screen bg-canvas">
       <header className="sticky top-0 z-10 border-b border-hairline bg-panel/95 backdrop-blur">
@@ -37,6 +47,10 @@ export function PageShell({
             {subtitle ? <p className="truncate text-[11px] text-text-muted">{subtitle}</p> : null}
           </div>
           {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
+          <AppMenu
+            account={account}
+            onClaim={() => void claimConsole().then((a) => a && setAccount(a))}
+          />
         </div>
       </header>
       <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6">{children}</main>
