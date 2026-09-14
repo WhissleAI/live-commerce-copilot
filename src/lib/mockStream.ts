@@ -366,6 +366,12 @@ export class MockDriver {
     this.context = {
       currentTopic: "Chicago Reimagined pricing",
       listingInFocus: "lst_aj1chi",
+      voice: {
+        topLabel: "EMOTION_HAPPY", topP: 0.61,
+        topK: [{ label: "EMOTION_HAPPY", p: 0.61 }, { label: "EMOTION_NEUTRAL", p: 0.29 }],
+        changed: false, prevLabel: null, heldMs: 4200, flips: 2, trusted: true,
+      },
+      onScreen: { text: "a red and white high-top sneaker held to camera", at: new Date().toISOString() },
       recentPoints: [
         "Showed the sail midsole on camera",
         "Confirmed 3-day return window",

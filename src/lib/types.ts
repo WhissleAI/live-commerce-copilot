@@ -269,7 +269,13 @@ export interface ShowContext {
   currentTopic: string;
   listingInFocus: string | null;
   recentPoints: string[];
+  /** Inferred from what was SAID. */
   tone: string | null;
+  /** Measured from HOW it was said — a distribution, carried only while the
+   *  metadata head reports it trusted. */
+  voice: SignalDistribution | null;
+  /** A one-line reading of the show's VIDEO. Context, never provenance. */
+  onScreen: { text: string; at: string } | null;
   updatedAt: string;
 }
 

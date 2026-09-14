@@ -59,10 +59,35 @@ export function TranscriptPanel({
         <div className="shrink-0 border-b border-border px-3 py-2">
           <div className="text-[11px] text-muted-foreground">now talking about</div>
           <div className="truncate text-xs text-foreground">{context.currentTopic}</div>
-          {context.tone && (
-            <span className="mt-1 inline-block rounded border border-border px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">
-              tone · {context.tone}
-            </span>
+          <div className="mt-1 flex flex-wrap items-center gap-1">
+            {context.tone && (
+              <span className="rounded border border-border px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">
+                tone · {context.tone}
+              </span>
+            )}
+            {/* Measured, not inferred — and shown with its confidence, because
+                the head's own guidance puts accuracy on low-arousal states
+                around 63%. A bare label here would read as a fact. */}
+            {context.voice && (
+              <span
+                title={`Measured from the audio. ${context.voice.topK
+                  .map((k) => `${k.label} ${Math.round(k.p * 100)}%`)
+                  .join(" · ")}`}
+                className="rounded border border-accent/40 bg-accent/5 px-1.5 py-0.5 text-[10px] font-mono text-accent"
+              >
+                sounds · {context.voice.topLabel.replace(/^EMOTION_/, "").toLowerCase()}{" "}
+                {Math.round(context.voice.topP * 100)}%
+              </span>
+            )}
+          </div>
+
+          {/* What the copilot can SEE. The one thing neither the catalog nor
+              the chat can supply: which item the host is holding right now. */}
+          {context.onScreen && (
+            <div className="mt-1.5 rounded-[4px] border border-border bg-elevated/60 px-2 py-1">
+              <div className="text-[10px] text-muted-foreground">on camera</div>
+              <div className="text-[11px] leading-snug text-foreground">{context.onScreen.text}</div>
+            </div>
           )}
         </div>
       )}
