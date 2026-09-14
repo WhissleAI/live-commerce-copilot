@@ -88,29 +88,67 @@ export function Hover({
   );
 }
 
+/** How an utterance reads on the speech-act axis — the same vocabulary the
+ *  host's voice metadata uses, so both sides of the room compare. */
+const ACT_NOTE: Record<string, string> = {
+  query: "a question — answerable",
+  command: "asks for an action — answerable",
+  inform: "a statement",
+  greeting: "a greeting",
+  wish: "wants the item, but asked nothing",
+  other: "unclassified",
+};
+
 export function IntentBadge({
   intent,
+  speechAct,
+  dropReason,
   className,
   animate = false,
 }: {
   intent: ChatIntent;
+  /** The second axis. A topic cue fires on the WORDS, so a statement can carry
+   *  one — which is why both are shown and why the tooltip names each. */
+  speechAct?: string | null | undefined;
+  dropReason?: string | undefined;
   className?: string;
   animate?: boolean;
 }) {
   const hue = INTENT_HUE[intent];
+  const answerable = speechAct === "query" || speechAct === "command";
   return (
     <span
+      title={
+        speechAct
+          ? `${INTENT_LABEL[intent]} · ${ACT_NOTE[speechAct] ?? speechAct}` +
+            (dropReason ? ` — ${dropReason}` : "")
+          : INTENT_LABEL[intent]
+      }
       className={cn(
-        "inline-flex shrink-0 items-center rounded-[4px] border px-1.5 text-[10px] leading-4 font-medium",
+        "inline-flex shrink-0 items-center gap-1 rounded-[4px] border px-1.5 text-[10px] leading-4 font-medium",
         animate && "anim-in",
         className,
       )}
+      // Light-theme values. These were written against a near-black canvas
+      // (0.78 text on 0.26 fill) and survived the theme swap as dark blobs —
+      // legible only by accident. Now a tinted chip: dark ink, pale fill.
       style={{
-        color: `oklch(0.78 0.09 ${hue})`,
-        borderColor: `oklch(0.42 0.06 ${hue})`,
-        backgroundColor: `oklch(0.26 0.03 ${hue})`,
+        color: `oklch(0.45 0.12 ${hue})`,
+        borderColor: `oklch(0.86 0.05 ${hue})`,
+        backgroundColor: `oklch(0.965 0.02 ${hue})`,
       }}
     >
+      {/* The speech act as a dot rather than a second word: filled when this
+          comment is the kind that wants an answer, hollow when it is not. */}
+      {speechAct ? (
+        <span
+          aria-hidden
+          className={cn(
+            "size-1 rounded-full",
+            answerable ? "bg-current" : "border border-current opacity-50",
+          )}
+        />
+      ) : null}
       {INTENT_LABEL[intent]}
     </span>
   );

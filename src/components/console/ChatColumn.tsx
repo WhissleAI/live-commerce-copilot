@@ -107,7 +107,14 @@ export function ChatColumn({
                     </span>{" "}
                     <span className="text-[12px] break-words text-text">{m.text}</span>
                   </div>
-                  {m.intent ? <IntentBadge intent={m.intent} animate /> : null}
+                  {m.intent ? (
+                    <IntentBadge
+                      intent={m.intent}
+                      speechAct={m.speechAct}
+                      dropReason={m.dropReason}
+                      animate
+                    />
+                  ) : null}
                 </li>
               );
               return m.admitted ? (

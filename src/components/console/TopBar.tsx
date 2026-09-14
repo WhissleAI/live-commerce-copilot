@@ -205,7 +205,11 @@ export function TopBar({
   const elapsed = (now - new Date(show.startedAt).getTime()) / 1000;
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-4 border-b border-hairline bg-panel px-3">
+    // sticky + z-40 so the bar survives any scrolling context around it, and so
+    // the account menu — which is absolutely positioned inside this header —
+    // renders OVER the panes below. No overflow here on purpose: a clipping
+    // context would cut that menu off at the header's own edge.
+    <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-4 border-b border-hairline bg-panel px-3">
       <div className="flex min-w-0 items-baseline gap-2">
         <h1 className="truncate text-[13px] font-semibold text-text">{show.title}</h1>
         <span className="truncate text-[12px] text-text-muted">

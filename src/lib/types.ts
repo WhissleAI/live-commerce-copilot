@@ -136,12 +136,20 @@ export interface Listing {
   updatedAt: string;
 }
 
+/** The speech act of a comment — the same vocabulary Whissle's metadata head
+ *  uses for the host's audio, so both sides of the room read on one axis. */
+export type SpeechAct = "query" | "command" | "inform" | "greeting" | "wish" | "other";
+
 export interface ChatMessage {
   id: string;
   author: string;
   text: string;
   at: string;
+  /** WHAT the comment is about. */
   intent: ChatIntent | null;
+  /** WHAT KIND of utterance it is — same axis as the host's voice metadata,
+   *  so a buyer querying and the host informing read on one scale. */
+  speechAct?: SpeechAct | null;
   admitted: boolean;
   dropReason?: string;
   proposalId?: string;
