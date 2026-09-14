@@ -30,6 +30,19 @@ export function Launcher({
 }) {
   const [catalogs, setCatalogs] = useState<CatalogSummary[] | null>(null);
   const [catalogId, setCatalogId] = useState<string | null>(null);
+  /**
+   * Is this the operator's OWN show?
+   *
+   * The flow used to demand a catalog before it would attach to anything, which
+   * quietly guaranteed the worst case: monitoring a stranger's fragrance auction
+   * with a baseball-card catalog loaded, every answer abstaining, and the lineup
+   * fact confidently denying stock the host was holding up.
+   *
+   * A show you do not own has exactly one honest source of inventory — the lots
+   * it puts on screen. So that is the default, and a catalog is offered only for
+   * the case where it is actually yours.
+   */
+  const [ownShow, setOwnShow] = useState(false);
   const [url, setUrl] = useState("");
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,14 +68,20 @@ export function Launcher({
     return t.match(/\/ebaylive\/events\/([A-Za-z0-9]{10,})/)?.[1] ?? null;
   }, [url]);
 
-  const canStart = Boolean(catalogId && eventId && !starting);
+  // A stream is all you need. The catalog is an OPTION, and only a sensible one
+  // when the show is your own.
+  const canStart = Boolean(eventId && !starting);
 
   async function start() {
-    if (!canStart || !catalogId) return;
+    if (!canStart) return;
     setStarting(true);
     setError(null);
     try {
-      const res = await api.startSession({ url: url.trim(), catalogId });
+      const res = await api.startSession({
+        url: url.trim(),
+        // Empty means "ground in the stream itself".
+        ...(ownShow && catalogId ? { catalogId } : {}),
+      });
       onStarted(res.showId);
     } catch (e) {
       setError((e as Error).message);
@@ -84,20 +103,77 @@ export function Launcher({
       <AppHeader account={account} onClaim={onClaim} />
       <div className="mx-auto w-full max-w-3xl px-5 py-10">
         <header className="mb-8">
-          <h1 className="text-[22px] font-semibold leading-tight">Start a monitoring session</h1>
+          <h1 className="text-[22px] font-semibold leading-tight">Monitor a live show</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Pick what you are selling, then the live show to listen to.
+            Paste the stream. The copilot learns the lineup from the show itself.
           </p>
         </header>
 
-        {/* ── 1. catalog ─────────────────────────────────────────────── */}
+        {/* ── 1. the stream ──────────────────────────────────────────────
+            The stream comes FIRST now, and a catalog is optional below it.
+            Demanding a catalog before attaching quietly guaranteed the worst
+            case: monitoring a stranger's fragrance auction with a baseball-card
+            catalog loaded, every answer abstaining, and the lineup fact
+            confidently denying stock the host was holding up. A show you do not
+            own has exactly one honest source of inventory — the lots it puts on
+            screen. */}
         <section className="mb-6">
           <div className="flex items-baseline gap-2 mb-3">
             <span className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-              1 · Catalog
+              1 · Live show
             </span>
             <span className="text-xs text-muted-foreground">
-              the inventory the copilot answers from
+              paste an eBay Live URL from{" "}
+              <a href="https://www.ebay.com/ebaylive" target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                ebay.com/ebaylive
+              </a>
+            </span>
+          </div>
+          <input
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") void start(); }}
+            placeholder="https://www.ebay.com/ebaylive/events/gmqxTwJPXDeKbGRE/stream"
+            spellCheck={false}
+            className="w-full rounded-md border border-border bg-card px-3 py-2.5 text-sm font-mono
+                       placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary"
+          />
+          <div className="mt-1.5 h-4 text-[11px] font-mono text-muted-foreground">
+            {url.trim() && (eventId ? `event ${eventId}` : "that does not look like an eBay Live show URL")}
+          </div>
+          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+            Every lot the host puts on screen becomes inventory the copilot can answer from —
+            title, price and availability, versioned as the auction moves. Nothing else is needed.
+          </p>
+        </section>
+
+        {/* ── 2. your own catalog, only if it IS your show ─────────────── */}
+        <section className="mb-6">
+          <label className="flex cursor-pointer items-start gap-2">
+            <input
+              type="checkbox"
+              checked={ownShow}
+              onChange={(e) => setOwnShow(e.target.checked)}
+              className="mt-0.5"
+            />
+            <span>
+              <span className="text-sm text-foreground">This is my show</span>
+              <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">
+                Ground replies in your own catalog and policies as well as the stream — and
+                enable listing actions, which a show you do not own can never have.
+              </span>
+            </span>
+          </label>
+        </section>
+
+        {ownShow && (
+        <section className="mb-6">
+          <div className="flex items-baseline gap-2 mb-3">
+            <span className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+              Catalog
+            </span>
+            <span className="text-xs text-muted-foreground">
+              your inventory, prices and policies
             </span>
           </div>
 
@@ -155,39 +231,7 @@ export function Launcher({
           )}
         </section>
 
-        {/* ── 2. show ────────────────────────────────────────────────── */}
-        <section className="mb-6">
-          <div className="flex items-baseline gap-2 mb-3">
-            <span className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-              2 · Live show
-            </span>
-            <span className="text-xs text-muted-foreground">
-              paste an eBay Live URL from{" "}
-              <a
-                href="https://www.ebay.com/ebaylive"
-                target="_blank"
-                rel="noreferrer"
-                className="text-primary hover:underline"
-              >
-                ebay.com/ebaylive
-              </a>
-            </span>
-          </div>
-          <input
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") void start();
-            }}
-            placeholder="https://www.ebay.com/ebaylive/events/gmqxTwJPXDeKbGRE/stream"
-            spellCheck={false}
-            className="w-full rounded-md border border-border bg-card px-3 py-2.5 text-sm font-mono
-                       placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary"
-          />
-          <div className="mt-1.5 h-4 text-[11px] font-mono text-muted-foreground">
-            {url.trim() && (eventId ? `event ${eventId}` : "that does not look like an eBay Live show URL")}
-          </div>
-        </section>
+        )}
 
         {error && (
           <div className="mb-5 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">

@@ -256,8 +256,15 @@ export const api = {
 
   shows: (): Promise<ShowSummary[]> => (USE_MOCKS ? Promise.resolve([]) : get(`/api/shows`)),
 
-  /** Attach to a live eBay show AND load the catalog being sold from, in one call. */
-  startSession: (input: { url: string; catalogId: string }): Promise<SessionStart> =>
+  /**
+   * Attach to a live eBay show.
+   *
+   * `catalogId` is OPTIONAL and only meaningful when the show is the operator's
+   * own. Without it the copilot grounds in the stream itself — every lot the
+   * host puts on screen — which is the only honest inventory for a show you do
+   * not own.
+   */
+  startSession: (input: { url: string; catalogId?: string }): Promise<SessionStart> =>
     post(`/api/shows/attach`, input),
 
   endSession: (showId: string): Promise<{ ok: boolean; shows: ShowSummary[] }> =>
