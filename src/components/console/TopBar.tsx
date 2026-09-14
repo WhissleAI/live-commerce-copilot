@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Radio, Users, ArrowUp, ArrowDown, Link2Off, LogOut, Lock } from "lucide-react";
-import { AppMenu } from "@/components/app/AppMenu";
+import { Radio, Users, ArrowUp, ArrowDown, Link2Off, LogOut, Lock, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatMs, formatPct, formatSeconds } from "@/lib/format";
 import type { Account, AutonomyLevel, ConnectionState, Metrics, SellerProfile, ShowState } from "@/lib/types";
@@ -268,14 +267,23 @@ export function TopBar({
 
       <AutonomyLadder level={show.autonomyLevel} onChange={onAutonomy} />
 
-      {/* Everything that is not the live show lives behind the identity — see
-          AppMenu. The bar keeps only what changes second to second. */}
-      <AppMenu
-        account={account ?? null}
-        onClaim={onClaim}
-        onToggleCost={onToggleCost}
-        costOpen={costOpen}
-      />
+      {/* Cost stays a first-class control on the show bar. It was folded into
+          the account menu, which put the one number that changes while a show
+          runs two clicks away — and made it look absent. */}
+      <button
+        type="button"
+        onClick={onToggleCost}
+        aria-pressed={costOpen}
+        title="What this show is costing — balance, gateway calls, latency by purpose"
+        className={cn(
+          "flex shrink-0 items-center gap-1.5 rounded-[4px] border px-2 py-1 text-[11px] transition-colors",
+          costOpen
+            ? "border-accent bg-accent/10 text-accent"
+            : "border-hairline-strong text-text-secondary hover:text-text",
+        )}
+      >
+        <Wallet className="size-3" aria-hidden /> cost
+      </button>
 
       {connection !== "open" ? (
         <span className="flex items-center gap-1.5 rounded-[4px] border border-warn/40 bg-warn/10 px-2 py-1 text-[11px] text-warn">

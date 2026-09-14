@@ -144,6 +144,10 @@ const STREAM_EVENTS = [
   // Host speech from the Whissle listen-only session, and the set of shows this
   // backend is watching.
   "transcript",
+  // The loudness envelope behind the audio timeline. Missing from this list is
+  // why the strip said "no audio yet" while transcripts streamed in beside it:
+  // the server emitted every frame and the browser had never asked for them.
+  "levels",
   "shows",
   "show",
 ] as const;

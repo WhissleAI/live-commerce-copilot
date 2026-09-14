@@ -384,12 +384,32 @@ export function ProposalQueue({
   onDismiss: (id: string) => void;
   onRegenerate: (id: string) => void;
 }) {
-  const awaiting = live.filter((p) => p.status !== "drafting").length;
+  // An abstention is not a suggestion. When retrieval found nothing, the draft
+  // is filler — "the host will get to that shortly" — and putting it on a card
+  // with a Send button beside real grounded answers is how a queue fills with
+  // sixteen things the operator has to read to discover none of them help.
+  //
+  // They are still SHOWN, because "this was asked and we could not answer it" is
+  // the most useful thing in the post-session report and the operator should see
+  // it accumulating. Just not as sendable cards.
+  const groundless = (p: ReplyProposal) =>
+    p.status !== "drafting" && p.evidence.length === 0 && p.confidence < 0.3;
+  const answerable = live.filter((p) => !groundless(p));
+  const unanswerable = live.filter(groundless);
+  const awaiting = answerable.filter((p) => p.status !== "drafting").length;
 
   return (
     <section className="flex min-h-0 flex-1 flex-col bg-canvas">
       <SectionHeader title="Proposals">
         <span className="num text-[11px] text-text-secondary">{awaiting} awaiting</span>
+        {unanswerable.length > 0 && (
+          <span
+            title="Asked, but nothing in the catalog could ground an answer. These are the gaps the post-session report lists."
+            className="num rounded-[3px] border border-hairline-strong px-1.5 text-[11px] text-text-muted"
+          >
+            {unanswerable.length} unanswerable
+          </span>
+        )}
         <span className="hidden text-[11px] text-text-muted lg:inline">
           J/K move · Enter send · E edit · X dismiss · R regenerate
         </span>
@@ -407,7 +427,7 @@ export function ProposalQueue({
           </div>
         ) : (
           <ul className="flex flex-col gap-2">
-            {live.map((p) => (
+            {answerable.map((p) => (
               <ProposalCard
                 key={p.id}
                 p={p}
@@ -423,6 +443,25 @@ export function ProposalQueue({
               />
             ))}
           </ul>
+        )}
+
+        {/* The gaps, compact. Each is a question the catalog could not ground an
+            answer for — the list that becomes `gaps.unanswered` in the report and
+            the input to the next show's setup. */}
+        {unanswerable.length > 0 && (
+          <div className="mt-3 rounded-[6px] border border-hairline bg-panel/60 p-2">
+            <div className="text-[10px] uppercase tracking-wider text-text-muted">
+              asked · nothing to ground an answer
+            </div>
+            <ul className="mt-1 space-y-0.5">
+              {unanswerable.slice(-8).map((p) => (
+                <li key={p.id} className="flex items-baseline gap-2 text-[11px]">
+                  <span className="shrink-0 text-text-muted">{p.message.author}</span>
+                  <span className="truncate text-text-secondary">{p.message.text}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
 
         {recent.length ? (

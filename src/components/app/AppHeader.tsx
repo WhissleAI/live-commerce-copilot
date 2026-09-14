@@ -2,6 +2,7 @@ import { Radio } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import type { Account } from "@/lib/types";
 import { AppMenu } from "./AppMenu";
+import { cn } from "@/lib/utils";
 
 /**
  * The application header, for every surface that is not the live console.
@@ -14,13 +15,22 @@ import { AppMenu } from "./AppMenu";
 export function AppHeader({
   account,
   onClaim,
+  compact = false,
 }: {
   account: Account | null;
   onClaim?: (() => void) | undefined;
+  /** Inside the console the header shares the screen with a live show, so it
+   *  gives up its centred max-width and some height. */
+  compact?: boolean;
 }) {
   return (
-    <header className="border-b border-hairline bg-panel">
-      <div className="mx-auto flex h-12 max-w-5xl items-center justify-between gap-4 px-5">
+    <header className="shrink-0 border-b border-hairline bg-panel">
+      <div
+        className={cn(
+          "flex items-center justify-between gap-4",
+          compact ? "h-9 px-3" : "mx-auto h-12 max-w-5xl px-5",
+        )}
+      >
         <Link
           to="/"
           className="flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-text-secondary hover:text-text"

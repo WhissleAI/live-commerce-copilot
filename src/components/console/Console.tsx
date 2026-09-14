@@ -13,6 +13,7 @@ import { ShortcutsOverlay } from "./ShortcutsOverlay";
 import { TranscriptPanel } from "./TranscriptPanel";
 import { Launcher } from "./Launcher";
 import { CostPanel } from "./CostPanel";
+import { AppHeader } from "@/components/app/AppHeader";
 
 /** Survives the reload that both entry paths do. Per-tab, not per-browser: two
  *  tabs on two shows should not fight over one flag. */
@@ -256,6 +257,11 @@ export function Console() {
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-canvas">
+      {/* The application header stays up during a session. It was only on the
+          launcher and the two pages, so the moment a show opened the operator
+          lost the wordmark, the account and the way to analytics — exactly when
+          they have least attention to go looking for them. */}
+      <AppHeader account={account} onClaim={claim} compact />
       <TopBar
         show={show}
         seller={seller}
