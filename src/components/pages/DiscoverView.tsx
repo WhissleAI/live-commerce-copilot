@@ -62,13 +62,15 @@ export function DiscoverView({ onAttach }: { onAttach: (url: string) => void }) 
     void read(false);
   }, [read]);
 
-  // Poll only while something is being prepared — each one is a minute of
-  // Browse calls and an agent creation.
+  // Poll while something is being prepared (each one is a minute of Browse
+  // calls and an agent creation) or while the server has not read the grid
+  // yet after a start — both resolve on their own.
   useEffect(() => {
-    if (!home?.preparing.length) return;
-    const t = setInterval(() => void read(false), 5000);
+    const pending = home?.discovery.reason === "pending";
+    if (!home?.preparing.length && !pending) return;
+    const t = setInterval(() => void read(false), pending ? 4000 : 5000);
     return () => clearInterval(t);
-  }, [home?.preparing.length, read]);
+  }, [home?.preparing.length, home?.discovery.reason, read]);
 
   async function refresh() {
     setBusy(true);
@@ -225,6 +227,19 @@ function NothingOnAir({
   busy: boolean;
   onRefresh: () => void;
 }) {
+  if (reason === "pending") {
+    return (
+      <Card className="border-dashed">
+        <EmptyState
+          icon={<Loader2 className="size-5 animate-spin" aria-hidden />}
+          title="Reading the live grid…"
+        >
+          The server has a session and has not read the grid yet — the first read after a start
+          takes about a minute. This refreshes itself.
+        </EmptyState>
+      </Card>
+    );
+  }
   if (reason === "no-session" || reason === "stale-session" || reason === "signed-out") {
     return (
       <Card className="border-dashed">

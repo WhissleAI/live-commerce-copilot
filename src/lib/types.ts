@@ -1102,7 +1102,8 @@ export interface DiscoveredShow {
 
 /** Why a discovery list is empty. "Sign in" is an action; "nothing on air" is
  *  a fact, and rendering them the same way is how Discover lied for weeks. */
-export type DiscoveryReason = "ok" | "no-session" | "stale-session" | "signed-out" | "blocked" | "stale";
+export type DiscoveryReason =
+  "ok" | "pending" | "no-session" | "stale-session" | "signed-out" | "blocked" | "stale";
 
 export interface EbayLiveSession {
   present: boolean;
