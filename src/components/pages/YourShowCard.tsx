@@ -14,10 +14,10 @@
 
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, Check, Circle, Loader2 } from "lucide-react";
+import { ArrowRight, Check, Circle, RefreshCw } from "lucide-react";
 import { api } from "@/lib/api";
 import type { CatalogSummary, EbayStatus, HomeView } from "@/lib/types";
-import { Badge, Button, Card, SectionHeading } from "@/components/ui/kit";
+import { Badge, Button, Card, SectionHeading, Skeleton } from "@/components/ui/kit";
 import { cn } from "@/lib/utils";
 
 interface Step {
@@ -29,26 +29,41 @@ interface Step {
 }
 
 export function YourShowCard() {
-  const [ebay, setEbay] = useState<EbayStatus | null>(null);
-  const [home, setHome] = useState<HomeView | null>(null);
-  const [catalogs, setCatalogs] = useState<CatalogSummary[] | null>(null);
+  // `undefined` is "not read yet"; `null` is "the read failed". They used to be
+  // the same value, so a backend that answered 500 left this card on
+  // "checking your setup…" for the rest of the session.
+  const [ebay, setEbay] = useState<EbayStatus | null | undefined>(undefined);
+  const [home, setHome] = useState<HomeView | null | undefined>(undefined);
+  const [catalogs, setCatalogs] = useState<CatalogSummary[] | null | undefined>(undefined);
+  const [failed, setFailed] = useState(false);
 
-  useEffect(() => {
+  const read = () => {
+    setFailed(false);
     void api
       .ebayStatus()
       .then(setEbay)
-      .catch(() => setEbay(null));
+      .catch(() => {
+        setEbay(null);
+        setFailed(true);
+      });
     void api
       .home()
       .then(setHome)
-      .catch(() => setHome(null));
+      .catch(() => {
+        setHome(null);
+        setFailed(true);
+      });
     void api
       .catalogs()
       .then(setCatalogs)
-      .catch(() => setCatalogs([]));
-  }, []);
+      .catch(() => {
+        setCatalogs(null);
+        setFailed(true);
+      });
+  };
+  useEffect(read, []);
 
-  const loading = ebay === null || home === null || catalogs === null;
+  const loading = ebay === undefined || home === undefined || catalogs === undefined;
 
   // Catalogs written by the eBay importer or by preparing a show are the
   // seller's own; the two shipped fixtures are demo inventory.
@@ -63,7 +78,11 @@ export function YourShowCard() {
       label: "Signed in to eBay Live",
       // A session the grid refuses is not a session that helps: from a server
       // address eBay hands back an anonymous grid even on valid cookies.
-      done: Boolean(session?.present && !session.stale && !["blocked", "signed-out"].includes(home?.discovery.reason ?? "")),
+      done: Boolean(
+        session?.present &&
+        !session.stale &&
+        !["blocked", "signed-out"].includes(home?.discovery.reason ?? ""),
+      ),
       detail: session?.present
         ? session.stale
           ? "the session has gone stale — sign in again"
@@ -73,9 +92,11 @@ export function YourShowCard() {
               ? "eBay serves this session the anonymous grid — Discover and Prepare run on your own machine; attaching by link works here"
               : "Discover and show preparation can see the live grid"
         : "nothing on eBay Live is visible to a signed-out visitor",
-      ...(session?.present && !session.stale && !["blocked", "signed-out"].includes(home?.discovery.reason ?? "")
+      ...(session?.present &&
+      !session.stale &&
+      !["blocked", "signed-out"].includes(home?.discovery.reason ?? "")
         ? {}
-        : { action: { label: "How to sign in", to: "/shows" } }),
+        : { action: { label: "How to sign in", to: "/", search: { view: "discover" } } }),
     },
     {
       id: "ebay",
@@ -110,7 +131,9 @@ export function YourShowCard() {
         : prepared.length
           ? `${prepared.length} prepared — each with its own agent and catalog`
           : "prepare a show before it starts, so the first question is answered from a full catalog",
-      ...(live || prepared.length ? {} : { action: { label: "Discover shows", to: "/shows" } }),
+      ...(live || prepared.length
+        ? {}
+        : { action: { label: "Discover shows", to: "/", search: { view: "discover" } } }),
     },
   ];
 
@@ -152,33 +175,52 @@ export function YourShowCard() {
       </div>
       <Card className="mt-3 divide-y divide-hairline">
         {loading ? (
-          <div className="flex items-center gap-2 px-4 py-3 text-[12.5px] text-text-muted">
-            <Loader2 className="size-3.5 animate-spin" aria-hidden /> checking your setup…
-          </div>
-        ) : (
-          steps.map((s) => (
-            <div key={s.id} className="flex items-center gap-3 px-4 py-2.5">
-              {s.done ? (
-                <Check className="size-4 shrink-0 text-ok" aria-hidden />
-              ) : (
-                <Circle className="size-4 shrink-0 text-text-faint" aria-hidden />
-              )}
-              <div className="min-w-0 flex-1">
-                <div className={cn("text-[12.5px]", s.done ? "text-text" : "font-medium")}>
-                  {s.label}
+          <div aria-busy="true" aria-label="checking your setup">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center gap-3 px-4 py-2.5">
+                <Skeleton className="size-4 rounded-full" />
+                <div className="flex-1">
+                  <Skeleton className="h-[13px] w-40" />
+                  <Skeleton className="mt-1.5 h-[11px] w-72" />
                 </div>
-                <div className="truncate text-[11.5px] text-text-muted">{s.detail}</div>
               </div>
-              {!s.done && s.action ? (
-                <Link to={s.action.to} search={s.action.search ?? {}}>
-                  <Button size="sm">
-                    {s.action.label} <ArrowRight className="size-3" aria-hidden />
-                  </Button>
-                </Link>
-              ) : null}
-            </div>
-          ))
-        )}
+            ))}
+          </div>
+        ) : failed ? (
+          <div className="flex items-center gap-3 px-4 py-3 text-[12.5px] text-text-secondary">
+            <span className="min-w-0 flex-1">
+              Could not read your setup — the backend did not answer. The checklist is shown from
+              what did arrive.
+            </span>
+            <Button size="sm" onClick={read}>
+              <RefreshCw className="size-3" aria-hidden /> Retry
+            </Button>
+          </div>
+        ) : null}
+        {!loading
+          ? steps.map((s) => (
+              <div key={s.id} className="flex items-center gap-3 px-4 py-2.5">
+                {s.done ? (
+                  <Check className="size-4 shrink-0 text-ok" aria-hidden />
+                ) : (
+                  <Circle className="size-4 shrink-0 text-text-faint" aria-hidden />
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className={cn("text-[12.5px]", s.done ? "text-text" : "font-medium")}>
+                    {s.label}
+                  </div>
+                  <div className="truncate text-[11.5px] text-text-muted">{s.detail}</div>
+                </div>
+                {!s.done && s.action ? (
+                  <Link to={s.action.to} search={s.action.search ?? {}}>
+                    <Button size="sm">
+                      {s.action.label} <ArrowRight className="size-3" aria-hidden />
+                    </Button>
+                  </Link>
+                ) : null}
+              </div>
+            ))
+          : null}
       </Card>
     </div>
   );

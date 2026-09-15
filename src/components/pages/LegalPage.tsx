@@ -17,7 +17,10 @@ function Frame({ title, children }: { title: string; children: React.ReactNode }
   return (
     <div className="min-h-screen bg-canvas">
       <div className="mx-auto w-full max-w-[720px] px-6 py-10">
-        <Link to="/shows" className="flex items-center gap-2 text-[12.5px] text-text-muted hover:text-text">
+        <Link
+          to="/"
+          className="flex items-center gap-2 text-[12.5px] text-text-muted hover:text-text"
+        >
           <LogoLockup size={20} />
         </Link>
         <h1 className="mt-6 text-[26px] font-semibold tracking-[-0.01em]">{title}</h1>
@@ -26,8 +29,14 @@ function Frame({ title, children }: { title: string; children: React.ReactNode }
           {children}
         </div>
         <p className="mt-10 text-[12.5px] text-text-muted">
-          <Link to="/privacy" className="hover:text-text">Privacy</Link> ·{" "}
-          <Link to="/terms" className="hover:text-text">Terms</Link> · Questions: {CONTACT}
+          <Link to="/privacy" className="hover:text-text">
+            Privacy
+          </Link>{" "}
+          ·{" "}
+          <Link to="/terms" className="hover:text-text">
+            Terms
+          </Link>{" "}
+          · Questions: {CONTACT}
         </p>
       </div>
     </div>
@@ -46,20 +55,23 @@ export function PrivacyPage() {
       <h2>What SideStage stores</h2>
       <ul>
         <li>
-          <strong>Show chat and the copilot's proposals.</strong> Public comments on a monitored show,
-          the replies the copilot drafted, the guardrail verdicts on each, and what the operator sent,
-          edited or dismissed.
+          <strong>Show chat and the copilot's proposals.</strong> Public comments on a monitored
+          show, the replies the copilot drafted, the guardrail verdicts on each, and what the
+          operator sent, edited or dismissed.
         </li>
         <li>
-          <strong>Host audio and camera frames — only when the seller turns the audio bridge on.</strong>{" "}
-          The host's speech is transcribed, with the emotion and intent estimates measured on it, and
-          the audio is kept in ten-second chunks. The video frames the copilot read are kept with
-          what it read; frames it skipped are not. All of it lives on the SideStage server's disk.
+          <strong>
+            Host audio and camera frames — only when the seller turns the audio bridge on.
+          </strong>{" "}
+          The host's speech is transcribed, with the emotion and intent estimates measured on it,
+          and the audio is kept in ten-second chunks. The video frames the copilot read are kept
+          with what it read; frames it skipped are not. All of it lives on the SideStage server's
+          disk.
         </li>
         <li>
           <strong>Listings, catalog and policies.</strong> The seller's own catalog, imported or
-          uploaded, and lot data read from the show. Actions on listings — markdowns, stock
-          changes, ended listings — are recorded in a hash-chained audit log.
+          uploaded, and lot data read from the show. Actions on listings — markdowns, stock changes,
+          ended listings — are recorded in a hash-chained audit log.
         </li>
         <li>
           <strong>eBay tokens, if you connect an eBay account.</strong> OAuth tokens issued by eBay
@@ -117,9 +129,10 @@ export function TermsPage() {
       <h2>What it does, and does not</h2>
       <ul>
         <li>
-          It drafts replies and proposes listing actions. <strong>The operator sends and approves.</strong>{" "}
-          A reply that reaches a buyer, and an action that changes a listing, is the operator's
-          decision — the copilot's guardrails reduce mistakes, they do not remove responsibility.
+          It drafts replies and proposes listing actions.{" "}
+          <strong>The operator sends and approves.</strong> A reply that reaches a buyer, and an
+          action that changes a listing, is the operator's decision — the copilot's guardrails
+          reduce mistakes, they do not remove responsibility.
         </li>
         <li>
           Shows you do not own are monitored read-only: the copilot drafts and proposes, and never

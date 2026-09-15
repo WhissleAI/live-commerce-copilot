@@ -15,7 +15,17 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { AlertTriangle, ArrowUpRight, Check, Download, Info, Lock, Mic, Sparkles, Unlock } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowUpRight,
+  Check,
+  Download,
+  Info,
+  Lock,
+  Mic,
+  Sparkles,
+  Unlock,
+} from "lucide-react";
 import { api } from "@/lib/api";
 import { formatMoney, GUARD_LABEL, GUARD_ORDER } from "@/lib/format";
 import type {
@@ -143,8 +153,8 @@ export function ReportPage({ showId }: { showId: string }) {
             icon={<AlertTriangle className="size-5 text-warn" aria-hidden />}
             title="No report for this show"
             action={
-              <Link to="/shows">
-                <BadgeButton>Back to shows</BadgeButton>
+              <Link to="/">
+                <BadgeButton>Back to Home</BadgeButton>
               </Link>
             }
           >
@@ -204,7 +214,7 @@ export function ReportPage({ showId }: { showId: string }) {
       {view === "summary" ? (
         <>
           {/* did it help --------------------------------------------------- */}
-          <SectionHeading hint="Measured against the targets in the PRD. Answered means a drafted reply you actually sent; a question nothing could ground is a gap below, never an answer.">
+          <SectionHeading hint="Measured against the targets in the PRD. Answered means the copilot put a sendable reply in front of you; sent means you pressed Enter on it. A question nothing could ground is a gap below, never an answer.">
             Did it help
           </SectionHeading>
           <div className="mt-3 grid gap-3 sm:grid-cols-4">
@@ -213,33 +223,20 @@ export function ReportPage({ showId }: { showId: string }) {
               value={pct(e.answeredRate)}
               target="target >85%"
               targetMet={e.answeredRate > 0.85}
-              hint={
-                e.answered
-                  ? `${e.answered} of ${e.questionsAsked} admitted questions`
-                  : drafted
-                    ? `${drafted} drafted for ${e.questionsAsked} admitted questions · none sent`
-                    : `${e.answered} of ${e.questionsAsked} admitted questions`
-              }
+              hint={`${e.answered} of ${e.questionsAsked} admitted questions answerable · ${e.sent} sent`}
             />
             <StatTile
-              label={e.answered ? "Time to answer p95" : "Time to draft p95"}
-              // Zero answers is not a zero-millisecond answer — but a drafted
-              // card IS a measurement: how long the copilot took to put an
-              // answer in front of you. Report that, labelled as that, rather
-              // than a dash over a number the show actually produced.
-              value={e.answered || (drafted && e.p95LatencyMs > 0) ? ms(e.p95LatencyMs) : "—"}
-              {...(e.answered ? { target: "target <10s", targetMet: e.p95LatencyMs < 10_000 } : {})}
-              {...(!e.answered && drafted && e.p95LatencyMs > 0
-                ? { target: "budget 2s", targetMet: e.p95LatencyMs < 2000 }
+              label="Time to answer p95"
+              // Question typed → sendable reply on screen. A show with no
+              // answerable question has no latency, not a zero-millisecond one.
+              value={e.answered && e.p95LatencyMs > 0 ? ms(e.p95LatencyMs) : "—"}
+              {...(e.answered && e.p95LatencyMs > 0
+                ? { target: "target <2s", targetMet: e.p95LatencyMs < 2000 }
                 : {})}
               hint={
-                e.answered
-                  ? `median ${ms(e.medianLatencyMs)} · cache hit ${pct(e.cacheHitRate)}`
-                  : drafted && e.p95LatencyMs > 0
-                    ? `question → drafted card · median ${ms(e.medianLatencyMs)} · nothing was sent`
-                    : drafted
-                      ? `${drafted} drafted, none sent · no latency was recorded for them`
-                      : "nothing was drafted, so there is no time to report"
+                e.answered && e.p95LatencyMs > 0
+                  ? `median ${ms(e.medianLatencyMs)} · cache hit ${pct(e.cacheHitRate)} · ${e.sent} sent`
+                  : "nothing was answerable, so there is no time to report"
               }
             />
             <StatTile
@@ -265,7 +262,11 @@ export function ReportPage({ showId }: { showId: string }) {
           </div>
 
           {/* what the host did --------------------------------------------- */}
-          <HostSection host={report.host} platform={report.platform} onTimeline={() => setView("timeline")} />
+          <HostSection
+            host={report.host}
+            platform={report.platform}
+            onTimeline={() => setView("timeline")}
+          />
 
           {/* what it was worth --------------------------------------------- */}
           {prd ? (
@@ -455,7 +456,9 @@ export function ReportPage({ showId }: { showId: string }) {
             </SectionHeading>
             <div className="mt-3 grid gap-3 lg:grid-cols-[1fr_1fr]">
               <Card className="flex items-center gap-3 px-4 py-3">
-                <span className="num text-[20px] leading-none">{report.gaps.unanswered.length}</span>
+                <span className="num text-[20px] leading-none">
+                  {report.gaps.unanswered.length}
+                </span>
                 <span className="min-w-0 flex-1 text-[12.5px] text-text-secondary">
                   distinct questions the catalog could not ground,{" "}
                   {report.gaps.unanswered.reduce((a, g) => a + g.asked, 0)} times asked.
@@ -563,10 +566,15 @@ function HostSection({
             />
             <StatTile
               label="Pace"
-              value={host.medianSpeechRate == null ? "—" : `${Math.round(host.medianSpeechRate)} wpm`}
+              value={
+                host.medianSpeechRate == null ? "—" : `${Math.round(host.medianSpeechRate)} wpm`
+              }
               hint="median words per minute — 150–170 is conversational"
               {...(host.medianSpeechRate != null
-                ? { target: "150–170 wpm", targetMet: host.medianSpeechRate >= 130 && host.medianSpeechRate <= 190 }
+                ? {
+                    target: "150–170 wpm",
+                    targetMet: host.medianSpeechRate >= 130 && host.medianSpeechRate <= 190,
+                  }
                 : {})}
             />
             <StatTile
@@ -578,7 +586,9 @@ function HostSection({
               label="Loudest moment"
               value={host.loudestAtMs == null ? "—" : msClock(host.loudestAtMs)}
               hint={
-                host.quietestAtMs == null ? "no loudness measured" : `quietest at ${msClock(host.quietestAtMs)}`
+                host.quietestAtMs == null
+                  ? "no loudness measured"
+                  : `quietest at ${msClock(host.quietestAtMs)}`
               }
             />
           </div>
@@ -591,13 +601,21 @@ function HostSection({
           {platform ? (
             <Card className="mt-3 px-4 py-3">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[12.5px] font-medium">The platform's own read of the same audio</span>
-                <Badge title={`matched by ${platform.matchedBy}`}>session {platform.sessionId.slice(0, 8)}</Badge>
-                {platform.dominantEmotion ? <Badge>sounds · {platform.dominantEmotion}</Badge> : null}
+                <span className="text-[12.5px] font-medium">
+                  The platform's own read of the same audio
+                </span>
+                <Badge title={`matched by ${platform.matchedBy}`}>
+                  session {platform.sessionId.slice(0, 8)}
+                </Badge>
+                {platform.dominantEmotion ? (
+                  <Badge>sounds · {platform.dominantEmotion}</Badge>
+                ) : null}
                 {platform.primaryIntent ? <Badge>intent · {platform.primaryIntent}</Badge> : null}
               </div>
               {platform.summary?.summary ? (
-                <p className="mt-2 text-[12px] leading-relaxed text-text-secondary">{platform.summary.summary}</p>
+                <p className="mt-2 text-[12px] leading-relaxed text-text-secondary">
+                  {platform.summary.summary}
+                </p>
               ) : null}
               {platform.summary?.nextAction ? (
                 <p className="mt-1.5 text-[12px] text-text-secondary">
@@ -606,8 +624,9 @@ function HostSection({
                 </p>
               ) : null}
               <p className="mt-2 text-[11.5px] text-text-muted">
-                Two measurements of one show, shown as two. The gateway ran its own emotion head over the
-                listen-only session; the numbers above are what this app measured utterance by utterance.
+                Two measurements of one show, shown as two. The gateway ran its own emotion head
+                over the listen-only session; the numbers above are what this app measured utterance
+                by utterance.
               </p>
             </Card>
           ) : null}
@@ -696,7 +715,9 @@ function ConclusionSection({ c }: { c: Conclusion | null | undefined }) {
           <Card className="px-4 py-3.5">
             <div className="flex items-center gap-2">
               <Badge tone={OUTCOME_TONE[c.outcome]}>{c.outcome}</Badge>
-              <span className="text-[11.5px] text-text-muted">by the show's agent · {new Date(c.at).toLocaleTimeString()}</span>
+              <span className="text-[11.5px] text-text-muted">
+                by the show's agent · {new Date(c.at).toLocaleTimeString()}
+              </span>
             </div>
             <p className="mt-2.5 text-[13px] leading-relaxed">{c.summary}</p>
             {c.keyPoints.length ? (
@@ -715,18 +736,29 @@ function ConclusionSection({ c }: { c: Conclusion | null | undefined }) {
               next actions · before the next show
             </div>
             {c.nextActions.length === 0 ? (
-              <p className="px-4 py-3 text-[12.5px] text-text-muted">The agent had nothing to add to the gaps list.</p>
+              <p className="px-4 py-3 text-[12.5px] text-text-muted">
+                The agent had nothing to add to the gaps list.
+              </p>
             ) : (
               <ol>
                 {c.nextActions.map((a, i) => (
-                  <li key={i} className="flex gap-3 px-4 py-2.5 shadow-[0_1px_0_var(--hairline)] last:shadow-none">
-                    <span className="num w-4 shrink-0 pt-0.5 text-[11px] text-text-faint">{i + 1}</span>
+                  <li
+                    key={i}
+                    className="flex gap-3 px-4 py-2.5 shadow-[0_1px_0_var(--hairline)] last:shadow-none"
+                  >
+                    <span className="num w-4 shrink-0 pt-0.5 text-[11px] text-text-faint">
+                      {i + 1}
+                    </span>
                     <span className="min-w-0 flex-1">
                       <span className="flex items-center gap-2">
                         <span className="text-[12.5px] font-medium">{a.title}</span>
-                        <Badge tone={a.kind === "hosting" ? "accent" : "neutral"}>{KIND_LABEL[a.kind]}</Badge>
+                        <Badge tone={a.kind === "hosting" ? "accent" : "neutral"}>
+                          {KIND_LABEL[a.kind]}
+                        </Badge>
                       </span>
-                      {a.why ? <span className="mt-0.5 block text-[11.5px] text-text-muted">{a.why}</span> : null}
+                      {a.why ? (
+                        <span className="mt-0.5 block text-[11.5px] text-text-muted">{a.why}</span>
+                      ) : null}
                     </span>
                   </li>
                 ))}
@@ -769,7 +801,9 @@ function NextRung({ r }: { r: PromotionReadiness | null }) {
         ) : (
           <>
             <span className="font-medium">At the top of what can be unlocked</span>
-            <span className="block text-[11.5px] text-text-muted">L4 unlocks when a show writes to eBay and the rollback criterion holds.</span>
+            <span className="block text-[11.5px] text-text-muted">
+              L4 unlocks when a show writes to eBay and the rollback criterion holds.
+            </span>
           </>
         )}
       </span>
@@ -780,8 +814,15 @@ function NextRung({ r }: { r: PromotionReadiness | null }) {
   );
 }
 
+/** Shaped like the table it stands in for, so nothing jumps when it lands. */
 function Loading({ what }: { what: string }) {
-  return <p className="text-[12.5px] text-text-muted">Reading {what}…</p>;
+  return (
+    <div className="flex flex-col gap-2" aria-busy="true" aria-label={`Reading ${what}`}>
+      <Skeleton className="h-[52px]" />
+      <Skeleton className="h-[52px]" />
+      <Skeleton className="h-[52px] w-3/4" />
+    </div>
+  );
 }
 
 /** Every proposal the show produced, with its verdicts. */
@@ -795,11 +836,16 @@ function Replies({ record }: { record: ShowRecord | null }) {
       </SectionHeading>
       <Card className="mt-3">
         {rows.length === 0 ? (
-          <EmptyState title="No replies were drafted.">Nothing admitted by the gate reached the copilot.</EmptyState>
+          <EmptyState title="No replies were drafted.">
+            Nothing admitted by the gate reached the copilot.
+          </EmptyState>
         ) : (
           <ul>
             {rows.map((p) => (
-              <li key={p.id} className="px-4 py-3 shadow-[0_1px_0_var(--hairline)] last:shadow-none">
+              <li
+                key={p.id}
+                className="px-4 py-3 shadow-[0_1px_0_var(--hairline)] last:shadow-none"
+              >
                 <div className="flex flex-wrap items-center gap-2 text-[11.5px] text-text-muted">
                   <span className="num">{new Date(p.at).toLocaleTimeString()}</span>
                   {p.intent ? <Badge>{p.intent.replace(/_/g, " ")}</Badge> : null}
@@ -818,20 +864,32 @@ function Replies({ record }: { record: ShowRecord | null }) {
                   </Badge>
                   {p.edited ? <Badge>edited</Badge> : null}
                   {p.repaired ? <Badge tone="warn">repaired</Badge> : null}
-                  {p.flaggedWrong ? <Badge tone="bad">flagged wrong · {p.flagReason ?? "unspecified"}</Badge> : null}
-                  <span className="num ml-auto">{p.latencyMs ? `${(p.latencyMs / 1000).toFixed(2)}s` : "—"}</span>
+                  {p.flaggedWrong ? (
+                    <Badge tone="bad">flagged wrong · {p.flagReason ?? "unspecified"}</Badge>
+                  ) : null}
+                  <span className="num ml-auto">
+                    {p.latencyMs ? `${(p.latencyMs / 1000).toFixed(2)}s` : "—"}
+                  </span>
                   <span className="num">conf {p.confidence.toFixed(2)}</span>
                 </div>
                 <p className="mt-1.5 text-[12px] text-text-muted">
                   <span className="text-text-secondary">{p.author}</span> · {p.question}
                 </p>
-                <p className={`mt-1 text-[12.5px] leading-snug ${p.verdict === "block" ? "text-text-muted line-through" : ""}`}>
+                <p
+                  className={`mt-1 text-[12.5px] leading-snug ${p.verdict === "block" ? "text-text-muted line-through" : ""}`}
+                >
                   {p.sentText ?? p.draft}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-1">
                   {GUARD_ORDER.map((g) => {
                     const hit = p.guards.find((x) => x.guard === g);
-                    return <GuardPill key={g} guard={g} verdict={(hit?.verdict as Verdict | undefined) ?? "n/a"} />;
+                    return (
+                      <GuardPill
+                        key={g}
+                        guard={g}
+                        verdict={(hit?.verdict as Verdict | undefined) ?? "n/a"}
+                      />
+                    );
                   })}
                 </div>
               </li>
@@ -848,7 +906,13 @@ function Actions({ record }: { record: ShowRecord | null }) {
   if (!record) return <Loading what="the record" />;
   const rows = [...record.actions].reverse();
   const tone = (s: string): "ok" | "bad" | "warn" | "neutral" =>
-    s === "committed" ? "ok" : s === "failed" || s === "preflight_failed" ? "bad" : s === "rolled_back" ? "warn" : "neutral";
+    s === "committed"
+      ? "ok"
+      : s === "failed" || s === "preflight_failed"
+        ? "bad"
+        : s === "rolled_back"
+          ? "warn"
+          : "neutral";
   return (
     <>
       <SectionHeading hint="Every listing write the copilot proposed — markdowns, stock fixes, ended listings — with its preflight and what happened. Nothing here ran without a person approving it.">
@@ -856,24 +920,35 @@ function Actions({ record }: { record: ShowRecord | null }) {
       </SectionHeading>
       <Card className="mt-3">
         {rows.length === 0 ? (
-          <EmptyState title="No actions were proposed.">The show never called for a listing write.</EmptyState>
+          <EmptyState title="No actions were proposed.">
+            The show never called for a listing write.
+          </EmptyState>
         ) : (
           <ul>
             {rows.map((a) => (
-              <li key={a.id} className="px-4 py-3 shadow-[0_1px_0_var(--hairline)] last:shadow-none">
+              <li
+                key={a.id}
+                className="px-4 py-3 shadow-[0_1px_0_var(--hairline)] last:shadow-none"
+              >
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge tone={tone(a.status)}>{a.status.replace(/_/g, " ")}</Badge>
                   <Badge>{a.kind.replace(/_/g, " ")}</Badge>
                   <span className="min-w-0 flex-1 text-[12.5px]">{a.summary}</span>
-                  <span className="num text-[11px] text-text-muted">{new Date(a.createdAt).toLocaleTimeString()}</span>
+                  <span className="num text-[11px] text-text-muted">
+                    {new Date(a.createdAt).toLocaleTimeString()}
+                  </span>
                 </div>
-                {a.rationale ? <p className="mt-1 text-[11.5px] text-text-muted">{a.rationale}</p> : null}
+                {a.rationale ? (
+                  <p className="mt-1 text-[11.5px] text-text-muted">{a.rationale}</p>
+                ) : null}
                 {a.preflight?.checks?.length ? (
                   <ul className="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-[11.5px]">
                     {a.preflight.checks.map((c) => (
                       <li key={c.name} className={c.ok ? "text-text-secondary" : "text-bad"}>
                         {c.ok ? "✓" : "✕"} {c.name}
-                        {c.detail ? <span className="num text-text-muted"> ({c.detail})</span> : null}
+                        {c.detail ? (
+                          <span className="num text-text-muted"> ({c.detail})</span>
+                        ) : null}
                       </li>
                     ))}
                   </ul>
@@ -900,7 +975,9 @@ function Audit({ record }: { record: ShowRecord | null }) {
       </SectionHeading>
       <Card className="mt-3 overflow-hidden">
         {rows.length === 0 ? (
-          <EmptyState title="The chain is empty.">Nothing happened that needed recording.</EmptyState>
+          <EmptyState title="The chain is empty.">
+            Nothing happened that needed recording.
+          </EmptyState>
         ) : (
           <div className="scroll-thin overflow-x-auto">
             <table className="w-full min-w-[720px] text-[12px]">
@@ -917,15 +994,23 @@ function Audit({ record }: { record: ShowRecord | null }) {
                 {rows.map((e) => (
                   <tr key={e.seq} className="shadow-[0_1px_0_var(--hairline)] last:shadow-none">
                     <td className="num px-4 py-1.5 text-text-muted">{e.seq}</td>
-                    <td className="num px-3 py-1.5 text-text-muted">{new Date(e.at).toLocaleTimeString()}</td>
+                    <td className="num px-3 py-1.5 text-text-muted">
+                      {new Date(e.at).toLocaleTimeString()}
+                    </td>
                     <td className="px-3 py-1.5">
-                      <Badge {...(e.actorType === "copilot" ? { tone: "accent" as const } : {})}>{e.actorType}</Badge>
+                      <Badge {...(e.actorType === "copilot" ? { tone: "accent" as const } : {})}>
+                        {e.actorType}
+                      </Badge>
                     </td>
                     <td className="px-3 py-1.5">
                       <span className="block">{e.summary}</span>
-                      <span className="text-[11px] text-text-muted">{e.kind.replace(/_/g, " ")}</span>
+                      <span className="text-[11px] text-text-muted">
+                        {e.kind.replace(/_/g, " ")}
+                      </span>
                     </td>
-                    <td className="num px-3 py-1.5 text-[11px] text-text-faint">{e.hash.slice(0, 12)}…</td>
+                    <td className="num px-3 py-1.5 text-[11px] text-text-faint">
+                      {e.hash.slice(0, 12)}…
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -1172,7 +1257,7 @@ function Gaps({ report }: { report: ShowReport }) {
           These carry into your next session's readiness check, so the fix is offered where it can
           still be made.
         </p>
-        <Link to="/shows">
+        <Link to="/">
           <BadgeButton tone="accent">
             Start the next show <ArrowUpRight className="size-3" aria-hidden />
           </BadgeButton>

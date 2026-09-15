@@ -5,6 +5,10 @@ import { ShowsPage } from "@/components/pages/ShowsPage";
 import { ensureSession } from "@/lib/api";
 
 export const Route = createFileRoute("/")({
+  // `/?view=discover` opens Home on its Discover tab — the one deep link the
+  // readiness checklist and the command palette need.
+  validateSearch: (s: Record<string, unknown>): { view?: "discover" } =>
+    s["view"] === "discover" ? { view: "discover" } : {},
   head: () => ({
     meta: [
       { title: "SideStage — Live Selling Copilot" },
@@ -16,8 +20,7 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "SideStage — Live Selling Copilot" },
       {
         property: "og:description",
-        content:
-          "It watches the show. It answers the room. You keep the last word.",
+        content: "It watches the show. It answers the room. You keep the last word.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -28,11 +31,16 @@ export const Route = createFileRoute("/")({
     // lands on Home — their shows, the paste box, and Discover. The console
     // is a destination of its own (/console) and only worth a rail button
     // while a show is on air. Decided on the client, where the session lives.
+    const { view } = Route.useSearch();
     const [state, setState] = useState<"unknown" | "in" | "out">("unknown");
     useEffect(() => {
       void ensureSession().then((a) => setState(a ? "in" : "out"));
     }, []);
     if (state === "unknown") return null;
-    return state === "in" ? <ShowsPage /> : <LandingPage />;
+    return state === "in" ? (
+      <ShowsPage view={view === "discover" ? "discover" : "live"} />
+    ) : (
+      <LandingPage />
+    );
   },
 });

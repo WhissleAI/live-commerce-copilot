@@ -65,7 +65,6 @@ export function ShowsPage({ view = "live" }: { view?: View }) {
     setWatched(w);
   }, []);
 
-
   useEffect(() => {
     void load();
   }, [load]);
@@ -104,7 +103,12 @@ export function ShowsPage({ view = "live" }: { view?: View }) {
   // list below — a show is a row here whether it is on air or behind you,
   // and a followed seller who goes live shows up on Discover.
   const tabs: Tab[] = [
-    { label: "Your shows", count: rows?.length ?? null, active: tab === "live", onClick: () => setTab("live") },
+    {
+      label: "Your shows",
+      count: rows?.length ?? null,
+      active: tab === "live",
+      onClick: () => setTab("live"),
+    },
     { label: "Discover", active: tab === "discover", onClick: () => setTab("discover") },
   ];
 
@@ -113,9 +117,7 @@ export function ShowsPage({ view = "live" }: { view?: View }) {
       section="shows"
       title="Home"
       subtitle={
-        rows === null
-          ? "reading your shows…"
-          : `${live.length} on air · ${past.length} behind you`
+        rows === null ? "reading your shows…" : `${live.length} on air · ${past.length} behind you`
       }
       tabs={tabs}
     >
@@ -203,7 +205,9 @@ export function ShowsPage({ view = "live" }: { view?: View }) {
                     key={r.showId}
                     row={r}
                     watched={watched.some((w) => w.showId === r.showId)}
-                    onOpen={() => void api.activateShow(r.showId).then(() => navigate({ to: "/console" }))}
+                    onOpen={() =>
+                      void api.activateShow(r.showId).then(() => navigate({ to: "/console" }))
+                    }
                     onDelete={() => setDeleting(r)}
                   />
                 ))
@@ -243,7 +247,7 @@ function ShowRowCard({
   const live = row.status === "live";
   const started = new Date(row.startedAt);
   return (
-    <Card className="flex items-center gap-3 px-3 py-2.5">
+    <Card className="flex items-center gap-3 px-3 py-2.5 transition-shadow duration-150 hover:z2">
       {live ? (
         <Badge tone="bad" className="gap-1.5">
           <span aria-hidden className="anim-live size-1.5 rounded-full bg-bad" />
@@ -309,4 +313,3 @@ function ShowRowCard({
     </Card>
   );
 }
-

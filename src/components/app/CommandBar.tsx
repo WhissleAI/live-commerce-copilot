@@ -123,7 +123,7 @@ export function CommandBar({
         } else if (s.hasReport) {
           void navigate({ to: "/reports/$showId", params: { showId: s.showId } });
         } else {
-          void navigate({ to: "/shows" });
+          void navigate({ to: "/" });
         }
       },
     }));

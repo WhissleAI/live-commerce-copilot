@@ -72,9 +72,9 @@ export function BadgeButton({
     <button
       type="button"
       className={cn(
-        "inline-flex h-[26px] shrink-0 items-center gap-1.5 rounded-sm px-2.5 text-[12px] font-medium whitespace-nowrap transition-colors duration-150",
+        "inline-flex h-[26px] shrink-0 items-center gap-1.5 rounded-sm px-2.5 text-[12px] font-medium whitespace-nowrap",
         BADGE_TONE[tone],
-        "hover:brightness-[0.97] disabled:cursor-not-allowed disabled:opacity-45",
+        "enabled:hover:brightness-[0.94] enabled:active:brightness-[0.9] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-45",
         className,
       )}
       {...rest}
@@ -225,7 +225,30 @@ export function Card({
             ? "ring-[1.5px] ring-accent"
             : "z1";
   return (
-    <div onClick={onClick} className={cn("rounded-md bg-panel", edge, className)}>
+    <div
+      onClick={onClick}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={
+        onClick
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onClick();
+              }
+            }
+          : undefined
+      }
+      className={cn(
+        "rounded-md bg-panel",
+        edge,
+        // A card that does something says so on hover, and can be reached
+        // and pressed from the keyboard like any other control.
+        onClick &&
+          "cursor-pointer transition-[box-shadow,transform] duration-150 hover:z2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+        className,
+      )}
+    >
       {children}
     </div>
   );
@@ -320,11 +343,17 @@ const SIZE: Record<ButtonSize, string> = {
   md: "h-9 px-3.5 text-[13px]",
 };
 
+// `enabled:` so a disabled button stops reacting to the pointer as well as
+// looking dim — the two used to disagree, and a greyed button that still lit
+// up on hover read as "try again".
 const VARIANT: Record<ButtonVariant, string> = {
-  primary: "bg-accent text-accent-foreground hover:bg-accent/90",
-  secondary: "bg-elevated text-text hover:brightness-[0.97]",
-  ghost: "text-text-secondary hover:bg-elevated hover:text-text",
-  danger: "bg-bad/12 text-[oklch(0.48_0.19_27.4)] hover:bg-bad/18",
+  primary:
+    "bg-accent text-accent-foreground enabled:hover:bg-accent/90 enabled:active:bg-accent/80 z1",
+  secondary:
+    "bg-elevated text-text enabled:hover:brightness-[0.95] enabled:active:brightness-[0.9]",
+  ghost:
+    "text-text-secondary enabled:hover:bg-elevated enabled:hover:text-text enabled:active:bg-hairline",
+  danger: "bg-bad/12 text-[oklch(0.48_0.19_27.4)] enabled:hover:bg-bad/18 enabled:active:bg-bad/25",
 };
 
 export function Button({
@@ -337,8 +366,8 @@ export function Button({
     <button
       type="button"
       className={cn(
-        "inline-flex shrink-0 items-center gap-1.5 rounded-sm font-medium whitespace-nowrap transition-colors duration-150",
-        "disabled:cursor-not-allowed disabled:opacity-45",
+        "inline-flex shrink-0 items-center gap-1.5 rounded-sm font-medium whitespace-nowrap",
+        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-45",
         SIZE[size],
         VARIANT[variant],
         className,
@@ -380,7 +409,7 @@ export function Skeleton({ className }: { className?: string }) {
     <span
       aria-hidden
       className={cn(
-        "block rounded-xs bg-[linear-gradient(90deg,var(--hairline)_0%,var(--elevated)_50%,var(--hairline)_100%)]",
+        "anim-shimmer block rounded-xs bg-[linear-gradient(90deg,var(--hairline)_0%,var(--elevated)_50%,var(--hairline)_100%)]",
         className,
       )}
     />

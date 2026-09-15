@@ -68,9 +68,9 @@
      the console rendered as nested rectangles, four borders deep around a
      single pill. A card is now white on grey with one ring, and anything that
      already sits on its own surface has no outline at all. */
-  --canvas: oklch(0.9800 0.0028 264.5);
+  --canvas: oklch(0.98 0.0028 264.5);
   --panel: oklch(1 0 0);
-  --elevated: oklch(0.9690 0.0035 264.5);
+  --elevated: oklch(0.969 0.0035 264.5);
   --hairline: oklch(0.9154 0.0055 264.5);
   --hairline-strong: oklch(0.8558 0.0082 264.5);
 
@@ -79,8 +79,8 @@
   /* Darkened from 0.6012, which was ~3.9:1 on white — under AA, and this is the
      colour every hint, sub-label, table header and rail icon uses. One token,
      about two hundred declarations. */
-  --text-muted: oklch(0.5180 0.0165 261.3);
-  --text-faint: oklch(0.6300 0.0150 261.3);
+  --text-muted: oklch(0.518 0.0165 261.3);
+  --text-faint: oklch(0.63 0.015 261.3);
 
   /* The status colours are darkened rather than reused: the dark theme's greens
      and ambers were tuned against a near-black canvas and fail contrast on
@@ -94,11 +94,11 @@
 
   /* Depth, declared once. Four layers and a single ring, so "selected" stops
      being five different treatments across five files. */
-  --ring: 0 0 0 1px oklch(0.9060 0.0055 264.5);
+  --ring: 0 0 0 1px oklch(0.906 0.0055 264.5);
   --z1: var(--ring);
   --z2: var(--ring), 0 1px 2px oklch(0.2359 0.0118 264.5 / 0.04);
-  --z3: 0 0 0 1px oklch(0.8900 0.0060 264.5), 0 6px 20px oklch(0.2359 0.0118 264.5 / 0.10);
-  --z4: 0 0 0 1px oklch(0.8900 0.0060 264.5), 0 16px 40px oklch(0.2359 0.0118 264.5 / 0.14);
+  --z3: 0 0 0 1px oklch(0.89 0.006 264.5), 0 6px 20px oklch(0.2359 0.0118 264.5 / 0.1);
+  --z4: 0 0 0 1px oklch(0.89 0.006 264.5), 0 16px 40px oklch(0.2359 0.0118 264.5 / 0.14);
 
   /* The shell. Navigation spends width, never height — the console cannot
      spare the vertical. */
@@ -151,6 +151,37 @@
     outline: 2px solid var(--color-accent);
     outline-offset: 1px;
   }
+
+  /* Every control answers the hand the same way. One rule here beats a class
+     on each of the ~90 buttons: the cursor says "clickable", the press is felt
+     (a 3% shrink), and colour, shadow and transform all move on one 150ms
+     curve. A disabled control neither invites nor reacts. */
+  button,
+  a,
+  [role="button"],
+  summary {
+    transition:
+      color 150ms ease,
+      background-color 150ms ease,
+      border-color 150ms ease,
+      box-shadow 150ms ease,
+      opacity 150ms ease,
+      filter 150ms ease,
+      transform 120ms ease;
+  }
+  button:not(:disabled),
+  [role="button"],
+  summary {
+    cursor: pointer;
+  }
+  button:not(:disabled):active,
+  a[href]:active,
+  [role="button"]:active {
+    transform: scale(0.97);
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
 }
 
 @utility num {
@@ -180,10 +211,18 @@
 }
 
 /* Depth, as utilities, so a component never invents its own shadow. */
-@utility z1 { box-shadow: var(--z1); }
-@utility z2 { box-shadow: var(--z2); }
-@utility z3 { box-shadow: var(--z3); }
-@utility z4 { box-shadow: var(--z4); }
+@utility z1 {
+  box-shadow: var(--z1);
+}
+@utility z2 {
+  box-shadow: var(--z2);
+}
+@utility z3 {
+  box-shadow: var(--z3);
+}
+@utility z4 {
+  box-shadow: var(--z4);
+}
 
 @utility hatch {
   background-image: repeating-linear-gradient(
@@ -273,6 +312,36 @@
   animation: ss-indeterminate 1.1s ease-in-out infinite;
 }
 
+/* A skeleton breathes so it reads as "arriving", not as a grey box that is
+   the design. */
+@keyframes ss-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+@utility anim-shimmer {
+  background-size: 200% 100%;
+  animation: ss-shimmer 1.6s linear infinite;
+}
+
+/* Content arrives, it does not pop: 180ms of opacity on mount. Applied to the
+   shell's content well, so every page gets it on route change and nothing
+   re-animates on an ordinary state update. */
+@keyframes ss-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@utility anim-fade {
+  animation: ss-fade 180ms ease-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -283,7 +352,9 @@
   }
   .anim-in,
   .anim-out,
-  .anim-live {
+  .anim-live,
+  .anim-fade,
+  .anim-shimmer {
     animation: none !important;
     opacity: 1;
     transform: none;
@@ -303,5 +374,7 @@
 [data-reveal].in {
   opacity: 1;
   transform: none;
-  transition: opacity 0.55s ease, transform 0.55s ease;
+  transition:
+    opacity 0.55s ease,
+    transform 0.55s ease;
 }

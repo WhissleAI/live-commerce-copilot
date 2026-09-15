@@ -100,7 +100,10 @@ export function useLiveShow(): ShowSummary | null {
  * while healthy and quickly while not, so recovery is noticed within seconds.
  */
 function useBackendHealth(): { ok: boolean; detail: string | null } {
-  const [state, setState] = useState<{ ok: boolean; detail: string | null }>({ ok: true, detail: null });
+  const [state, setState] = useState<{ ok: boolean; detail: string | null }>({
+    ok: true,
+    detail: null,
+  });
   useEffect(() => {
     let stop = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
@@ -156,7 +159,7 @@ function Rail({ section }: { section: Section }) {
             aria-label={r.label}
             aria-current={on ? "page" : undefined}
             className={cn(
-              "relative grid size-9 place-items-center rounded-sm transition-colors duration-150",
+              "relative grid size-9 place-items-center rounded-sm focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent",
               on ? "bg-elevated text-text" : "text-text-muted hover:bg-elevated hover:text-text",
             )}
           >
@@ -178,8 +181,10 @@ function Rail({ section }: { section: Section }) {
         aria-label="Account"
         aria-current={section === "account" ? "page" : undefined}
         className={cn(
-          "grid size-9 place-items-center rounded-sm",
-          section === "account" ? "bg-elevated text-text" : "text-text-muted hover:bg-elevated hover:text-text",
+          "grid size-9 place-items-center rounded-sm focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent",
+          section === "account"
+            ? "bg-elevated text-text"
+            : "text-text-muted hover:bg-elevated hover:text-text",
         )}
       >
         <UserRound className="size-4" aria-hidden />
@@ -221,7 +226,7 @@ function LiveStrip({ show }: { show: ShowSummary }) {
       <button
         type="button"
         onClick={() => void navigate({ to: "/console" })}
-        className="ml-auto flex shrink-0 items-center gap-1.5 text-[12px] text-text-secondary hover:text-text"
+        className="ml-auto flex shrink-0 items-center gap-1.5 rounded-xs px-1.5 py-0.5 text-[12px] text-text-secondary hover:bg-bad/10 hover:text-text"
       >
         Return to console <Key>⌘2</Key>
       </button>
@@ -314,9 +319,9 @@ export function AppShell({
               </button>
             }
           >
-            {API_BASE} — {health.detail ?? "no response"}. A show that is on air keeps running on eBay;
-            this console is simply not attached to it. Retrying every 5 s; nothing is sent while
-            disconnected.
+            {API_BASE} — {health.detail ?? "no response"}. A show that is on air keeps running on
+            eBay; this console is simply not attached to it. Retrying every 5 s; nothing is sent
+            while disconnected.
           </Banner>
         ) : null}
         {banner}
@@ -348,10 +353,10 @@ export function AppShell({
                   key={t.label}
                   to={t.to}
                   className={cn(
-                    "flex h-[34px] items-center gap-1.5 text-[12.5px]",
+                    "flex h-[34px] items-center gap-1.5 text-[12.5px] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent",
                     t.active
                       ? "font-medium text-text shadow-[inset_0_-2px_0_var(--accent)]"
-                      : "text-text-muted hover:text-text",
+                      : "text-text-muted hover:text-text hover:shadow-[inset_0_-2px_0_var(--hairline-strong)]",
                   )}
                 >
                   {t.label}
@@ -364,11 +369,12 @@ export function AppShell({
                   key={t.label}
                   type="button"
                   onClick={t.onClick}
+                  aria-pressed={t.active}
                   className={cn(
-                    "flex h-[34px] items-center gap-1.5 text-[12.5px]",
+                    "flex h-[34px] items-center gap-1.5 text-[12.5px] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent",
                     t.active
                       ? "font-medium text-text shadow-[inset_0_-2px_0_var(--accent)]"
-                      : "text-text-muted hover:text-text",
+                      : "text-text-muted hover:text-text hover:shadow-[inset_0_-2px_0_var(--hairline-strong)]",
                   )}
                 >
                   {t.label}
@@ -388,7 +394,7 @@ export function AppShell({
             {bare ? (
               children
             ) : (
-              <div className="mx-auto w-full max-w-[1100px] px-6 py-5">{children}</div>
+              <div className="anim-fade mx-auto w-full max-w-[1100px] px-6 py-5">{children}</div>
             )}
           </main>
 

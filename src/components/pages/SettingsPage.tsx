@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 
 import { Section } from "./PageShell";
 import { AppShell, type Tab } from "@/components/app/AppShell";
-import { Badge, Button, Card, EmptyState } from "@/components/ui/kit";
+import { Badge, Button, Card, EmptyState, Skeleton } from "@/components/ui/kit";
 import {
   IngestionPanel,
   AutomationPanel,
@@ -127,8 +127,26 @@ export function SettingsPage({ initialTab }: { initialTab?: SettingsTab | undefi
 
   if (!draft || !view) {
     return (
-      <AppShell section="settings" title="Settings">
-        <p className="text-[12px] text-text-muted">{error ?? "Loading the policy…"}</p>
+      <AppShell
+        section="settings"
+        title="Settings"
+        subtitle={error ? undefined : "reading the policy…"}
+      >
+        {error ? (
+          <Card tone="bad" className="flex items-center gap-3 px-4 py-3">
+            <span className="min-w-0 flex-1 text-[12.5px]">{error}</span>
+            <Button size="sm" onClick={() => void load().catch((e: Error) => setError(e.message))}>
+              Retry
+            </Button>
+          </Card>
+        ) : (
+          <div className="flex flex-col gap-3" aria-busy="true" aria-label="reading the policy">
+            <Skeleton className="h-[34px] w-2/3" />
+            <Skeleton className="h-[120px]" />
+            <Skeleton className="h-[120px]" />
+            <Skeleton className="h-[80px] w-1/2" />
+          </div>
+        )}
       </AppShell>
     );
   }
@@ -592,8 +610,14 @@ function AccountAndData() {
           {[
             ["chat, proposals and their verdicts", "until you delete the show"],
             ["the hash-chained audit log", "kept with the show"],
-            ["host audio", "10-second chunks on the server's disk, with the transcript and its emotion and intent distributions — playable from the report"],
-            ["camera frames", "the frames the agent read, kept with what it read; frames it skipped are not"],
+            [
+              "host audio",
+              "10-second chunks on the server's disk, with the transcript and its emotion and intent distributions — playable from the report",
+            ],
+            [
+              "camera frames",
+              "the frames the agent read, kept with what it read; frames it skipped are not",
+            ],
             ["the agent's conclusion and the platform's session summary", "kept in the report"],
             ["the stream's Whissle agent", "deleted with the session"],
             ["everything above", "deleted together when you delete the show — rows and bytes"],

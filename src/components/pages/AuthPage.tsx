@@ -27,7 +27,7 @@ export function AuthPage({ mode }: { mode: "login" | "register" }) {
     try {
       if (mode === "register") await register(email, password, name);
       else await login(email, password);
-      await navigate({ to: "/shows" });
+      await navigate({ to: "/" });
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -57,31 +57,78 @@ export function AuthPage({ mode }: { mode: "login" | "register" }) {
           {mode === "register" ? (
             <label className="flex flex-col gap-1 text-[12px] text-text-muted">
               Your name, as the audit will record it
-              <input id="auth-name" value={name} onChange={(e) => setName(e.target.value)} className={field} placeholder="Rae Okafor" autoComplete="name" />
+              <input
+                id="auth-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className={field}
+                placeholder="Rae Okafor"
+                autoComplete="name"
+              />
             </label>
           ) : null}
           <label className="flex flex-col gap-1 text-[12px] text-text-muted">
             Email
-            <input id="auth-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={field} placeholder="you@example.com" autoComplete="email" />
+            <input
+              id="auth-email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={field}
+              placeholder="you@example.com"
+              autoComplete="email"
+            />
           </label>
           <label className="flex flex-col gap-1 text-[12px] text-text-muted">
             Password{mode === "register" ? " · at least 8 characters" : ""}
-            <input id="auth-password" type="password" required minLength={mode === "register" ? 8 : 1} value={password} onChange={(e) => setPassword(e.target.value)} className={field} autoComplete={mode === "register" ? "new-password" : "current-password"} />
+            <input
+              id="auth-password"
+              type="password"
+              required
+              minLength={mode === "register" ? 8 : 1}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className={field}
+              autoComplete={mode === "register" ? "new-password" : "current-password"}
+            />
           </label>
           {error ? <p className="text-[12.5px] text-bad">{error}</p> : null}
-          <Button type="submit" size="md" variant="primary" disabled={busy || !email || !password} className="mt-1 justify-center">
+          <Button
+            type="submit"
+            size="md"
+            variant="primary"
+            disabled={busy || !email || !password}
+            className="mt-1 justify-center"
+          >
             {busy ? "One moment…" : mode === "register" ? "Create account" : "Sign in"}
           </Button>
         </form>
 
         <p className="mt-5 text-[12.5px] text-text-muted">
           {mode === "register" ? (
-            <>Already have one? <Link to="/login" className="text-accent hover:underline">Sign in</Link></>
+            <>
+              Already have one?{" "}
+              <Link to="/login" className="text-accent hover:underline">
+                Sign in
+              </Link>
+            </>
           ) : (
-            <>New here? <Link to="/register" className="text-accent hover:underline">Create an account</Link></>
+            <>
+              New here?{" "}
+              <Link to="/register" className="text-accent hover:underline">
+                Create an account
+              </Link>
+            </>
           )}
           {" · "}
-          <Link to="/privacy" className="hover:text-text">Privacy</Link> · <Link to="/terms" className="hover:text-text">Terms</Link>
+          <Link to="/privacy" className="hover:text-text">
+            Privacy
+          </Link>{" "}
+          ·{" "}
+          <Link to="/terms" className="hover:text-text">
+            Terms
+          </Link>
         </p>
       </div>
     </div>
