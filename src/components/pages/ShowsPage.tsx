@@ -89,7 +89,21 @@ export function ShowsPage({ view = "live" }: { view?: View }) {
       setStarting(true);
       setError(null);
       try {
-        const res = await api.startSession({ url: value });
+        let res;
+        try {
+          res = await api.startSession({ url: value });
+        } catch (e) {
+          // A show that was never prepared has no catalog and no agent. Prepare
+          // it here (about a minute: the seller's listings are read into a
+          // catalog and a knowledge base) and attach once that lands.
+          if (!/prepare the agent/i.test((e as Error).message)) throw e;
+          const eventId = value.match(/\/ebaylive\/events\/([A-Za-z0-9]{10,})/)?.[1] ?? (/^[A-Za-z0-9]{16}$/.test(value) ? value : null);
+          if (!eventId) throw e;
+          setError("Preparing this show's agent and catalog first — about a minute…");
+          await api.prepareShow({ eventId, title: `eBay Live ${eventId}`, host: "", sellerHandle: null, tags: [], thumbnailUrl: null });
+          setError(null);
+          res = await api.startSession({ url: value });
+        }
         await navigate({ to: "/setup", search: { showId: res.showId } });
       } catch (e) {
         setError((e as Error).message);

@@ -483,7 +483,11 @@ function ShowCard({
               )}
               {preparing ? "Preparing…" : "Prepare agent"}
             </Button>
-            <Button size="sm" onClick={onAttach}>
+            <Button
+              size="sm"
+              disabled
+              title="Prepare the agent first — that is where this show's catalog and knowledge base are built"
+            >
               Monitor
             </Button>
           </div>
