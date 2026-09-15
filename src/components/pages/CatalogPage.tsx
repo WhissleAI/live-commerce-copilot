@@ -306,7 +306,7 @@ function MarketRowLine({ row }: { row: MarketRow }) {
 
 /** "Kicks by Rae · @kicksbyrae" — and what kind of catalog it is, in one line. */
 function catalogLabel(c: CatalogSummary): string {
-  const who = c.seller?.handle ? ` · @${c.seller.handle}` : "";
+  const who = c.seller?.handle ? ` · @${c.seller.handle.replace(/^@+/, "")}` : "";
   const kind =
     c.origin?.kind === "prepared"
       ? " · prepared show"
@@ -327,7 +327,7 @@ function Provenance({ catalog }: { catalog: CatalogSummary }) {
   const o = catalog.origin;
   if (!o) return null;
   if (o.kind === "prepared") {
-    const who = o.sellerHandle ? `@${o.sellerHandle}` : o.host;
+    const who = o.sellerHandle ? `@${o.sellerHandle.replace(/^@+/, "")}` : o.host;
     return (
       <p className="mb-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-text-secondary">
         <Badge tone="neutral">prepared show</Badge>
@@ -369,7 +369,7 @@ function Provenance({ catalog }: { catalog: CatalogSummary }) {
     return (
       <p className="mb-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-text-secondary">
         <Badge tone="neutral">your listings</Badge>
-        <span>Imported from the eBay account @{o.handle}.</span>
+        <span>Imported from the eBay account @{o.handle.replace(/^@+/, "")}.</span>
         <Link
           to="/settings"
           search={{ tab: "ebay" }}
