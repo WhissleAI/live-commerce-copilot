@@ -25,6 +25,7 @@ import {
   Mic,
   Sparkles,
   Unlock,
+  ExternalLink,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { formatMoney, GUARD_LABEL, GUARD_ORDER } from "@/lib/format";
@@ -33,6 +34,7 @@ import type {
   Conclusion,
   GuardName,
   HostSummary,
+  HostTrajectoryPoint,
   PlatformSessionSummary,
   PromotionReadiness,
   ShowRecord,
@@ -579,13 +581,16 @@ export function ReportPage({ showId }: { showId: string }) {
 }
 
 /**
- * What the host did — from the host's own speech.
+ * How the host worked the show — from the host's own speech.
  *
- * Every number here is a distribution summed as probability mass over the
- * whole show, never a count of top labels: a run of 0.34-confidence "excited"
- * is 34% excited, not "excited 80% of the time". The platform's own account
- * of the same audio session sits beside it when there is one, labelled as a
- * second measurement rather than merged into the first.
+ * The voice head measures the SELLER's delivery: energy, and what kind of
+ * speech act each utterance was. That is a style, and over a show it is a
+ * trajectory — not a sentiment about buyers. Every number here is a
+ * distribution summed as probability mass over the whole show, never a count
+ * of top labels: a run of 0.34-confidence "excited" is 34% excited, not
+ * "excited 80% of the time". The platform's own account of the same audio
+ * session sits beside it when there is one, labelled as a second measurement
+ * rather than merged into the first.
  */
 function HostSection({
   host,
@@ -598,8 +603,8 @@ function HostSection({
 }) {
   return (
     <div className="mt-8">
-      <SectionHeading hint="Measured from the host's own speech through the audio bridge — not from chat. Shares are probability mass summed over every utterance, so a hesitant read stays hesitant here.">
-        What the host did
+      <SectionHeading hint="The seller's delivery, measured from their own speech through the audio bridge — energy and the kind of speech act, utterance by utterance. These describe how the show was hosted, not what buyers felt.">
+        How the host worked the show
       </SectionHeading>
       {!host ? (
         <Card className="mt-3 flex gap-2.5 bg-elevated px-4 py-3">
@@ -607,11 +612,20 @@ function HostSection({
           <p className="text-[12px] leading-relaxed text-text-secondary">
             {host === undefined
               ? "This report was written before host signals were kept, and a report is never regenerated."
-              : "Host audio was not captured for this show, so there is nothing to say about how it was hosted. Open the audio bridge next show and this section fills in — pace, tone, and the moments chat reacted to."}
+              : "Host audio was not captured for this show, so there is nothing to say about how it was hosted. Open the audio bridge next show and this section fills in — pace, delivery, and the moments chat reacted to."}
           </p>
         </Card>
       ) : (
         <>
+          {host.style ? (
+            <Card className="mt-3 px-4 py-3.5">
+              <p className="text-[15px] font-medium leading-snug text-text">{host.style.label}</p>
+              <p className="mt-1 text-[12.5px] leading-relaxed text-text-secondary">
+                {host.style.detail}
+              </p>
+            </Card>
+          ) : null}
+
           <div className="mt-3 grid gap-3 sm:grid-cols-4">
             <StatTile
               label="Speaking"
@@ -621,9 +635,17 @@ function HostSection({
             <StatTile
               label="Pace"
               value={
-                host.medianSpeechRate == null ? "—" : `${Math.round(host.medianSpeechRate)} wpm`
+                host.medianSpeechRate == null
+                  ? host.utterances > 0
+                    ? "not measured"
+                    : "—"
+                  : `${Math.round(host.medianSpeechRate)} wpm`
               }
-              hint="median words per minute — 150–170 is conversational"
+              hint={
+                host.medianSpeechRate == null && host.utterances > 0
+                  ? "speech rate is computed from utterance length and timing when the gateway sends none; this report predates that"
+                  : "median words per minute — 150–170 is conversational"
+              }
               {...(host.medianSpeechRate != null
                 ? {
                     target: "150–170 wpm",
@@ -632,9 +654,9 @@ function HostSection({
                 : {})}
             />
             <StatTile
-              label="Emotion flips"
+              label="Delivery shifts"
               value={String(host.emotionFlips)}
-              hint="utterances whose top emotion changed — many on a short show is a host pulled around by chat"
+              hint="utterances whose measured energy state changed — many on a short show is a host pulled around by chat"
             />
             <StatTile
               label="Loudest moment"
@@ -647,10 +669,17 @@ function HostSection({
             />
           </div>
 
+          {host.trajectory && host.trajectory.length > 1 ? (
+            <Trajectory points={host.trajectory} />
+          ) : null}
+
           <div className="mt-3 grid gap-3 lg:grid-cols-2">
-            <Shares title="What they were doing · intent" shares={host.intent} />
-            <Shares title="How they sounded · emotion" shares={host.emotion} />
+            <Shares title="Style of delivery · intent mix" shares={host.intent} />
+            <Shares title="Energy and delivery · measured from the voice" shares={host.emotion} />
           </div>
+          <p className="mt-2 text-[11.5px] text-text-muted">
+            These describe the seller's delivery over the show, not buyer sentiment.
+          </p>
 
           {platform ? (
             <Card className="mt-3 px-4 py-3">
@@ -662,7 +691,7 @@ function HostSection({
                   session {platform.sessionId.slice(0, 8)}
                 </Badge>
                 {platform.dominantEmotion ? (
-                  <Badge>sounds · {platform.dominantEmotion}</Badge>
+                  <Badge>delivery · {platform.dominantEmotion}</Badge>
                 ) : null}
                 {platform.primaryIntent ? <Badge>intent · {platform.primaryIntent}</Badge> : null}
               </div>
@@ -702,6 +731,123 @@ const msClock = (ms: number) => {
   const s = Math.floor(ms / 1000);
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 };
+
+const INTENT_ORDER = ["inform", "question", "command", "other"];
+const INTENT_FILL: Record<string, string> = {
+  inform: "var(--color-accent)",
+  question: "oklch(0.72 0.12 250)",
+  command: "oklch(0.62 0.15 60)",
+  other: "var(--hairline-strong)",
+};
+
+/**
+ * The seller's delivery over the show: energy as a line, the intent mix as
+ * thin stacked bars beneath it, one column per two-minute bucket. Inline SVG,
+ * scaled to the viewBox, so it reads at any width.
+ */
+function Trajectory({ points }: { points: HostTrajectoryPoint[] }) {
+  const W = 640;
+  const H = 120;
+  const LINE_H = 64;
+  const BAR_TOP = 78;
+  const BAR_H = 30;
+  const n = points.length;
+  const colW = W / n;
+  const keys = INTENT_ORDER.filter((k) => points.some((p) => (p.intent[k] ?? 0) > 0));
+  for (const p of points)
+    for (const k of Object.keys(p.intent))
+      if (!keys.includes(k) && (p.intent[k] ?? 0) > 0) keys.push(k);
+  const x = (i: number) => i * colW + colW / 2;
+  const y = (e: number) => 6 + (1 - Math.max(0, Math.min(1, e))) * (LINE_H - 12);
+  const line = points
+    .map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(p.energy).toFixed(1)}`)
+    .join(" ");
+  const first = points[0]!;
+  const last = points[n - 1]!;
+  return (
+    <Card className="mt-3 px-4 py-3.5">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <div className="section-header">Delivery over the show</div>
+        <span className="num text-[11px] text-text-muted">
+          energy {first.energy.toFixed(2)} → {last.energy.toFixed(2)} · {n} two-minute stretches
+        </span>
+      </div>
+      <div className="mt-2 overflow-x-auto">
+        <svg
+          viewBox={`0 0 ${W} ${H}`}
+          className="h-[120px] w-full min-w-[320px]"
+          role="img"
+          aria-label="Energy over time with intent mix per stretch"
+        >
+          {[0.25, 0.5, 0.75].map((g) => (
+            <line
+              key={g}
+              x1={0}
+              x2={W}
+              y1={y(g)}
+              y2={y(g)}
+              stroke="var(--hairline)"
+              strokeWidth={1}
+            />
+          ))}
+          <path
+            d={line}
+            fill="none"
+            stroke="var(--color-accent)"
+            strokeWidth={2}
+            strokeLinejoin="round"
+          />
+          {points.map((p, i) => (
+            <circle key={i} cx={x(i)} cy={y(p.energy)} r={2.5} fill="var(--color-accent)">
+              <title>{`${msClock(p.offsetMs)} · energy ${p.energy.toFixed(2)} · ${p.utterances} utterances${p.wpm ? ` · ${Math.round(p.wpm)} wpm` : ""}`}</title>
+            </circle>
+          ))}
+          {points.map((p, i) => {
+            const total = keys.reduce((a, k) => a + (p.intent[k] ?? 0), 0) || 1;
+            let acc = 0;
+            return keys.map((k) => {
+              const h = ((p.intent[k] ?? 0) / total) * BAR_H;
+              const rect = (
+                <rect
+                  key={k}
+                  x={i * colW + 1}
+                  y={BAR_TOP + acc}
+                  width={Math.max(1, colW - 2)}
+                  height={h}
+                  fill={INTENT_FILL[k] ?? "var(--hairline-strong)"}
+                >
+                  <title>{`${msClock(p.offsetMs)} · ${k} ${Math.round(((p.intent[k] ?? 0) / total) * 100)}%`}</title>
+                </rect>
+              );
+              acc += h;
+              return rect;
+            });
+          })}
+          <text x={0} y={H - 2} fontSize={9} fill="var(--text-muted)">
+            {msClock(first.offsetMs)}
+          </text>
+          <text x={W} y={H - 2} fontSize={9} fill="var(--text-muted)" textAnchor="end">
+            {msClock(last.offsetMs)}
+          </text>
+        </svg>
+      </div>
+      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10.5px] text-text-muted">
+        <span className="inline-flex items-center gap-1">
+          <span className="inline-block h-0.5 w-3 bg-accent" /> energy, 0–1
+        </span>
+        {keys.map((k) => (
+          <span key={k} className="inline-flex items-center gap-1">
+            <span
+              className="inline-block size-2 rounded-[2px]"
+              style={{ background: INTENT_FILL[k] ?? "var(--hairline-strong)" }}
+            />{" "}
+            {k}
+          </span>
+        ))}
+      </div>
+    </Card>
+  );
+}
 
 function Shares({ title, shares }: { title: string; shares: { label: string; share: number }[] }) {
   const max = Math.max(0.01, ...shares.map((x) => x.share));
@@ -988,6 +1134,16 @@ function Actions({ record }: { record: ShowRecord | null }) {
                   <Badge tone={tone(a.status)}>{a.status.replace(/_/g, " ")}</Badge>
                   <Badge>{a.kind.replace(/_/g, " ")}</Badge>
                   <span className="min-w-0 flex-1 text-[12.5px]">{a.summary}</span>
+                  {a.listingUrl ? (
+                    <a
+                      href={a.listingUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 text-[11px] text-text-muted hover:text-accent hover:underline"
+                    >
+                      View on eBay <ExternalLink className="size-3" aria-hidden />
+                    </a>
+                  ) : null}
                   <span className="num text-[11px] text-text-muted">
                     {new Date(a.createdAt).toLocaleTimeString()}
                   </span>

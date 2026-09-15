@@ -48,6 +48,7 @@ const SOURCE_LABEL: Record<Evidence["source"], string> = {
   policy: "policy clause",
   catalog: "catalog record",
   qa: "prior answer",
+  host: "what the host said on air",
   market: "market comp",
 };
 

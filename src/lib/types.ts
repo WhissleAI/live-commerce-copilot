@@ -163,6 +163,8 @@ export interface Listing {
   pinned: boolean;
   version: number;
   imageUrl: string;
+  /** The listing's page on eBay, when it has one. */
+  url?: string | null;
   shippingProfile: string;
   authenticated: boolean;
   certId: string | null;
@@ -190,11 +192,13 @@ export interface ChatMessage {
 
 export interface Evidence {
   factId: string;
-  source: "listing" | "policy" | "catalog" | "qa" | "market";
+  source: "listing" | "policy" | "catalog" | "qa" | "market" | "host";
   label: string;
   text: string;
   score: number;
   listingVersion?: number;
+  /** The listing on eBay, when the fact came from one that has a page. */
+  url?: string | null;
 }
 
 export interface GuardResult {
@@ -317,6 +321,9 @@ export interface ShowContext {
   voice: SignalDistribution | null;
   /** A one-line reading of the show's VIDEO. Context, never provenance. */
   onScreen: { text: string; at: string } | null;
+  /** The seller's delivery over the last few minutes, derived from the voice
+   *  distributions — a style, not a sentiment. */
+  style?: HostStyle | null;
   updatedAt: string;
 }
 
@@ -785,6 +792,22 @@ export interface LabelShare {
   share: number;
 }
 
+/** How the seller delivered the show — a style, not a sentiment. */
+export interface HostStyle {
+  label: string;
+  detail: string;
+}
+
+/** One two-minute bucket of the host's delivery. `energy` is 0..1. */
+export interface HostTrajectoryPoint {
+  offsetMs: number;
+  utterances: number;
+  energy: number;
+  intent: Record<string, number>;
+  emotion: Record<string, number>;
+  wpm: number | null;
+}
+
 export interface HostSummary {
   utterances: number;
   speakingSpanS: number;
@@ -794,6 +817,9 @@ export interface HostSummary {
   emotionFlips: number;
   loudestAtMs: number | null;
   quietestAtMs: number | null;
+  /** Absent on reports written before style was derived. */
+  style?: HostStyle | null;
+  trajectory?: HostTrajectoryPoint[];
 }
 
 export interface PlatformSessionSummary {
@@ -917,6 +943,8 @@ export interface RecordedAction {
   status: string;
   listingId: string | null;
   listingTitle: string | null;
+  /** The listing on eBay, when it has a page. */
+  listingUrl?: string | null;
   summary: string;
   rationale: string | null;
   preflight: { ok?: boolean; checks?: { name: string; ok: boolean; detail?: string }[] } | null;
@@ -1021,6 +1049,8 @@ export interface MarketRow {
   title: string;
   priceCents: number;
   qty: number;
+  /** The item's page on eBay, when the catalog came from there. */
+  url?: string | null;
   market: {
     basis: "sold" | "asking" | "none";
     medianCents: number;
@@ -1185,8 +1215,14 @@ export interface CostSnapshot {
     contextChars: number;
     byDoor: Record<string, { calls: number; failures: number; totalMs: number }>;
     /** Null when the wallet could not be read. Null is "unknown", and must
-     *  never render as zero. */
+     *  never render as zero. Secondary now: see `estimatedUsd`. */
     walletDeltaUsd: number | null;
+    /** This show's cost to this account. `basis` says how it was priced. */
+    estimatedUsd: number | null;
+    /** wallet-exclusive: the workspace wallet moved while this show ran alone,
+     *  so the delta is this show's real spend. metered: calls × the measured
+     *  average cost per call from shows that ran alone. none: nothing to price. */
+    basis: "wallet-exclusive" | "metered" | "none";
     answered: number;
   }[];
   totals: {
@@ -1194,6 +1230,10 @@ export interface CostSnapshot {
     calls: number;
     contextChars: number;
     spentUsd: number;
+    /** Sum of the rows' `estimatedUsd`. */
+    estimatedUsd: number;
+    /** How many rows were priced by the metered estimate. */
+    metered: number;
     answered: number;
     minutes: number;
     perAnsweredUsd: number | null;
@@ -1201,14 +1241,8 @@ export interface CostSnapshot {
     showsWithoutWallet: number;
   };
   byDoor: Record<string, { calls: number; failures: number; totalMs: number }>;
-  wallet: Wallet | null;
-  walletError: { status: number; message: string } | null;
-  usage: {
-    days: number;
-    totals: UsageTotal[];
-    daily?: { day: string; service: string; quantity: number }[];
-  } | null;
-  usageError: { status: number; message: string } | null;
+  /** Whose costs these are. The page is per account; the key behind it is shared. */
+  scope: { accountId: string; handle: string };
   live: Record<string, { calls: number; failures: number; contextChars: number }>;
   attribution: { perShow: string; note: string };
 }

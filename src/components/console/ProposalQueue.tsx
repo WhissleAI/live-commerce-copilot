@@ -2,11 +2,13 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   BookOpen,
   Check,
+  ExternalLink,
   FileText,
   Gavel,
   Info,
   LineChart,
   MessageSquareQuote,
+  Mic,
   ShieldAlert,
   Tag,
 } from "lucide-react";
@@ -22,6 +24,7 @@ const SOURCE_ICON = {
   catalog: FileText,
   qa: Gavel,
   market: LineChart,
+  host: Mic,
 } as const;
 
 function EvidenceChips({ evidence }: { evidence: Evidence[] }) {
@@ -49,6 +52,17 @@ function EvidenceChips({ evidence }: { evidence: Evidence[] }) {
                 </div>
                 {e.listingVersion !== undefined ? (
                   <div className="num text-[11px] text-text-muted">v{e.listingVersion}</div>
+                ) : null}
+                {e.url ? (
+                  <a
+                    href={e.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-[11px] text-accent hover:underline"
+                    onClick={(ev) => ev.stopPropagation()}
+                  >
+                    View on eBay <ExternalLink className="size-3" aria-hidden />
+                  </a>
                 ) : null}
               </div>
             }
@@ -259,10 +273,12 @@ function ProposalCard({
         highlighted && !focused && "border-accent/60",
       )}
     >
+      {/* A held reply is a guard doing its job, not a failure: amber, not red.
+          Red stays for a draft that genuinely errored. */}
       <span
         className={cn(
           "absolute inset-y-0 left-0 w-[3px] rounded-l-md",
-          blocked ? "bg-bad" : needsReview ? "bg-warn" : "bg-transparent",
+          blocked ? "bg-warn" : needsReview ? "bg-warn" : "bg-transparent",
         )}
         aria-hidden
       />
@@ -359,19 +375,29 @@ function ProposalCard({
 
         {!drafting ? (
           <>
-            {blocked && blockingGuard ? (
-              <p className="flex items-start gap-1.5 rounded-[4px] border border-bad/40 bg-bad/8 px-2 py-1.5 text-[12px] text-bad">
-                <ShieldAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-                <span>
-                  Blocked by the <strong>{GUARD_LABEL[blockingGuard.guard]}</strong> guard —{" "}
-                  {blockingGuard.reason}
-                  {blockingGuard.detail ? (
-                    <span className="num block pt-0.5 text-[11px] text-text-secondary">
+            {blocked ? (
+              <div className="flex items-start gap-2 rounded-[4px] border border-warn/40 bg-warn/[0.07] px-2.5 py-2 text-[12px]">
+                <ShieldAlert className="mt-0.5 size-3.5 shrink-0 text-warn" aria-hidden />
+                <div className="min-w-0">
+                  <p className="font-medium text-text">
+                    Held by the {blockingGuard ? GUARD_LABEL[blockingGuard.guard] : "guardrail"}{" "}
+                    guard
+                  </p>
+                  <p className="mt-0.5 leading-snug text-text-secondary">
+                    {blockingGuard?.reason ??
+                      "This draft did not pass the checks a reply must pass before it can be sent."}
+                  </p>
+                  {blockingGuard?.detail ? (
+                    <p className="num mt-0.5 text-[11px] text-text-muted">
                       expected {blockingGuard.detail.expected} · found {blockingGuard.detail.found}
-                    </span>
+                    </p>
                   ) : null}
-                </span>
-              </p>
+                  <p className="mt-1 text-[11px] text-text-muted">
+                    What to do: edit it and send — the edit is checked again — or dismiss it.
+                    Nothing went wrong; the reply was stopped on purpose.
+                  </p>
+                </div>
+              </div>
             ) : null}
 
             <EvidenceChips evidence={p.evidence} />

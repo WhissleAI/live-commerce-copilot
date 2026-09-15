@@ -1,5 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
-import { AlertTriangle, Check, Link as LinkIcon, Loader2, Pin, Tag, Undo2, X } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  ExternalLink,
+  Link as LinkIcon,
+  Loader2,
+  Pin,
+  Tag,
+  Undo2,
+  X,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatClock, formatMoney, formatMoneyShort } from "@/lib/format";
 import type { ActionProposal, AuditEntry, Listing } from "@/lib/types";
@@ -92,6 +102,16 @@ function PinnedLot({
             <Pin className="mt-0.5 size-3 shrink-0 text-accent" aria-hidden />
             <p className="text-[12px] leading-snug font-medium text-text">{listing.title}</p>
           </div>
+          {listing.url ? (
+            <a
+              href={listing.url}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-0.5 inline-flex items-center gap-1 text-[10.5px] text-text-muted hover:text-accent hover:underline"
+            >
+              View on eBay <ExternalLink className="size-3" aria-hidden />
+            </a>
+          ) : null}
           <div className="mt-1 flex flex-wrap items-center gap-1">
             {listing.size ? (
               <span className="rounded-[4px] border border-hairline-strong px-1.5 text-[10px] text-text-secondary">

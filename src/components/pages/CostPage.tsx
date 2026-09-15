@@ -6,11 +6,16 @@
  * both lived in process memory. Every finished session now writes a row, and
  * this page reads them.
  *
+ * This page is YOURS: the shows this account ran, and what they cost this
+ * account. The Whissle key behind the backend is shared by every seller on the
+ * host, so the workspace wallet is not shown here — it is not your balance.
+ *
  * Two kinds of number, kept visually apart because conflating them is how a
  * dashboard ends up quoting a token count as a price:
  *   · CALLS are exact — this app makes them and counts them itself.
- *   · DOLLARS are an upper bound — the wallet is workspace-wide, so anything
- *     else running under this account is inside the figure.
+ *   · DOLLARS are priced per show on one of two bases, and each row says which:
+ *     the wallet's movement while the show ran alone (its real spend), or the
+ *     show's calls at the average cost per call measured from shows that did.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -46,6 +51,38 @@ const DOOR_LABEL: Record<string, string> = {
   visual_read: "Camera reads",
   billing: "This page",
 };
+
+const BASIS_TITLE: Record<"wallet-exclusive" | "metered" | "none", string> = {
+  "wallet-exclusive": "Priced by the wallet's movement while this show ran alone — its real spend.",
+  metered:
+    "Priced from this show's calls at the average cost per call measured on shows that ran alone.",
+  none: "Nothing to price this show on.",
+};
+
+/** Which basis a row's dollar figure rests on. Small, beside the number. */
+function BasisMark({
+  basis,
+  inline,
+}: {
+  basis: "wallet-exclusive" | "metered" | "none";
+  inline?: boolean;
+}) {
+  if (basis === "none") return null;
+  return (
+    <span
+      title={BASIS_TITLE[basis]}
+      className={cn(
+        "inline-flex cursor-help items-center rounded-[3px] border px-1 font-sans text-[9.5px] uppercase tracking-wider",
+        basis === "wallet-exclusive"
+          ? "border-ok/40 text-ok"
+          : "border-hairline-strong text-text-muted",
+        inline && "mx-0.5 align-middle",
+      )}
+    >
+      {basis === "wallet-exclusive" ? "wallet" : "metered"}
+    </span>
+  );
+}
 
 /**
  * The cap, where the money is.
@@ -135,9 +172,7 @@ export function CostPage() {
       section="cost"
       title="Cost"
       subtitle={
-        data
-          ? `Whissle workspace · ${t?.shows ?? 0} shows · last ${days} days`
-          : "reading the meter…"
+        data ? `Your shows · ${t?.shows ?? 0} shows · last ${days} days` : "reading the meter…"
       }
       tabs={tabs}
       actions={
@@ -152,14 +187,13 @@ export function CostPage() {
         </Card>
       ) : null}
 
-      <SectionHeading hint="Only the balance is money. Everything under it is consumption — tokens, seconds, characters — and a dollar figure per show is an upper bound, not an invoice.">
-        The money
+      <SectionHeading hint="What your shows cost you. Calls are exact — this app counts them. Dollars are priced per show, and each row says on what basis.">
+        Your money
       </SectionHeading>
 
-      <div className="mt-3 grid gap-3 sm:grid-cols-4">
+      <div className="mt-3 grid gap-3 sm:grid-cols-3">
         {!data ? (
           <>
-            <Skeleton className="h-[92px]" />
             <Skeleton className="h-[92px]" />
             <Skeleton className="h-[92px]" />
             <Skeleton className="h-[92px]" />
@@ -167,29 +201,19 @@ export function CostPage() {
         ) : (
           <>
             <StatTile
-              label="Available"
-              value={usd(data.wallet?.availableUsd)}
-              {...(data.wallet?.lowBalance ? { tone: "bad" as const } : {})}
-              hint={
-                data.walletError
-                  ? `wallet unavailable (${data.walletError.status}) — ${data.walletError.message}`
-                  : data.wallet?.paymentsEnabled
-                    ? `${usd(data.wallet?.heldUsd)} held · payments on`
-                    : "payments are off — the agent stops answering at zero"
-              }
-            />
-            <StatTile
-              label={`Spent, ${days} days`}
-              value={usd(t?.spentUsd)}
-              hint={`${t?.shows ?? 0} shows · ${Math.floor((t?.minutes ?? 0) / 60)}h ${(t?.minutes ?? 0) % 60}m on air`}
+              label={`Your spend, ${days} days`}
+              value={usd(t?.estimatedUsd)}
+              hint={`${t?.shows ?? 0} shows · ${Math.floor((t?.minutes ?? 0) / 60)}h ${(t?.minutes ?? 0) % 60}m on air${
+                t?.metered ? ` · ${t.metered} priced from calls` : ""
+              }`}
             />
             <StatTile
               label="Per hour on air"
               value={usd(t?.perHourUsd)}
               hint={
                 t?.showsWithoutWallet
-                  ? `${t.showsWithoutWallet} show${t.showsWithoutWallet === 1 ? "" : "s"} carry no dollar figure`
-                  : "wallet delta across each session window"
+                  ? `${t.showsWithoutWallet} show${t.showsWithoutWallet === 1 ? "" : "s"} could not be priced`
+                  : "your spend over your time on air"
               }
             />
             <StatTile
@@ -233,7 +257,7 @@ export function CostPage() {
                     <th className="px-4 py-2.5 text-right font-medium">On air</th>
                     <th className="px-4 py-2.5 text-right font-medium">Calls</th>
                     <th className="px-4 py-2.5 text-right font-medium">Context chars</th>
-                    <th className="px-4 py-2.5 text-right font-medium">Wallet</th>
+                    <th className="px-4 py-2.5 text-right font-medium">Cost</th>
                     <th className="px-4 py-2.5 text-right font-medium">Answered</th>
                     <th className="px-4 py-2.5 text-right font-medium">Per reply</th>
                   </tr>
@@ -256,17 +280,20 @@ export function CostPage() {
                       <td className="num px-4 py-2.5 text-right">{s.calls}</td>
                       <td className="num px-4 py-2.5 text-right">{compact(s.contextChars)}</td>
                       <td className="num px-4 py-2.5 text-right">
-                        {s.walletDeltaUsd == null ? (
-                          <span title="the wallet could not be read for this session">—</span>
+                        {s.estimatedUsd == null ? (
+                          <span title="nothing to price this show on">—</span>
                         ) : (
-                          `≤ ${usd(s.walletDeltaUsd, 2)}`
+                          <span className="inline-flex items-center justify-end gap-1">
+                            {usd(s.estimatedUsd, 2)}
+                            <BasisMark basis={s.basis} />
+                          </span>
                         )}
                       </td>
                       <td className="num px-4 py-2.5 text-right">{s.answered}</td>
                       <td className="num px-4 py-2.5 text-right">
-                        {s.walletDeltaUsd == null || !s.answered
+                        {s.estimatedUsd == null || !s.answered
                           ? "—"
-                          : `$${(s.walletDeltaUsd / s.answered).toFixed(4)}`}
+                          : `$${(s.estimatedUsd / s.answered).toFixed(4)}`}
                       </td>
                     </tr>
                   ))}
@@ -279,7 +306,7 @@ export function CostPage() {
                     </td>
                     <td className="num px-4 py-2.5 text-right">{t?.calls}</td>
                     <td className="num px-4 py-2.5 text-right">{compact(t?.contextChars ?? 0)}</td>
-                    <td className="num px-4 py-2.5 text-right">≤ {usd(t?.spentUsd)}</td>
+                    <td className="num px-4 py-2.5 text-right">{usd(t?.estimatedUsd)}</td>
                     <td className="num px-4 py-2.5 text-right">{t?.answered}</td>
                     <td className="num px-4 py-2.5 text-right">
                       {t?.perAnsweredUsd == null ? "—" : `$${t.perAnsweredUsd.toFixed(4)}`}
@@ -290,6 +317,12 @@ export function CostPage() {
             </div>
           )}
         </Card>
+        <p className="mt-2 text-[11.5px] leading-relaxed text-text-muted">
+          A show marked <BasisMark basis="wallet-exclusive" inline /> is priced by how much the
+          wallet moved while it ran alone (its real spend); one marked{" "}
+          <BasisMark basis="metered" inline /> is priced from its calls at the average cost per call
+          measured on shows that ran alone.
+        </p>
       </div>
 
       {/* by purpose -------------------------------------------------------- */}
@@ -337,35 +370,6 @@ export function CostPage() {
                   </span>
                 </div>
               </>
-            )}
-          </Card>
-        </div>
-
-        <div>
-          <SectionHeading hint="Org-wide, from the platform meter — everything under this key, not only SideStage.">
-            Workspace consumption
-          </SectionHeading>
-          <Card className="mt-3">
-            {!data?.usage ? (
-              <EmptyState title="No consumption recorded">
-                {data?.usageError
-                  ? `Usage unavailable (${data.usageError.status}) — ${data.usageError.message}`
-                  : ""}
-              </EmptyState>
-            ) : (
-              data.usage.totals
-                .filter((x) => x.quantity > 0)
-                .map((x) => (
-                  <div
-                    key={x.service}
-                    className="flex justify-between px-4 py-2.5 text-[12.5px] shadow-[0_1px_0_var(--hairline)] last:shadow-none"
-                  >
-                    <span className="text-text-secondary">{x.service.replace(/_/g, " ")}</span>
-                    <span className="num text-text">
-                      {compact(x.quantity)} {x.unit ?? ""}
-                    </span>
-                  </div>
-                ))
             )}
           </Card>
         </div>

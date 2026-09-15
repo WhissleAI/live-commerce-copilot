@@ -192,7 +192,9 @@ export function TranscriptPanel({
               <span className="num text-[10px] tabular-nums text-text-muted">
                 {new Date(shown.at).toLocaleTimeString([], { hour12: false })}
               </span>
-              <span className={cn("text-[10px]", stale ? "text-warn" : "text-ok")}>{stale ? `${shownAgeS}s ago` : "live"}</span>
+              <span className={cn("text-[10px]", stale ? "text-warn" : "text-ok")}>
+                {stale ? `${shownAgeS}s ago` : "live"}
+              </span>
               {shown.speechRate != null && (
                 <span className="num ml-auto text-[10px] tabular-nums text-text-muted">
                   {Math.round(shown.speechRate)} wpm
@@ -219,7 +221,7 @@ export function TranscriptPanel({
 
         {/* What the copilot can SEE, and how the host is presenting. Kept with
             the audio because they describe the same moment of the show. */}
-        {(context?.onScreen || context?.tone || context?.voice) && (
+        {(context?.onScreen || context?.tone || context?.voice || context?.style) && (
           <div className="mt-2 space-y-1.5 border-t border-hairline pt-2">
             {context.onScreen && (
               <div className="flex items-start gap-1.5">
@@ -236,14 +238,23 @@ export function TranscriptPanel({
                   tone · {context.tone}
                 </span>
               )}
+              {context.style && (
+                <span
+                  title={context.style.detail}
+                  className="rounded-[3px] border border-hairline-strong px-1.5 py-0.5 text-[10px] text-text-secondary"
+                >
+                  style · {context.style.label}
+                </span>
+              )}
               {context.voice && (
                 <span
-                  title={context.voice.topK
+                  title={`delivery, measured from the voice — ${context.voice.topK
                     .map((k) => `${pretty(k.label)} ${Math.round(k.p * 100)}%`)
-                    .join(" · ")}
+                    .join(" · ")}`}
                   className="rounded-[3px] border border-accent/40 bg-accent/5 px-1.5 py-0.5 text-[10px] text-accent"
                 >
-                  sounds · {pretty(context.voice.topLabel)} {Math.round(context.voice.topP * 100)}%
+                  delivery · {pretty(context.voice.topLabel)} {Math.round(context.voice.topP * 100)}
+                  %
                 </span>
               )}
             </div>

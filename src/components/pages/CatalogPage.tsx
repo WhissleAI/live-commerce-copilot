@@ -266,8 +266,20 @@ function MarketRowLine({ row }: { row: MarketRow }) {
     <tr className="shadow-[0_1px_0_var(--hairline)] last:shadow-none">
       <td className="max-w-[280px] px-4 py-2.5">
         <div className="truncate">{row.title}</div>
-        <div className="num text-[11px] text-text-muted">
-          {row.sku} · {row.qty} in stock
+        <div className="num flex items-center gap-2 text-[11px] text-text-muted">
+          <span>
+            {row.sku} · {row.qty} in stock
+          </span>
+          {row.url ? (
+            <a
+              href={row.url}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-0.5 font-sans text-text-muted hover:text-accent hover:underline"
+            >
+              View on eBay <ExternalLink className="size-3" aria-hidden />
+            </a>
+          ) : null}
         </div>
       </td>
       <td className="num px-3 py-2.5 text-right">{formatMoney(row.priceCents)}</td>

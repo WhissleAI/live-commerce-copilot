@@ -304,7 +304,7 @@ function Player({ t, showId, onDescribe }: { t: ShowTimeline; showId: string; on
                       <span className="min-w-0 flex-1">
                         <span className="block text-[12.5px] leading-snug">{r.u.text}</span>
                         <span className="mt-1 flex flex-wrap items-center gap-1">
-                          {r.u.emotion ? <Chip kind="sounds" d={r.u.emotion} /> : null}
+                          {r.u.emotion ? <Chip kind="delivery" d={r.u.emotion} /> : null}
                           {r.u.intent ? <Chip kind="intent" d={r.u.intent} /> : null}
                           {r.u.speechRate ? (
                             <span className="num text-[10.5px] text-text-muted">{Math.round(r.u.speechRate)} wpm</span>
