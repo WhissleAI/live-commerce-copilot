@@ -60,18 +60,29 @@ export const INTENT_LABEL: Record<ChatIntent, string> = {
   other: "other",
 };
 
-/** Muted per-intent chip colors, expressed as inline-safe css color strings. */
-export const INTENT_HUE: Record<ChatIntent, string> = {
-  price_question: "200",
-  availability: "150",
-  sizing: "280",
-  shipping: "230",
-  returns: "40",
-  authenticity: "170",
-  comparison: "310",
-  discount_request: "20",
-  hype: "330",
-  other: "260",
+/**
+ * Topic hues, as oklch hue angles — and `null` for the one topic that should
+ * not have a colour at all.
+ *
+ * Re-spaced deliberately. `discount_request` sat at hue 20, two degrees from
+ * `--bad` (27.4) and next door to `--warn` (71.5), so a topic chip read as an
+ * alert on the one screen where red means blocked or live. Nothing now sits in
+ * the 0–90° band those two own; topics start at 105 and step 30–40°, which is
+ * as much separation as eight of them fit into the remaining arc.
+ */
+export const INTENT_HUE: Record<ChatIntent, string | null> = {
+  returns: "105",
+  availability: "145",
+  authenticity: "175",
+  price_question: "205",
+  shipping: "235",
+  hype: "265",
+  comparison: "295",
+  sizing: "320",
+  discount_request: "340",
+  // "other" is not a topic. Giving it a hue made an unclassified comment look
+  // like a category the operator should recognise.
+  other: null,
 };
 
 export const GUARD_ORDER: GuardName[] = [

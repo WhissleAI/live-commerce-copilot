@@ -1,0 +1,53 @@
+    .page{width:1440px;height:5860px;background:var(--panel);overflow:hidden}
+    .in{margin:0 auto;max-width:1160px;padding:0 32px}
+    .i{stroke:currentColor;stroke-width:1.5;fill:none;stroke-linecap:round;stroke-linejoin:round}
+    .disp{font-family:'Archivo',Inter,ui-sans-serif,sans-serif;font-weight:700;font-stretch:112%;
+      letter-spacing:-0.030em;line-height:1.02;text-wrap:balance;margin:0}
+    .h2{font-family:'Archivo',Inter,sans-serif;font-weight:700;font-stretch:108%;letter-spacing:-0.022em;
+      font-size:40px;line-height:1.08;margin:0;text-wrap:balance}
+    .h3{font-size:20px;line-height:1.3;font-weight:600;letter-spacing:-0.01em;margin:0}
+    .lede{font-size:20px;line-height:1.5;color:var(--ink2);margin:0}
+    .p{font-size:17px;line-height:1.65;color:var(--ink2);margin:0}
+    .cap{font-size:14px;line-height:1.6;color:var(--ink3);margin:0}
+    .sec{padding:112px 0}
+    .eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:14px;font-weight:500;color:var(--ink3)}
+    .cta{display:inline-flex;align-items:center;gap:9px;height:52px;padding:0 24px;border-radius:10px;
+      font-size:16px;font-weight:600;white-space:nowrap}
+    .cta-p{background:var(--bad);color:oklch(0.99 0 0)}
+    .cta-s{box-shadow:var(--ring);color:var(--ink);background:var(--panel)}
+    .tally{display:inline-flex;align-items:center;gap:8px;border-radius:999px;
+      background:oklch(0.5468 0.2093 27.4/.10);padding:6px 12px;color:var(--bad);
+      font-size:13px;font-weight:600;letter-spacing:.02em}
+    .dark{background:oklch(0.2000 0.0110 264.5);color:oklch(0.97 0.002 264)}
+    .dark .h2,.dark .disp{color:oklch(0.99 0 0)}
+    .dark .p{color:oklch(0.8200 0.0090 264)}
+    .dark .cap{color:oklch(0.6800 0.0110 264)}
+    .fig{font-family:'Archivo',Inter,sans-serif;font-weight:700;font-stretch:105%;
+      font-variant-numeric:tabular-nums;letter-spacing:-0.03em;line-height:1;font-size:52px}
+    .g{display:inline-flex;align-items:center;gap:5px;border-radius:var(--r-md);padding:3px 9px;font-size:13px;font-weight:500}
+    .g-ok{color:oklch(0.4600 0.1300 147.8);background:oklch(0.5421 0.1489 147.8/.14)}
+    .g-bad{color:oklch(0.4800 0.1900 27.4);background:oklch(0.5468 0.2093 27.4/.14)}
+    .g-na{color:var(--ink3);background:var(--elev)}
+    .card{background:var(--panel);border-radius:14px;box-shadow:var(--z3)}
+    .rule{height:1px;background:var(--line)}
+
+    /* the hero replays the one moment the product exists for */
+    .stage{position:relative;height:286px}
+    .layer{position:absolute;inset:0}
+    @keyframes l-draft{0%,6%{opacity:0}10%,40%{opacity:1}46%,100%{opacity:0}}
+    @keyframes l-block{0%,42%{opacity:0}48%,72%{opacity:1}78%,100%{opacity:0}}
+    @keyframes l-fixed{0%,74%{opacity:0}80%,96%{opacity:1}100%{opacity:0}}
+    @keyframes l-strike{0%,44%{width:0}56%,100%{width:100%}}
+    @keyframes l-caret{0%,50%{opacity:1}51%,100%{opacity:0}}
+    @keyframes l-bar{0%{width:0}100%{width:100%}}
+    .s-draft{animation:l-draft 9s linear infinite}
+    .s-block{animation:l-block 9s linear infinite}
+    .s-fixed{animation:l-fixed 9s linear infinite}
+    .strike{position:absolute;left:0;top:50%;height:1.5px;background:var(--bad);animation:l-strike 9s linear infinite}
+    .caret{display:inline-block;width:8px;height:17px;background:var(--accent);vertical-align:-3px;animation:l-caret 1s steps(1) infinite}
+    .prog{height:2px;background:var(--accent);animation:l-bar 9s linear infinite}
+    @media (prefers-reduced-motion: reduce){
+      .s-draft,.s-block,.caret,.prog{animation:none;opacity:0}
+      .s-fixed{animation:none;opacity:1}
+      .strike{animation:none;width:100%}
+    }

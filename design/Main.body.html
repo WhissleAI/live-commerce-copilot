@@ -1,0 +1,452 @@
+<div class="app">
+
+  <!-- ── the shell: one bar, then the show strip ───────────────────── -->
+  <div class="rail">
+    <span class="rr" style="margin-bottom:6px;color:var(--bad)"><svg viewBox="0 0 16 16" width="18" height="18" class="i"><circle cx="8" cy="8" r="2"/><path d="M4.5 11.5a5 5 0 0 1 0-7M11.5 4.5a5 5 0 0 1 0 7"/></svg></span>
+    <span class="rr" title="Shows"><svg viewBox="0 0 16 16" width="16" height="16" class="i"><path d="M2.5 4.5h11v8h-11z"/><path d="M6.5 7.5 10 9l-3.5 1.5z"/></svg></span>
+    <span class="rr on" title="Console"><svg viewBox="0 0 16 16" width="16" height="16" class="i"><path d="M2.5 3.5h11v9h-11z"/><path d="M5 6.5 7 8l-2 1.5M8.5 10h3"/></svg><span class="live"></span></span>
+    <span class="rr" title="Catalog"><svg viewBox="0 0 16 16" width="16" height="16" class="i"><path d="M2.5 5.2 8 2.5l5.5 2.7v5.6L8 13.5 2.5 10.8z"/><path d="M2.5 5.2 8 8l5.5-2.8M8 8v5.5"/></svg></span>
+    <span class="rr" title="Reports"><svg viewBox="0 0 16 16" width="16" height="16" class="i"><path d="M4 2.5h5l3 3v8H4z"/><path d="M9 2.5v3h3M6 8.5h4M6 10.5h3"/></svg></span>
+    <span class="rr" title="Analytics"><svg viewBox="0 0 16 16" width="16" height="16" class="i"><path d="M3 12.5V9M8 12.5V5M13 12.5V7.5"/></svg></span>
+    <span class="rr" title="Cost"><svg viewBox="0 0 16 16" width="16" height="16" class="i"><rect x="2.5" y="4" width="11" height="8.5" rx="1.5"/><path d="M10.5 8.2h3"/></svg></span>
+    <span class="rr" title="Settings"><svg viewBox="0 0 16 16" width="16" height="16" class="i"><circle cx="8" cy="8" r="2.2"/><path d="M8 2.5v1.6M8 11.9v1.6M13.5 8h-1.6M4.1 8H2.5M11.9 4.1l-1.1 1.1M5.2 10.8l-1.1 1.1M11.9 11.9l-1.1-1.1M5.2 5.2 4.1 4.1"/></svg></span>
+    <span style="margin-top:auto"></span>
+    <span class="rr" title="Guest session — take control to send"><svg viewBox="0 0 16 16" width="16" height="16" class="i" style="color:var(--warn)"><path d="M1.8 8S4 4.2 8 4.2 14.2 8 14.2 8 12 11.8 8 11.8 1.8 8 1.8 8z"/><circle cx="8" cy="8" r="1.8"/></svg></span>
+  </div>
+  <div class="colmain">
+    <div class="cbar">
+      <span class="navghost" style="gap:8px;max-width:320px;height:28px;padding:0 9px;border-radius:var(--r-sm);display:inline-flex;align-items:center">
+        <span style="width:6px;height:6px;border-radius:50%;background:var(--bad);flex:none"></span>
+        <svg viewBox="0 0 16 16" width="11" height="11" class="i" style="color:var(--ink3);flex:none"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>
+        <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink);font-weight:500">Denim Vault — Friday Night Drop</span>
+        <span style="font-size:11.5px;color:var(--ink3);flex:none">@northsidethrift</span>
+        <svg viewBox="0 0 16 16" width="11" height="11" class="i" style="opacity:.5;flex:none"><path d="M4.5 6.5 8 10l3.5-3.5"/></svg>
+      </span>
+      <span style="margin-left:auto;display:flex;align-items:center;gap:8px">
+        <span class="navghost" style="height:28px;padding:0 9px;border-radius:var(--r-sm);display:inline-flex;align-items:center;gap:6px;color:var(--ink3);width:200px">
+          <svg viewBox="0 0 16 16" width="12" height="12" class="i"><circle cx="7.2" cy="7.2" r="4"/><path d="M10.2 10.2 13.5 13.5"/></svg>Search or run a command
+          <span class="navkbd" style="margin-left:auto">&#8984;K</span>
+        </span>
+        <span class="navghost" style="height:28px;padding:0 9px;border-radius:var(--r-sm);display:inline-flex;align-items:center">end session</span>
+      </span>
+    </div>
+    <div class="navsub">
+    <span style="display:inline-flex;align-items:center;gap:6px;border:1px solid oklch(0.5468 0.2093 27.4/.4);background:oklch(0.5468 0.2093 27.4/.08);border-radius:var(--r-xs);padding:2px 7px">
+      <span class="anim" style="width:5px;height:5px;border-radius:50%;background:var(--bad)"></span>
+      <span style="font-size:11.5px;font-weight:600;letter-spacing:.04em;color:var(--bad)">LIVE</span>
+      <span class="num" style="font-size:11px">01:12:36</span>
+    </span>
+    <span style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--ink2)">
+      <svg viewBox="0 0 16 16" width="12" height="12" class="i"><circle cx="6" cy="6" r="2.5"/><path d="M2 13.5c0-2.2 1.8-3.5 4-3.5s4 1.3 4 3.5"/><path d="M11 5.2a2.2 2.2 0 0 1 0 4.3M12 13.5c0-1.6-.6-2.6-1.6-3.2"/></svg>
+      <span class="num" style="color:var(--ink)">412</span><span class="num" style="color:var(--ok)">+18</span>
+    </span>
+    <span style="display:inline-flex;align-items:center;gap:6px">
+      <span style="font-size:11.5px;color:var(--ink3)">p95</span>
+      <span class="num" style="font-size:13px;color:var(--warn)">1840ms</span>
+      <span style="width:48px;height:3px;border-radius:2px;background:var(--line);overflow:hidden"><span style="display:block;height:100%;width:92%;background:var(--warn)"></span></span>
+    </span>
+    <span class="navghost" style="height:22px;font-size:11px"><span class="num">L1</span> Suggest <svg viewBox="0 0 16 16" width="10" height="10" class="i" style="opacity:.5"><path d="M4.5 6.5 8 10l3.5-3.5"/></svg></span>
+    <span class="navghost" style="height:22px;font-size:11px"><svg viewBox="0 0 16 16" width="11" height="11" class="i"><rect x="2.5" y="4" width="11" height="8.5" rx="1.5"/><path d="M10.5 8.2h3"/></svg><span class="num">$0.91</span> this show</span>
+    <span title="eBay Live watcher · last read 1.8s ago" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--ok)">
+      <span style="width:5px;height:5px;border-radius:50%;background:var(--ok)"></span>stream live
+    </span>
+    <span style="margin-left:auto;display:flex;align-items:center;gap:12px;font-size:11px;color:var(--ink3)">
+      <span>sent <span class="num" style="color:var(--ink2)">38</span></span>
+      <span>blocked <span class="num" style="color:var(--ink2)">2</span></span>
+      <span>undone <span class="num" style="color:var(--ink2)">1</span></span>
+      <span class="navghost" style="height:22px;font-size:11px">end session</span>
+    </span>
+  </div>
+
+  <!-- ── three columns ──────────────────────────────────────────────── -->
+  <div class="grid" style="position:relative">
+
+    <!-- toast rail: what just happened, and how to take it back -->
+    <div style="position:absolute;left:12px;bottom:12px;z-index:30;display:flex;flex-direction:column;gap:6px;width:292px">
+      <div style="display:flex;align-items:center;gap:8px;border:1px solid oklch(0.5421 0.1489 147.8/.4);background:var(--canvas);border-radius:var(--r-md);padding:8px 10px;box-shadow:var(--z3)">
+        <svg viewBox="0 0 16 16" width="13" height="13" class="i" style="color:var(--ok)"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg>
+        <span style="flex:1;min-width:0;font-size:11px">Stock on #007 set to 1</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line2);border-radius:3px;padding:1px 6px;font-size:11.5px;color:var(--ink2)">Undo <span class="num">18s</span></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;border:1px solid var(--line2);background:var(--canvas);border-radius:var(--r-md);padding:8px 10px;box-shadow:var(--z2)">
+        <svg viewBox="0 0 16 16" width="13" height="13" class="i" style="color:var(--ink3)"><path d="M3 8h9M9 4.5 12.5 8 9 11.5"/></svg>
+        <span style="flex:1;min-width:0;font-size:11px;color:var(--ink2)">Reply sent to carl_w</span>
+      </div>
+    </div>
+
+
+    <!-- LEFT: what is coming in ------------------------------------- -->
+    <div class="pane" style="background:var(--panel)">
+
+      <div class="pane" style="flex:2.7">
+        <div class="panehdr">
+          <span class="sh">Buyer chat</span>
+          <span style="display:flex;align-items:center;gap:8px">
+            <span class="num" style="font-size:11px;color:var(--ink3)">24/min</span>
+            <span style="display:flex;border:1px solid var(--line2);border-radius:var(--r-sm);overflow:hidden">
+              <span style="padding:2px 6px;font-size:11.5px;background:var(--elev);color:var(--ink)">all</span>
+              <span style="padding:2px 6px;font-size:11.5px;color:var(--ink3)">admitted</span>
+            </span>
+          </span>
+        </div>
+        <div style="flex:1;min-height:0;display:flex;flex-direction:column;justify-content:flex-end;padding:4px 0;overflow:hidden">
+          <div class="chatrow">
+            <div style="min-width:0;flex:1;font-size:12px"><span style="font-weight:500;color:var(--ink)">vintagevic</span> <span>how's the inseam on those</span></div>
+            <span style="display:inline-flex;align-items:center;gap:4px;border-radius:var(--r-sm);border:0;box-shadow:none;--unused:oklch(0.90 0.04 320);background:oklch(0.955 0.030 320);color:oklch(0.44 0.13 320);padding:0 6px;font-size:11.5px;line-height:16px;font-weight:500"><span style="width:4px;height:4px;border-radius:50%;background:currentColor"></span>sizing</span>
+          </div>
+          <div class="chatrow" style="background:var(--elev)">
+            <div style="min-width:0;flex:1;font-size:12px;opacity:.45"><span style="color:var(--ink3)">· </span><span style="font-weight:500;color:var(--ink)">ritu.p</span> <span>let's goooo</span></div>
+            <span title="Drafts a reply even though the gate dropped this one" style="display:inline-flex;align-items:center;gap:3px;border:1px solid var(--line2);background:var(--canvas);border-radius:3px;padding:0 4px;font-size:11px;color:var(--ink2)">
+              <svg viewBox="0 0 16 16" width="9" height="9" class="i"><path d="M3 3.5h10v7H8.5L6 13v-2.5H3z"/></svg>answer
+            </span>
+            <span style="display:inline-flex;align-items:center;gap:4px;border-radius:var(--r-sm);border:0;box-shadow:none;--unused:oklch(0.90 0.04 265);background:oklch(0.955 0.030 265);color:oklch(0.44 0.13 265);padding:0 6px;font-size:11.5px;line-height:16px;font-weight:500"><span style="width:4px;height:4px;border-radius:50%;border:1px solid currentColor;opacity:.5"></span>hype</span>
+          </div>
+          <div class="chatrow">
+            <div style="min-width:0;flex:1;font-size:12px"><span style="font-weight:500;color:var(--ink)">lo_fi_jim</span> <span>selvedge or no</span></div>
+            <span style="display:inline-flex;align-items:center;gap:4px;border-radius:var(--r-sm);border:0;background:var(--elev);color:var(--ink3);padding:0 6px;font-size:11.5px;line-height:16px;font-weight:500"><span style="width:4px;height:4px;border-radius:50%;background:currentColor"></span>other</span>
+          </div>
+          <div class="chatrow">
+            <div style="min-width:0;flex:1;font-size:12px"><span style="font-weight:500;color:var(--ink)">maya_k</span> <span>is the 505 still available?</span></div>
+            <span style="display:inline-flex;align-items:center;gap:4px;border-radius:var(--r-sm);border:0;box-shadow:none;--unused:oklch(0.90 0.04 145);background:oklch(0.955 0.030 145);color:oklch(0.44 0.13 145);padding:0 6px;font-size:11.5px;line-height:16px;font-weight:500"><span style="width:4px;height:4px;border-radius:50%;background:currentColor"></span>stock</span>
+          </div>
+          <div class="chatrow" style="border-left:2px solid var(--accent);padding-left:10px;background:oklch(0.9642 0.0038 264.5/.6)">
+            <div style="min-width:0;flex:1;font-size:12px"><span style="font-weight:500;color:var(--ink)">carl_w</span> <span>does it ship to canada</span></div>
+            <span style="display:inline-flex;align-items:center;gap:4px;border-radius:var(--r-sm);border:0;box-shadow:none;--unused:oklch(0.90 0.04 235);background:oklch(0.955 0.030 235);color:oklch(0.44 0.13 235);padding:0 6px;font-size:11.5px;line-height:16px;font-weight:500"><span style="width:4px;height:4px;border-radius:50%;background:currentColor"></span>shipping</span>
+          </div>
+          <div class="chatrow">
+            <div style="min-width:0;flex:1;font-size:12px"><span style="font-weight:500;color:var(--ink)">s_okafor</span> <span>would you do 120 for the trucker</span></div>
+            <span style="display:inline-flex;align-items:center;gap:4px;border-radius:var(--r-sm);border:0;box-shadow:none;--unused:oklch(0.90 0.04 340);background:oklch(0.955 0.030 340);color:oklch(0.44 0.13 340);padding:0 6px;font-size:11.5px;line-height:16px;font-weight:500"><span style="width:4px;height:4px;border-radius:50%;background:currentColor"></span>discount</span>
+          </div>
+          <div class="chatrow">
+            <div style="min-width:0;flex:1;font-size:12px"><span style="font-weight:500;color:var(--ink)">dnm_hunter</span> <span>what waist is the one on the left</span></div>
+            <span style="display:inline-flex;align-items:center;gap:4px;border-radius:var(--r-sm);border:0;box-shadow:none;--unused:oklch(0.90 0.04 320);background:oklch(0.955 0.030 320);color:oklch(0.44 0.13 320);padding:0 6px;font-size:11.5px;line-height:16px;font-weight:500"><span style="width:4px;height:4px;border-radius:50%;background:currentColor"></span>sizing</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- host audio -->
+      <div class="pane" style="flex:2.3;border-top:1px solid var(--line)">
+        <div class="panehdr">
+          <span style="display:flex;align-items:center;gap:8px">
+            <svg viewBox="0 0 16 16" width="13" height="13" class="i" style="color:var(--ok)"><rect x="6" y="2.5" width="4" height="7" rx="2"/><path d="M3.8 8a4.2 4.2 0 0 0 8.4 0M8 12.2V14"/></svg>
+            <span class="sh" style="letter-spacing:.14em">Host audio</span>
+            <span style="font-size:11px;color:var(--ink2)">· 505 orange tab</span>
+          </span>
+          <span style="font-size:11px;color:var(--accent)">bridge</span>
+        </div>
+        <div style="flex:none;border-bottom:1px solid var(--line);padding:6px 8px">
+          <svg viewBox="0 0 276 64" width="276" height="64" style="width:100%;height:64px">
+<!--include:_wave.frag-->
+            <rect x="0" y="31.6" width="276" height="1" fill="oklch(0.88 0.004 255 / 0.8)"/>
+          </svg>
+        </div>
+        <div style="flex:1;min-height:0;padding:8px 12px;overflow:hidden">
+          <div style="display:flex;align-items:baseline;gap:8px">
+            <span class="num" style="font-size:11.5px;color:var(--ink3)">21:47:03</span>
+            <span style="font-size:11.5px;color:var(--ok)">live</span>
+            <span class="num" style="margin-left:auto;font-size:11.5px;color:var(--ink3)">168 wpm</span>
+          </div>
+          <p style="margin-top:2px;font-size:12px;line-height:1.55">…orange tab, thirty-four thirty-two, and this is the last one I have in this waist — hardly any fade at the knee.</p>
+          <div style="margin-top:6px;display:grid;grid-template-columns:1fr 1fr;gap:5px 12px">
+            <div style="min-width:0">
+              <div style="display:flex;align-items:baseline;justify-content:space-between">
+                <span style="font-size:11px;color:var(--ink3)">emotion</span>
+              </div>
+              <div style="margin-top:2px;display:flex;flex-direction:column;gap:2px">
+                <div style="display:flex;align-items:center;gap:4px"><span class="num" style="width:46px;font-size:11px;color:var(--ink2)">excited</span><span class="bar"><span style="display:block;height:100%;width:61%;background:oklch(0.58 0.15 145);border-radius:2px"></span></span><span class="num" style="width:22px;text-align:right;font-size:11px;color:var(--ink3)">0.61</span></div>
+                <div style="display:flex;align-items:center;gap:4px"><span class="num" style="width:46px;font-size:11px;color:var(--ink2)">happy</span><span class="bar"><span style="display:block;height:100%;width:24%;background:oklch(0.72 0.01 255);border-radius:2px"></span></span><span class="num" style="width:22px;text-align:right;font-size:11px;color:var(--ink3)">0.24</span></div>
+                <div style="display:flex;align-items:center;gap:4px"><span class="num" style="width:46px;font-size:11px;color:var(--ink2)">neutral</span><span class="bar"><span style="display:block;height:100%;width:11%;background:oklch(0.72 0.01 255);border-radius:2px"></span></span><span class="num" style="width:22px;text-align:right;font-size:11px;color:var(--ink3)">0.11</span></div>
+              </div>
+            </div>
+            <div style="min-width:0">
+              <div style="display:flex;align-items:baseline;justify-content:space-between">
+                <span style="font-size:11px;color:var(--ink3)">intent</span>
+                <span style="border:1px solid oklch(0.5812 0.1264 71.5/.4);border-radius:3px;padding:0 4px;font-size:11px;color:var(--warn)">flip</span>
+              </div>
+              <div style="margin-top:2px;display:flex;flex-direction:column;gap:2px">
+                <div style="display:flex;align-items:center;gap:4px"><span class="num" style="width:46px;font-size:11px;color:var(--ink2)">inform</span><span class="bar"><span style="display:block;height:100%;width:54%;background:oklch(0.58 0.15 145);border-radius:2px"></span></span><span class="num" style="width:22px;text-align:right;font-size:11px;color:var(--ink3)">0.54</span></div>
+                <div style="display:flex;align-items:center;gap:4px"><span class="num" style="width:46px;font-size:11px;color:var(--ink2)">command</span><span class="bar"><span style="display:block;height:100%;width:31%;background:oklch(0.72 0.01 255);border-radius:2px"></span></span><span class="num" style="width:22px;text-align:right;font-size:11px;color:var(--ink3)">0.31</span></div>
+                <div style="display:flex;align-items:center;gap:4px"><span class="num" style="width:46px;font-size:11px;color:var(--ink2)">query</span><span class="bar"><span style="display:block;height:100%;width:9%;background:oklch(0.72 0.01 255);border-radius:2px"></span></span><span class="num" style="width:22px;text-align:right;font-size:11px;color:var(--ink3)">0.09</span></div>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:6px;border-top:1px solid var(--line);padding-top:6px;display:flex;flex-direction:column;gap:5px">
+            <div style="display:flex;align-items:flex-start;gap:6px">
+              <svg viewBox="0 0 16 16" width="12" height="12" class="i" style="margin-top:2px;color:var(--ink3)"><path d="M1.8 8S4 4.2 8 4.2 14.2 8 14.2 8 12 11.8 8 11.8 1.8 8 1.8 8z"/><circle cx="8" cy="8" r="1.8"/></svg>
+              <div style="min-width:0">
+                <div style="font-size:11.5px;color:var(--ink3)">on camera</div>
+                <div style="font-size:11px;line-height:1.4">Dark-wash jeans held up, red tab at the hip; price card reads 148.</div>
+              </div>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:4px">
+              <span class="chip" style="font-size:11.5px">tone · selling hard</span>
+              <span style="border:1px solid oklch(0.5487 0.1908 262.3/.4);background:oklch(0.5487 0.1908 262.3/.05);color:var(--accent);border-radius:3px;padding:1px 6px;font-size:11.5px">sounds · excited 61%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CENTER: the proposal queue ---------------------------------- -->
+    <div class="pane">
+      <div class="panehdr">
+        <span class="sh">Proposals</span>
+        <span style="display:flex;align-items:center;gap:8px">
+          <span style="display:flex;border:1px solid var(--line2);border-radius:var(--r-sm);overflow:hidden">
+            <span class="num" style="padding:2px 7px;font-size:11.5px;background:var(--elev);color:var(--ink)">2 awaiting</span>
+            <span class="num" style="padding:2px 7px;font-size:11.5px;color:var(--ink3);border-left:1px solid var(--line2)">1 blocked</span>
+            <span class="num" style="padding:2px 7px;font-size:11.5px;color:var(--ink3);border-left:1px solid var(--line2)">3 unanswerable</span>
+          </span>
+          <span style="font-size:11px;color:var(--ink3)">J/K move · Enter send · E edit · X dismiss · R regenerate</span>
+        </span>
+      </div>
+
+      <div style="flex:1;min-height:0;padding:12px;overflow:hidden;display:flex;flex-direction:column;gap:8px">
+
+        <!-- focused, clean -->
+        <div class="card card-f" style="position:relative">
+          <div style="display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line);padding:6px 12px">
+            <span class="num" style="font-size:11px;color:var(--ink3)">8s ago</span>
+            <span style="display:inline-flex;align-items:center;gap:4px;border-radius:var(--r-sm);border:0;box-shadow:none;--unused:oklch(0.90 0.04 235);background:oklch(0.955 0.030 235);color:oklch(0.44 0.13 235);padding:0 6px;font-size:11.5px;line-height:16px;font-weight:500">shipping</span>
+            <span style="margin-left:auto;display:flex;align-items:center;gap:8px">
+              <span style="display:flex;align-items:center;gap:4px">
+                <span class="num" style="font-size:11px;color:var(--ink2)">0.86</span>
+                <span style="display:flex;gap:2px">
+                  <span style="width:4px;height:8px;border-radius:1px;background:var(--ok)"></span>
+                  <span style="width:4px;height:8px;border-radius:1px;background:var(--ok)"></span>
+                  <span style="width:4px;height:8px;border-radius:1px;background:var(--ok)"></span>
+                </span>
+              </span>
+              <span class="num" style="font-size:11px;color:var(--ink3)">1.42s</span>
+            </span>
+          </div>
+          <div style="padding:12px;display:flex;flex-direction:column;gap:10px">
+            <blockquote style="margin:0;border-left:2px solid var(--line2);padding-left:10px">
+              <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--ink3)">
+                <svg viewBox="0 0 16 16" width="11" height="11" class="i"><path d="M3 3.5h10v7H8.5L6 13v-2.5H3z"/></svg>
+                carl_w
+              </span>
+              <p style="font-size:12px;color:var(--ink2)">does it ship to canada</p>
+            </blockquote>
+            <p style="font-size:14px;line-height:1.4">Yes — Canada ships at a flat $18.50, and it goes out within one business day of the show ending.</p>
+            <div style="display:flex;flex-wrap:wrap;gap:6px">
+              <span class="ev"><svg viewBox="0 0 16 16" width="11" height="11" class="i" style="color:var(--ink3)"><path d="M3 3.5h10v9H3z"/><path d="M8 3.5v9"/></svg>shipping policy · intl rate</span>
+              <span class="ev"><svg viewBox="0 0 16 16" width="11" height="11" class="i" style="color:var(--ink3)"><path d="M3 3.5h10v9H3z"/><path d="M8 3.5v9"/></svg>handling time</span>
+              <span class="ev"><svg viewBox="0 0 16 16" width="11" height="11" class="i" style="color:var(--ink3)"><path d="M2.8 8.3 8 3h5v5l-5.3 5.2a1 1 0 0 1-1.4 0L2.8 9.7a1 1 0 0 1 0-1.4z"/><circle cx="10.3" cy="5.7" r=".9"/></svg>lot #007 · v13</span>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:4px">
+              <span class="g g-na"><span class="num">–</span>price</span>
+              <span class="g g-na"><span class="num">–</span>stock</span>
+              <span class="g g-ok"><span class="num">✓</span>policy</span>
+              <span class="g g-ok"><span class="num">✓</span>grounding</span>
+              <span class="g g-ok"><span class="num">✓</span>tone</span>
+              <span class="g g-ok"><span class="num">✓</span>pii</span>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding-top:2px">
+              <span class="btn btn-p">Send <span class="kbd" style="border-color:oklch(0.99 0 0/.4);background:transparent;color:oklch(0.99 0 0/.8)">⏎</span></span>
+              <span class="btn btn-s">Edit <span class="kbd">E</span></span>
+              <span class="btn btn-g">Dismiss <span class="kbd">X</span></span>
+              <span class="btn btn-g">Regenerate <span class="kbd">R</span></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- blocked: the stale price -->
+        <div class="card" style="position:relative;overflow:hidden">
+          <span style="position:absolute;top:0;bottom:0;left:0;width:3px;background:var(--bad)"></span>
+          <div style="display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line);padding:6px 12px">
+            <span class="num" style="font-size:11px;color:var(--ink3)">31s ago</span>
+            <span style="display:inline-flex;align-items:center;gap:4px;border-radius:var(--r-sm);border:0;box-shadow:none;--unused:oklch(0.90 0.04 340);background:oklch(0.955 0.030 340);color:oklch(0.44 0.13 340);padding:0 6px;font-size:11.5px;line-height:16px;font-weight:500">discount</span>
+            <span style="border:1px solid oklch(0.5812 0.1264 71.5/.45);background:oklch(0.5812 0.1264 71.5/.12);color:var(--warn);border-radius:var(--r-sm);padding:0 6px;font-size:11.5px">repaired</span>
+            <span style="margin-left:auto;display:flex;align-items:center;gap:8px">
+              <span style="display:flex;align-items:center;gap:4px">
+                <span class="num" style="font-size:11px;color:var(--ink2)">0.26</span>
+                <span style="display:flex;gap:2px">
+                  <span style="width:4px;height:8px;border-radius:1px;background:var(--bad)"></span>
+                  <span style="width:4px;height:8px;border-radius:1px;background:var(--line)"></span>
+                  <span style="width:4px;height:8px;border-radius:1px;background:var(--line)"></span>
+                </span>
+              </span>
+              <span class="num" style="font-size:11px;color:var(--ink3)">1.91s</span>
+            </span>
+          </div>
+          <div style="padding:12px;display:flex;flex-direction:column;gap:10px">
+            <blockquote style="margin:0;border-left:2px solid var(--line2);padding-left:10px">
+              <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--ink3)">
+                <svg viewBox="0 0 16 16" width="11" height="11" class="i"><path d="M3 3.5h10v7H8.5L6 13v-2.5H3z"/></svg>
+                s_okafor
+              </span>
+              <p style="font-size:12px;color:var(--ink2)">would you do 120 for the trucker</p>
+            </blockquote>
+            <p style="font-size:14px;line-height:1.4;color:var(--ink3);text-decoration:line-through">I can do $132.00 on the trucker jacket if you want it — that's the best I can go tonight.</p>
+            <p style="display:flex;align-items:flex-start;gap:6px;border:1px solid oklch(0.5468 0.2093 27.4/.4);background:oklch(0.5468 0.2093 27.4/.08);border-radius:var(--r-sm);padding:6px 8px;font-size:12px;color:var(--bad)">
+              <svg viewBox="0 0 16 16" width="13" height="13" class="i" style="margin-top:2px"><path d="M8 2.2 13 4v4c0 3-2.2 5.2-5 6-2.8-.8-5-3-5-6V4l5-1.8z"/><path d="M8 6v3M8 10.8v.2"/></svg>
+              <span>Blocked by the <strong>price</strong> guard — the amount was read from listing v12; the listing is now v13.
+                <span class="num" style="display:block;padding-top:2px;font-size:11px;color:var(--ink2)">expected $148.00 · found $132.00</span>
+              </span>
+            </p>
+            <div style="display:flex;flex-wrap:wrap;gap:6px">
+              <span class="ev"><svg viewBox="0 0 16 16" width="11" height="11" class="i" style="color:var(--ink3)"><path d="M2.8 8.3 8 3h5v5l-5.3 5.2a1 1 0 0 1-1.4 0L2.8 9.7a1 1 0 0 1 0-1.4z"/><circle cx="10.3" cy="5.7" r=".9"/></svg>lot #012 · v12</span>
+              <span class="ev"><svg viewBox="0 0 16 16" width="11" height="11" class="i" style="color:var(--ink3)"><path d="M3 3.5h10v9H3z"/><path d="M8 3.5v9"/></svg>discount floor</span>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:4px">
+              <span class="g g-bad"><span class="num">✕</span>price</span>
+              <span class="g g-ok"><span class="num">✓</span>stock</span>
+              <span class="g g-warn"><span class="num">!</span>policy</span>
+              <span class="g g-ok"><span class="num">✓</span>grounding</span>
+              <span class="g g-ok"><span class="num">✓</span>tone</span>
+              <span class="g g-ok"><span class="num">✓</span>pii</span>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding-top:2px">
+              <span class="btn btn-s">Edit <span class="kbd">E</span></span>
+              <span class="btn btn-g">Dismiss <span class="kbd">X</span></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- the gaps -->
+        <div style="border:1px solid var(--line);border-radius:var(--r-md);background:oklch(0.9848 0.0018 264.5/.6);padding:8px">
+          <div style="font-size:11.5px;color:var(--ink3)">asked · nothing to ground an answer</div>
+          <ul style="margin-top:4px;display:flex;flex-direction:column;gap:2px">
+            <li style="display:flex;align-items:baseline;gap:8px;font-size:11px"><span style="color:var(--ink3)">lo_fi_jim</span><span style="color:var(--ink2)">selvedge or no</span></li>
+            <li style="display:flex;align-items:baseline;gap:8px;font-size:11px"><span style="color:var(--ink3)">bex__</span><span style="color:var(--ink2)">any chance of a 32 waist later tonight</span></li>
+            <li style="display:flex;align-items:baseline;gap:8px;font-size:11px"><span style="color:var(--ink3)">dnm_hunter</span><span style="color:var(--ink2)">is the trucker a type III</span></li>
+          </ul>
+        </div>
+
+        <div>
+          <div class="sh" style="margin-bottom:4px;padding:0 4px">Recent</div>
+          <ul style="border:1px solid var(--line);border-radius:var(--r-md);background:var(--panel);overflow:hidden">
+            <li style="display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line);padding:6px 12px;font-size:12px">
+              <svg viewBox="0 0 16 16" width="13" height="13" class="i" style="color:var(--ok)"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg>
+              <span style="flex:1;min-width:0;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Still available — one left in 34×32, and it's the last one in that waist tonight.</span>
+              <span class="chip" style="padding:2px 7px;font-size:11.5px;color:var(--ink3)">
+                <svg viewBox="0 0 16 16" width="11" height="11" class="i"><path d="M4 14V3.2M4 3.2h7.2l-.9 2.4.9 2.4H4"/></svg>wrong?
+              </span>
+              <span class="num" style="font-size:11px;color:var(--ink3)">1.18s</span>
+            </li>
+            <li style="display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line);padding:6px 12px;font-size:12px">
+              <svg viewBox="0 0 16 16" width="13" height="13" class="i" style="color:var(--ok)"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg>
+              <span style="flex:1;min-width:0;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Returns are 30 days, buyer pays return shipping.</span>
+              <span class="chip" style="padding:2px 7px;font-size:11.5px;color:var(--ink3)">
+                <svg viewBox="0 0 16 16" width="11" height="11" class="i"><path d="M4 14V3.2M4 3.2h7.2l-.9 2.4.9 2.4H4"/></svg>wrong?
+              </span>
+              <span class="num" style="font-size:11px;color:var(--ink3)">0.94s</span>
+            </li>
+            <li style="display:flex;align-items:center;gap:8px;padding:6px 12px;font-size:12px">
+              <svg viewBox="0 0 16 16" width="13" height="13" class="i" style="color:var(--ok)"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg>
+              <span style="flex:1;min-width:0;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Waist measures 34 flat across, inseam 32.</span>
+              <span class="chip" style="padding:2px 7px;font-size:11.5px;color:var(--ink3)">
+                <svg viewBox="0 0 16 16" width="11" height="11" class="i"><path d="M4 14V3.2M4 3.2h7.2l-.9 2.4.9 2.4H4"/></svg>wrong?
+              </span>
+              <span class="num" style="font-size:11px;color:var(--ink3)">1.36s</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: the show rail ---------------------------------------- -->
+    <div class="pane" style="background:var(--panel)">
+
+      <div style="flex:none;border-bottom:1px solid var(--line)">
+        <div class="panehdr"><span class="sh">Pinned lot</span>
+          <span style="display:flex;align-items:center;gap:6px">
+            <span title="Tell the copilot what is actually on screen — named from host speech and the camera, and sometimes wrong" style="display:inline-flex;align-items:center;gap:3px;border:1px solid var(--line2);border-radius:3px;padding:0 5px;font-size:11px;color:var(--ink2)">
+              <svg viewBox="0 0 16 16" width="9" height="9" class="i"><path d="M11.2 3.3 12.7 4.8 5.5 12H4v-1.5z"/></svg>not this lot?
+            </span>
+            <span class="num" style="font-size:11px;color:var(--ink3)">v13</span>
+          </span>
+        </div>
+        <div style="display:flex;gap:12px;padding:12px">
+          <div style="width:64px;height:64px;flex:none;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--elev);color:var(--ink3)">
+            <svg viewBox="0 0 16 16" width="20" height="20" class="i"><path d="M2.8 8.3 8 3h5v5l-5.3 5.2a1 1 0 0 1-1.4 0L2.8 9.7a1 1 0 0 1 0-1.4z"/><circle cx="10.3" cy="5.7" r=".9"/></svg>
+          </div>
+          <div style="min-width:0;flex:1">
+            <div style="display:flex;align-items:flex-start;gap:4px">
+              <svg viewBox="0 0 16 16" width="12" height="12" class="i" style="margin-top:2px;color:var(--accent)"><path d="M6 2h4l-.6 4 2.1 2.2H4.5L6.6 6 6 2zM8 8.2V14"/></svg>
+              <p style="font-size:12px;line-height:1.35;font-weight:500">#007 — Levi's 505 Orange Tab, 34×32, dark wash</p>
+            </div>
+            <div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:4px">
+              <span class="chip" style="font-size:11.5px">size 34</span>
+              <span class="chip" style="font-size:11.5px">very good</span>
+            </div>
+            <div class="num" style="margin-top:6px;font-size:20px;line-height:1">$142.00</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;border-top:1px solid var(--line);padding:6px 12px;font-size:11px;color:var(--ink3)">
+          <span>stock <span class="num" style="color:var(--ink2)">1</span></span>
+          <span>sold <span class="num" style="color:var(--ink2)">0</span></span>
+          <span>views <span class="num" style="color:var(--ink2)">2104</span></span>
+        </div>
+        <div style="display:flex;gap:6px;border-top:1px solid var(--line);padding:8px 12px">
+          <span style="width:56px"><span style="display:block;height:40px;border:1px solid var(--line);border-radius:3px;background:var(--elev)"></span><span class="num" style="display:block;margin-top:2px;font-size:11.5px;color:var(--ink2)">$132</span></span>
+          <span style="width:56px"><span style="display:block;height:40px;border:1px solid var(--line);border-radius:3px;background:var(--elev)"></span><span class="num" style="display:block;margin-top:2px;font-size:11.5px;color:var(--ink2)">$96</span></span>
+          <span style="width:56px"><span style="display:block;height:40px;border:1px solid var(--line);border-radius:3px;background:var(--elev)"></span><span class="num" style="display:block;margin-top:2px;font-size:11.5px;color:var(--ink2)">$210</span></span>
+          <span style="width:56px"><span style="display:block;height:40px;border:1px solid var(--line);border-radius:3px;background:var(--elev)"></span><span class="num" style="display:block;margin-top:2px;font-size:11.5px;color:var(--ink2)">$74</span></span>
+        </div>
+      </div>
+
+      <div class="pane" style="flex:1.2;border-bottom:1px solid var(--line)">
+        <div class="panehdr"><span class="sh">Actions</span><span class="num" style="font-size:11px;color:var(--ink2)">1 pending</span></div>
+        <div style="flex:1;min-height:0;padding:8px;overflow:hidden;display:flex;flex-direction:column;gap:8px">
+          <div style="border:1px solid var(--line);border-radius:var(--r-md);background:var(--panel);padding:10px">
+            <div style="display:flex;align-items:flex-start;gap:8px">
+              <svg viewBox="0 0 16 16" width="13" height="13" class="i" style="margin-top:2px;color:var(--ink3)"><path d="M2.8 8.3 8 3h5v5l-5.3 5.2a1 1 0 0 1-1.4 0L2.8 9.7a1 1 0 0 1 0-1.4z"/><circle cx="10.3" cy="5.7" r=".9"/></svg>
+              <p style="font-size:12px;line-height:1.35">Mark #012 Trucker Jacket down to $138.00 (−7%)</p>
+            </div>
+            <p style="margin-top:4px;padding-left:21px;font-size:11px;color:var(--ink3)">Three discount asks in four minutes and no bid since 21:39.</p>
+            <ul style="margin-top:6px;padding-left:21px;display:flex;flex-direction:column;gap:2px">
+              <li style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink2)"><svg viewBox="0 0 16 16" width="11" height="11" class="i" style="color:var(--ok)"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg>floor price <span class="num" style="color:var(--ink3)">($138 ≥ $125)</span></li>
+              <li style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink2)"><svg viewBox="0 0 16 16" width="11" height="11" class="i" style="color:var(--ok)"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg>discount cap <span class="num" style="color:var(--ink3)">(7% ≤ 15%)</span></li>
+              <li style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink2)"><svg viewBox="0 0 16 16" width="11" height="11" class="i" style="color:var(--ok)"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg>action budget <span class="num" style="color:var(--ink3)">(4 of 12)</span></li>
+            </ul>
+            <div style="margin-top:8px;display:flex;align-items:center;gap:6px;padding-left:21px">
+              <span class="btn btn-p" style="height:24px">Approve</span>
+              <span class="btn btn-g" style="height:24px">Reject</span>
+              <span class="num" style="margin-left:auto;font-size:11.5px;color:var(--ink3)">mkdn-012-a41f9…</span>
+            </div>
+          </div>
+
+          <div style="border:1px solid oklch(0.5421 0.1489 147.8/.35);border-radius:var(--r-md);background:oklch(0.5421 0.1489 147.8/.06);padding:10px">
+            <div style="display:flex;align-items:flex-start;gap:8px">
+              <svg viewBox="0 0 16 16" width="13" height="13" class="i" style="margin-top:2px;color:var(--ink3)"><path d="M2.8 8.3 8 3h5v5l-5.3 5.2a1 1 0 0 1-1.4 0L2.8 9.7a1 1 0 0 1 0-1.4z"/><circle cx="10.3" cy="5.7" r=".9"/></svg>
+              <p style="font-size:12px;line-height:1.35">Set #007 stock to 1 — two were reserved off-platform</p>
+            </div>
+            <div style="margin-top:8px;display:flex;align-items:center;gap:6px;padding-left:21px">
+              <span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--ok)"><svg viewBox="0 0 16 16" width="11" height="11" class="i"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg>committed</span>
+              <span class="btn btn-s" style="height:24px"><svg viewBox="0 0 16 16" width="11" height="11" class="i"><path d="M3.5 6.5h6a3.5 3.5 0 0 1 0 7H7"/><path d="M6 4 3.5 6.5 6 9"/></svg>Undo · <span class="num">18s</span></span>
+              <span class="num" style="margin-left:auto;font-size:11.5px;color:var(--ink3)">stk-007-77c0b2…</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pane" style="flex:1">
+        <div class="panehdr">
+          <span class="sh">Audit</span>
+          <span style="display:flex;align-items:center;gap:8px">
+            <span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--ink3)">
+              <svg viewBox="0 0 16 16" width="11" height="11" class="i"><path d="M7 9a3 3 0 0 0 4.2 0l1.3-1.3a3 3 0 0 0-4.2-4.2L7.6 4.2"/><path d="M9 7a3 3 0 0 0-4.2 0L3.5 8.3a3 3 0 0 0 4.2 4.2l.7-.7"/></svg>
+              <span class="num">h147</span>
+            </span>
+            <span class="btn btn-g" style="height:24px;font-size:11px">Verify chain</span>
+          </span>
+        </div>
+        <p style="display:flex;align-items:center;gap:4px;padding:4px 12px;font-size:11px;color:var(--ok)">
+          <svg viewBox="0 0 16 16" width="11" height="11" class="i"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg>
+          chain intact (147 entries)
+        </p>
+        <ul style="flex:1;min-height:0;overflow:hidden">
+          <li class="auditrow"><span class="num" style="font-size:11.5px;color:var(--ink3)">21:46:58</span><span class="chip" style="font-size:11.5px">operator</span><span style="flex:1;min-width:0;font-size:11px;color:var(--ok);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">reply sent to carl_w</span></li>
+          <li class="auditrow"><span class="num" style="font-size:11.5px;color:var(--ink3)">21:46:31</span><span class="chip" style="font-size:11.5px">copilot</span><span style="flex:1;min-width:0;font-size:11px;color:var(--bad);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">reply blocked · price v12 ≠ v13</span></li>
+          <li class="auditrow"><span class="num" style="font-size:11.5px;color:var(--ink3)">21:45:02</span><span class="chip" style="font-size:11.5px">operator</span><span style="flex:1;min-width:0;font-size:11px;color:var(--ok);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">action committed · stock #007 → 1</span></li>
+          <li class="auditrow"><span class="num" style="font-size:11.5px;color:var(--ink3)">21:44:40</span><span class="chip" style="font-size:11.5px">copilot</span><span style="flex:1;min-width:0;font-size:11px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">lot observed · #012 went live at $142.00</span></li>
+          <li class="auditrow"><span class="num" style="font-size:11.5px;color:var(--ink3)">21:43:11</span><span class="chip" style="font-size:11.5px">operator</span><span style="flex:1;min-width:0;font-size:11px;color:var(--warn);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">action rolled back · markdown #004</span></li>
+          <li class="auditrow"><span class="num" style="font-size:11.5px;color:var(--ink3)">21:42:55</span><span class="chip" style="font-size:11.5px">copilot</span><span style="flex:1;min-width:0;font-size:11px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">autonomy set to L1 · suggest</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  </div>
+</div>

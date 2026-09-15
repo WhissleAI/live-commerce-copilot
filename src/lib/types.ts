@@ -56,15 +56,26 @@ export interface CatalogSummary {
 /** A show this backend is watching. */
 export interface ShowSummary {
   showId: string;
+  /** The Whissle agent answering for this show — one per stream. */
+  agentId?: string;
+  catalogId?: string | null;
   title: string;
   sellerHandle: string;
   source: "simulated" | "ebaylive";
   externalId: string | null;
   readOnly: boolean;
+  /** Where approved writes actually land. Shown, never inferred. */
+  writeTarget?: "mock" | "ebay";
   status: "live" | "ended";
+  /** When it went on air — the live strip counts from this. */
+  startedAt: string;
   viewers: number;
   listings: number;
   proposals: number;
+  /** What is waiting for the operator, so a screen that is not the console can
+   *  still say "2 awaiting · 1 blocked". */
+  awaiting?: number;
+  blocked?: number;
 }
 
 /**
@@ -298,10 +309,16 @@ export interface ShowContext {
 
 export interface Comp {
   title: string;
-  soldPriceCents: number;
-  soldAt: string;
+  /** What this comparable is priced at, on the basis below. */
+  priceCents: number;
+  /** When it sold. Null for an active listing, which has not. */
+  soldAt: string | null;
   condition: string;
   size: string;
+  /** `sold` is what someone paid; `asking` is what someone hopes for. They move
+   *  differently and a seller prices against them differently. */
+  basis: "sold" | "asking";
+  url?: string;
 }
 
 export interface ResearchCard {
@@ -310,6 +327,9 @@ export interface ResearchCard {
   headline: string;
   comps: Comp[];
   medianCents: number;
+  /** What `medianCents` is a median OF. "none" when nothing was found. */
+  marketBasis: "sold" | "asking" | "none";
+  marketSource: "ebay-sold" | "ebay-active" | "seeded" | "checking" | "none";
   suggestion: string;
   specDiff?: { attribute: string; ours: string; theirs: string }[];
   latencyMs: number;
@@ -323,6 +343,8 @@ export interface HelloPayload {
   catalogId?: string | null;
   show: ShowState;
   listings: Listing[];
+  /** The tail of the firehose, so a console opened mid-show is not blank. */
+  chat?: ChatMessage[];
   proposals: ReplyProposal[];
   actions: ActionProposal[];
   audit: AuditEntry[];
@@ -342,7 +364,44 @@ export type StreamEvent =
   | { type: "listing"; data: Listing }
   | { type: "audit"; data: AuditEntry }
   | { type: "metrics"; data: Metrics }
-  | { type: "context"; data: ShowContext };
+  | { type: "context"; data: ShowContext }
+  // Ingest health from the eBay Live watcher. Emitted since the watcher was
+  // written and never subscribed to, so a stream that stopped reading the lot
+  // card looked exactly like a quiet chat.
+  | { type: "source"; data: SourceStatus }
+  // What this show has cost against the seller's cap, and whether the cap has
+  // stopped the copilot drafting. Server-side: the console never computes it.
+  | { type: "budget"; data: BudgetState }
+  // The server says so when the show id it was asked for does not exist. The
+  // browser used to ignore it and sit on an empty stream forever.
+  | { type: "stream_error"; data: { error: string } };
+
+/**
+ * The seller's per-show spend cap, and where this show stands against it.
+ *
+ * `spentUsd` is an upper bound, not an invoice: spend is a wallet delta and the
+ * wallet is workspace-wide. Every surface that renders it says so.
+ */
+export interface BudgetState {
+  showId?: string;
+  spentUsd: number | null;
+  capUsd: number | null;
+  capped: boolean;
+  balanceUsd: number | null;
+  lowBalance: boolean;
+  readAt: string | null;
+  error: string | null;
+}
+
+/** What the ingest watcher is doing, as reported by the server. */
+export interface SourceStatus {
+  source: "ebaylive" | "simulated" | string;
+  eventId?: string;
+  state?: "connecting" | "connected" | "failing" | "stopped";
+  detail?: string;
+  lastReadAt?: string;
+  consecutiveFailures?: number;
+}
 
 export type ConnectionState = "connecting" | "open" | "reconnecting";
 
@@ -385,13 +444,26 @@ export interface DoorReport {
   meanMs: number;
 }
 
-export type GatewayDoor = "chat_turn" | "utility_turn" | "voice_start" | "kb_upload" | "billing";
+export type GatewayDoor =
+  | "chat_turn"
+  | "utility_turn"
+  | "voice_start"
+  | "kb_upload"
+  | "billing"
+  // Camera reads. The meter has counted these since visual perception shipped;
+  // the client's door list did not include it, so every frame was metered and
+  // then displayed nowhere.
+  | "visual_read";
 
 export interface BillingSnapshot {
   wallet: Wallet | null;
   /** Why a read failed. A missing scope and a zero balance are different facts. */
   walletError: { status: number; message: string } | null;
-  usage: { days: number; totals: UsageTotal[]; daily: { day: string; service: string; quantity: number }[] } | null;
+  usage: {
+    days: number;
+    totals: UsageTotal[];
+    daily: { day: string; service: string; quantity: number }[];
+  } | null;
   usageError: { status: number; message: string } | null;
   meter: {
     since: string;
@@ -409,6 +481,7 @@ export interface Account {
   kind: "guest" | "seller";
   handle: string;
   displayName: string;
+  email?: string | null;
 }
 
 // ── settings ────────────────────────────────────────────────────────────────
@@ -434,6 +507,27 @@ export interface SellerGuardrailPolicy {
   hypePhrases: string[];
   languageMode: "auto" | "fixed";
   holdForApproval: string[];
+
+  /** What the copilot may use. Each source off is a class of question it will
+   *  abstain on rather than guess at — and the switch is honoured at the door,
+   *  not in the UI. */
+  ingest: {
+    hostAudio: boolean;
+    cameraFrames: boolean;
+    webResearch: boolean;
+    priorAnswers: boolean;
+  };
+
+  /** How much it may do on its own. All of these were env-only until now, so
+   *  changing where a show starts meant editing a file and restarting. */
+  automation: {
+    startingRung: "L0_OBSERVE" | "L1_SUGGEST" | "L2_ONE_TAP" | "L3_AUTO_REPLY" | "L4_AUTO_ACT";
+    confidenceFloor: number;
+    undoWindowS: number;
+    actionBudget: number;
+    warnBalanceUsd: number;
+    perShowCapUsd: number | null;
+  };
 }
 
 /** What the gateway reports as armed after a push — read back, not assumed. */
@@ -482,6 +576,62 @@ export interface AgentActivity {
   error?: string;
 }
 
+/** Analytics across every finished show in a window. Every number is a sum
+ *  or a rate over persisted reports — it exists whether or not a show is live
+ *  and it is the same number tomorrow. */
+export interface AnalyticsOverview {
+  window: { days: number; from: string; to: string };
+  shows: { finished: number; withoutReport: number; hoursOnAir: number };
+  engagement: {
+    commentsSeen: number;
+    questionsAsked: number;
+    answered: number;
+    sent: number;
+    answeredRate: number;
+    /** A median of per-show medians — a shape, not a median. */
+    medianOfMediansMs: number;
+    worstP95Ms: number;
+    cacheHitRate: number;
+  };
+  safety: {
+    blocked: number;
+    revised: number;
+    abstained: number;
+    flaggedWrong: number;
+    byGuard: Record<string, number>;
+    blockRate: number;
+    chainsIntact: number;
+  };
+  actions: { proposed: number; committed: number; rolledBack: number; failed: number };
+  gmv: { grossCents: number; lotsSold: number; showsWithGmv: number };
+  operator: { medianDecisionMs: number | null; editRate: number | null };
+  /** Where it is strong and where it is not, by topic — the evidence the
+   *  auto-reply allow-list should be argued from. */
+  byIntent: {
+    intent: string;
+    asked: number;
+    answeredRate: number;
+    abstainedRate: number;
+    blocked: number;
+    editedRate: number;
+    autoReply: "allow-listed" | "never";
+  }[];
+  perShow: {
+    showId: string;
+    title: string;
+    startedAt: string;
+    durationMin: number;
+    answeredRate: number;
+    p95LatencyMs: number;
+    blocked: number;
+    flaggedWrong: number;
+    gmvCents: number | null;
+    chainOk: boolean;
+  }[];
+  liveShowId: string | null;
+  readiness: PromotionReadiness | null;
+}
+
 export interface Analytics {
   showId: string;
   agentId: string | null;
@@ -499,4 +649,544 @@ export interface Analytics {
     spend: BillingSnapshot["spend"];
   };
   policy: { maxDiscountPct: number; neverSayRules: number; armedOnAgent: number };
+}
+
+// ── surfaces that existed server-side before they existed here ───────────────
+//
+// Seven endpoints were built and tested with no caller. These are their shapes,
+// mirrored from `src/shows/sessionRecord.ts`, `src/shows/prdMetrics.ts`,
+// `src/shows/readiness.ts` and `src/autonomy/promotion.ts` in the backend.
+
+/** One row in "your shows" — a session, with its report summary when it has
+ *  one. A session whose report failed to generate is still a row: that is the
+ *  show you most want to look at. */
+export interface ShowRow {
+  showId: string;
+  title: string;
+  source: string;
+  status: "live" | "ended" | string;
+  startedAt: string;
+  viewers: number;
+  agentId: string | null;
+  generatedAt: string | null;
+  durationMin: number | null;
+  questionsAsked: number | null;
+  answered: number | null;
+  sent: number | null;
+  blocked: number | null;
+  hasReport: boolean;
+}
+
+export interface PrdMetrics {
+  gmv: {
+    grossCents: number;
+    lotsSold: number;
+    hours: number;
+    /** Null below 15 minutes: a rate extrapolated from four minutes is noise
+     *  wearing a decimal point. */
+    perShowHourCents: number | null;
+    answeredQuestionRate: number;
+    timeToAnswerP95Ms: number;
+    sellThroughWithAnswer: { withAnswer: number; total: number; rate: number };
+  };
+  operatorLoad: {
+    interactions: number;
+    medianDecisionMs: number | null;
+    operationalEdits: number;
+  };
+  trust: {
+    blockRate: number;
+    editRate: number;
+    rollbackRate: number;
+    /** The nearest machine proxy for "a wrong reply reached a buyer", and
+     *  deliberately NOT the same thing. */
+    sentThenContradicted: number;
+  };
+  notMeasured: { metric: string; why: string }[];
+}
+
+export interface ShowReport {
+  showId: string;
+  /** The inventory this show ran on — where an answer to a gap gets written.
+   *  Absent on reports generated before the gap loop existed. */
+  catalogId?: string | null;
+  title: string;
+  source: string;
+  startedAt: string;
+  endedAt: string;
+  durationMin: number;
+  generatedAt?: string;
+  engagement: {
+    commentsSeen: number;
+    questionsAsked: number;
+    answered: number;
+    sent: number;
+    answeredRate: number;
+    medianLatencyMs: number;
+    p95LatencyMs: number;
+    cacheHitRate: number;
+  };
+  safety: {
+    blocked: number;
+    revised: number;
+    abstained: number;
+    /** What the OPERATOR marked wrong after it was sent — the only human source
+     *  the accuracy number has, and a floor rather than a total. */
+    flaggedWrong?: number;
+    flagReasons?: Record<string, number>;
+    byGuard: Record<string, number>;
+    auditChain: { ok: boolean; height: number; brokenAt?: number };
+    examples: { question: string; draft: string; guard: string; reason: string }[];
+  };
+  inventory: { lotsObserved: number; lotsEnded: number; priceChanges: number; peakViewers: number };
+  actions: { proposed: number; committed: number; rolledBack: number; failed: number };
+  /** The part worth acting on: every question the catalog could not ground. */
+  gaps: {
+    unanswered: { question: string; asked: number; reason: string }[];
+    droppedByGate: Record<string, number>;
+  };
+  /** Optional on purpose: reports stored before the PRD metrics existed have no
+   *  `prd` block, and a report is a statement about a show that has finished —
+   *  it is never regenerated. The page degrades rather than crashing on its own
+   *  history. */
+  prd?: PrdMetrics;
+  /**
+   * What the host did — measured from their own speech, not from chat.
+   * Absent on reports written before signals were kept; null when host audio
+   * was never captured for this show. The page says which.
+   */
+  host?: HostSummary | null;
+  /** The platform's own account of the audio session, when it produced one. */
+  platform?: PlatformSessionSummary | null;
+  /** What was kept for the timeline. */
+  media?: { utterances: number; frames: number; audioChunks: number; audioSeconds: number };
+  /** What the agent concluded. Null when it could not answer. */
+  conclusion?: Conclusion | null;
+}
+
+/** A share is probability mass over every utterance, never a label count. */
+export interface LabelShare {
+  label: string;
+  share: number;
+}
+
+export interface HostSummary {
+  utterances: number;
+  speakingSpanS: number;
+  intent: LabelShare[];
+  emotion: LabelShare[];
+  medianSpeechRate: number | null;
+  emotionFlips: number;
+  loudestAtMs: number | null;
+  quietestAtMs: number | null;
+}
+
+export interface PlatformSessionSummary {
+  sessionId: string;
+  matchedBy: "room" | "agent" | "window";
+  createdAt: string;
+  durationSec: number;
+  turns: number;
+  summary: {
+    summary: string | null;
+    outcome: string | null;
+    disposition: string | null;
+    nextAction: string | null;
+    recommendedAction: string | null;
+    confidence: string | null;
+    keyPoints: string[];
+  } | null;
+  emotion: LabelShare[];
+  intent: LabelShare[];
+  dominantEmotion: string | null;
+  primaryIntent: string | null;
+  recordingPath: string | null;
+}
+
+export type NextActionKind = "catalog" | "pricing" | "inventory" | "hosting" | "policy" | "setup";
+
+export interface NextAction {
+  kind: NextActionKind;
+  title: string;
+  why: string;
+}
+
+export interface Conclusion {
+  summary: string;
+  outcome: "strong" | "steady" | "rough" | "quiet";
+  keyPoints: string[];
+  nextActions: NextAction[];
+  by: "agent";
+  at: string;
+}
+
+/** The show on one clock: milliseconds from `startedAt`. */
+export interface Utterance {
+  seq: number;
+  at: string;
+  offsetMs: number;
+  text: string;
+  emotion: SignalDistribution | null;
+  intent: SignalDistribution | null;
+  speechRate: number | null;
+  levels: number[] | null;
+}
+
+export interface TimelineFrame {
+  seq: number;
+  at: string;
+  offsetMs: number;
+  reading: string;
+  bytes: number;
+}
+
+export interface TimelineAudio {
+  seq: number;
+  at: string;
+  offsetMs: number;
+  durationMs: number;
+  bytes: number;
+  mime: string;
+}
+
+export interface ShowTimeline {
+  showId: string;
+  host: HostSummary | null;
+  utterances: Utterance[];
+  frames: TimelineFrame[];
+  audio: TimelineAudio[];
+}
+
+/** The evidence behind a report, from the tables that kept it. */
+export interface RecordedProposal {
+  id: string;
+  messageId: string | null;
+  at: string;
+  decidedAt: string | null;
+  author: string;
+  question: string;
+  intent: string | null;
+  draft: string;
+  sentText: string | null;
+  status: string;
+  verdict: string;
+  confidence: number;
+  abstained: boolean;
+  repaired: boolean;
+  edited: boolean;
+  latencyMs: number;
+  cacheHit: boolean;
+  guards: { guard: string; verdict: string; reason?: string }[];
+  evidence: unknown[];
+  flaggedWrong: boolean;
+  flagReason: string | null;
+}
+
+export interface RecordedAction {
+  id: string;
+  kind: string;
+  createdAt: string;
+  status: string;
+  listingId: string | null;
+  listingTitle: string | null;
+  summary: string;
+  rationale: string | null;
+  preflight: { ok?: boolean; checks?: { name: string; ok: boolean; detail?: string }[] } | null;
+  error: string | null;
+  idempotencyKey: string;
+}
+
+export interface RecordedAudit {
+  seq: number;
+  at: string;
+  kind: string;
+  actorType: string;
+  actorId: string | null;
+  summary: string;
+  hash: string;
+  prevHash: string | null;
+  detail: unknown;
+}
+
+export interface RecordedChat {
+  id: string;
+  at: string;
+  author: string;
+  text: string;
+  intent: string | null;
+  speechAct: string | null;
+  admitted: boolean;
+  dropReason: string | null;
+}
+
+export interface ShowRecord {
+  showId: string;
+  chat: RecordedChat[];
+  proposals: RecordedProposal[];
+  actions: RecordedAction[];
+  audit: RecordedAudit[];
+}
+
+/** A rung's promotion criterion. `unknown` never reads as met — nobody climbs
+ *  the ladder on missing data. */
+export interface PromotionCriterion {
+  to: AutonomyLevel;
+  label: string;
+  showsRequired: number;
+  showsSeen: number;
+  value: number | null;
+  target: string;
+  state: "met" | "not_met" | "unknown";
+  detail: string;
+}
+
+export interface PromotionReadiness {
+  current: AutonomyLevel;
+  next: AutonomyLevel | null;
+  ready: boolean;
+  criteria: PromotionCriterion[];
+}
+
+export interface ReadinessCheck {
+  name: string;
+  ok: boolean;
+  detail: string;
+  /** A blocker disables Start; a warning does not. Drawing them identically is
+   *  how a seller starts a show with no knowledge base. */
+  severity: "blocker" | "warning" | "info";
+}
+
+/** What eBay says a listing in this category must carry, against what the
+ *  catalog does. Null when eBay could not be asked — which is "not checked",
+ *  never "nothing missing". */
+/** What the eBay application can and cannot do, split by capability because
+ *  reads and writes need different things and must not be shown as one state. */
+export interface EbayStatus {
+  configured: boolean;
+  env: "sandbox" | "production" | string;
+  marketplaceId: string;
+  token: boolean;
+  browse: boolean;
+  taxonomy: boolean;
+  /** Always false until eBay approves the app for Marketplace Insights. */
+  soldComps: boolean;
+  error: string | null;
+  write: {
+    connected: boolean;
+    connectedAt: string | null;
+    scopes: string[];
+    /** What is missing before a seller can even be asked to consent. */
+    blockers: string[];
+  };
+}
+
+export interface EbayImportResult {
+  catalogId: string;
+  items: number;
+  skipped: { sku: string; why: string }[];
+  path: string;
+}
+
+/** One catalog lot, priced against what eBay says it is worth. */
+export interface MarketRow {
+  sku: string;
+  title: string;
+  priceCents: number;
+  qty: number;
+  market: {
+    basis: "sold" | "asking" | "none";
+    medianCents: number;
+    lowCents: number;
+    highCents: number;
+    /** One comparable is not a market. Shown, so a delta can be judged. */
+    samples: number;
+    /** What actually matched. A broad query explains a wild delta. */
+    query: string;
+    checkedAt: string;
+  } | null;
+  checking: boolean;
+  deltaPct: number | null;
+}
+
+export interface CatalogMarket {
+  catalogId: string;
+  rows: MarketRow[];
+  pending: number;
+  /** The index is off: nothing more will be matched until this is fixed. */
+  error: string | null;
+  /** A capability the index is working without — sold comps, in production
+   *  until eBay grants Marketplace Insights. Rows still match on asking. */
+  note?: string | null;
+}
+
+/** A live eBay listing or completed sale, as returned by a direct search. */
+export interface EbayResult {
+  itemId: string;
+  title: string;
+  priceCents: number;
+  condition: string | null;
+  categoryName?: string | null;
+  soldAt?: string;
+  itemWebUrl: string | null;
+}
+
+export interface AspectGap {
+  categoryId: string;
+  categoryName: string;
+  /** Which item resolved the category, and on what query. */
+  sampledFrom: string;
+  required: string[];
+  /** Required aspects NO item can supply — a hole in the catalog's shape. */
+  missing: string[];
+  /** Items missing at least one, worst first. These are edits, not a rethink. */
+  worst: { sku: string; missing: string[] }[];
+}
+
+export interface CatalogReadiness {
+  catalogId: string;
+  agentId: string | null;
+  ok: boolean;
+  checks: ReadinessCheck[];
+  aspects?: AspectGap | null;
+  /** The gaps the last show on this catalog left — the last moment to close them. */
+  carried?: {
+    fromShowId: string;
+    title: string;
+    endedAt: string;
+    gaps: { question: string; asked: number; reason: string }[];
+  } | null;
+}
+
+export interface CatalogFit {
+  verdict: "match" | "weak" | "mismatch" | "unknown";
+  overlap: number;
+  sampled: number;
+  catalogId: string | null;
+}
+
+/** A seller you follow, plus what the last grid read could see of them. */
+export interface FollowedSeller {
+  handle: string;
+  note: string | null;
+  addedAt: string;
+  /** When the live grid last answered at all. Null means it never has. */
+  lastCheckedAt: string | null;
+  lastSeenLiveAt: string | null;
+  live: { eventId: string; title: string; url: string; viewers: number | null } | null;
+}
+
+export interface FollowingResponse {
+  sellers: FollowedSeller[];
+  checkedAt: string | null;
+  /** A grid read is running right now. Distinct from "we have never looked". */
+  checking: boolean;
+}
+
+export interface DiscoveredShow {
+  eventId: string;
+  title: string;
+  url: string;
+  /** The seller's display name on the card. */
+  host?: string;
+  /** The handle in the card's seller link — what a catalog is built from. */
+  sellerHandle?: string | null;
+  viewers?: number | null;
+  thumbnailUrl?: string | null;
+  /** eBay's own tags for the show: "$1 Starts", "Pokémon", "Vintage". */
+  tags?: string[];
+  status?: "live" | "scheduled";
+  /** eBay's wording — "Today, 4pm". Relative to the viewer's clock. */
+  startsAt?: string | null;
+  startedAt?: string | null;
+}
+
+/** Why a discovery list is empty. "Sign in" is an action; "nothing on air" is
+ *  a fact, and rendering them the same way is how Discover lied for weeks. */
+export type DiscoveryReason = "ok" | "no-session" | "stale-session" | "signed-out" | "blocked" | "stale";
+
+export interface EbayLiveSession {
+  present: boolean;
+  savedAt: string | null;
+  ageHours: number | null;
+  stale: boolean;
+  path: string;
+}
+
+/** An eBay Live event we have built a catalog and an agent for, in advance. */
+export interface PreparedShow {
+  eventId: string;
+  title: string;
+  host: string;
+  sellerHandle: string | null;
+  tags: string[];
+  thumbnailUrl: string | null;
+  catalogId: string | null;
+  agentId: string | null;
+  items: number;
+  /** What could not be done, kept rather than logged. */
+  warnings: string[];
+  preparedAt: string;
+}
+
+export interface HomeView {
+  live: DiscoveredShow[];
+  discovery: { reason: DiscoveryReason; session: EbayLiveSession };
+  prepared: PreparedShow[];
+  preparing: string[];
+  watching: ShowSummary[];
+}
+
+/** GET /api/cost — the history the live rail cannot have, because the meter
+ *  and the spend window both live in process memory. */
+export interface CostSnapshot {
+  days: number;
+  shows: {
+    showId: string;
+    title: string;
+    openedAt: string;
+    closedAt: string;
+    durationMin: number;
+    calls: number;
+    failures: number;
+    contextChars: number;
+    byDoor: Record<string, { calls: number; failures: number; totalMs: number }>;
+    /** Null when the wallet could not be read. Null is "unknown", and must
+     *  never render as zero. */
+    walletDeltaUsd: number | null;
+    answered: number;
+  }[];
+  totals: {
+    shows: number;
+    calls: number;
+    contextChars: number;
+    spentUsd: number;
+    answered: number;
+    minutes: number;
+    perAnsweredUsd: number | null;
+    perHourUsd: number | null;
+    showsWithoutWallet: number;
+  };
+  byDoor: Record<string, { calls: number; failures: number; totalMs: number }>;
+  wallet: Wallet | null;
+  walletError: { status: number; message: string } | null;
+  usage: {
+    days: number;
+    totals: UsageTotal[];
+    daily?: { day: string; service: string; quantity: number }[];
+  } | null;
+  usageError: { status: number; message: string } | null;
+  live: Record<string, { calls: number; failures: number; contextChars: number }>;
+  attribution: { perShow: string; note: string };
+}
+
+/** What the copilot would say, with the same six guards and nothing sent. */
+export interface DryRunResult {
+  question: string;
+  answer: string;
+  evidence: Evidence[];
+  guards: GuardResult[];
+  verdict: Verdict;
+  confidence: number;
+  abstained: boolean;
+  latencyMs: number;
 }

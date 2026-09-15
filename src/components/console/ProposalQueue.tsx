@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   BookOpen,
   Check,
   FileText,
   Gavel,
+  Info,
   LineChart,
   MessageSquareQuote,
   ShieldAlert,
@@ -13,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { GUARD_LABEL, GUARD_ORDER, formatMs, timeAgo } from "@/lib/format";
 import type { Evidence, GuardResult, ReplyProposal } from "@/lib/types";
 import { ConsoleButton, Dots, Hover, IntentBadge, Kbd, SectionHeader } from "./primitives";
+import { Badge, BadgeButton } from "@/components/ui/kit";
 
 const SOURCE_ICON = {
   listing: Tag,
@@ -144,17 +146,44 @@ function Confidence({ value }: { value: number }) {
   );
 }
 
-function SentLine({ p }: { p: ReplyProposal }) {
+function SentLine({ p, onFlag }: { p: ReplyProposal; onFlag: (reason: string) => void }) {
+  const [asking, setAsking] = useState(false);
   return (
-    <li className="anim-in flex items-center gap-2 border-b border-hairline px-3 py-1.5 text-[12px]">
-      <Check className="size-3.5 shrink-0 text-ok" aria-hidden />
-      <span className="min-w-0 flex-1 truncate text-text-secondary">{p.sentText ?? p.draft}</span>
-      {p.status === "auto_sent" ? (
-        <span className="rounded-[4px] border border-accent/40 px-1 text-[10px] text-accent">
-          auto
+    <li className="anim-in flex flex-col gap-1.5 px-3 py-2 text-[12px] shadow-[0_1px_0_var(--hairline)] last:shadow-none">
+      <div className="flex items-center gap-2">
+        <Check className="size-3.5 shrink-0 text-ok" aria-hidden />
+        <span className="min-w-0 flex-1 truncate text-text-secondary">{p.sentText ?? p.draft}</span>
+        {p.status === "auto_sent" ? <Badge tone="accent">auto</Badge> : null}
+        <BadgeButton
+          onClick={() => setAsking((v) => !v)}
+          title="Mark this reply wrong — the one number the report cannot measure on its own"
+        >
+          wrong?
+        </BadgeButton>
+        <span className="num shrink-0 text-[11px] text-text-muted">
+          {formatMs(p.spans.totalMs)}
         </span>
+      </div>
+
+      {/* Why it was wrong IS the eval case: "wrong fact" and "should have
+          abstained" are different failures that get fixed in different places. */}
+      {asking ? (
+        <div className="anim-in flex flex-wrap items-center gap-1.5 pl-5">
+          {["wrong fact", "out of date", "wrong lot", "tone", "should have abstained"].map((r) => (
+            <BadgeButton
+              key={r}
+              tone="bad"
+              onClick={() => {
+                onFlag(r);
+                setAsking(false);
+              }}
+            >
+              {r}
+            </BadgeButton>
+          ))}
+          <BadgeButton onClick={() => setAsking(false)}>cancel</BadgeButton>
+        </div>
       ) : null}
-      <span className="num shrink-0 text-[11px] text-text-muted">{formatMs(p.spans.totalMs)}</span>
     </li>
   );
 }
@@ -170,6 +199,7 @@ function ProposalCard({
   onCancelEdit,
   onDismiss,
   onRegenerate,
+  onInspect,
 }: {
   p: ReplyProposal;
   focused: boolean;
@@ -181,6 +211,7 @@ function ProposalCard({
   onCancelEdit: () => void;
   onDismiss: () => void;
   onRegenerate: () => void;
+  onInspect: () => void;
 }) {
   const ref = useRef<HTMLLIElement>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
@@ -244,6 +275,20 @@ function ProposalCard({
           </Hover>
         ) : null}
         <span className="ml-auto flex items-center gap-2">
+          {/* The hovers stay: they are the peek. This is where the whole story
+              of one reply opens, in the one panel the shell reserves for it. */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onInspect();
+            }}
+            title="Why this reply — evidence, every guard, where the time went (I)"
+            aria-label="Inspect this reply"
+            className="text-text-muted hover:text-text"
+          >
+            <Info className="size-3.5" aria-hidden />
+          </button>
           <Confidence value={p.confidence} />
           <span
             className={cn("num text-[11px]", p.spans.overBudget ? "text-bad" : "text-text-muted")}
@@ -371,6 +416,10 @@ export function ProposalQueue({
   onCancelEdit,
   onDismiss,
   onRegenerate,
+  onFlag,
+  onInspect,
+  leading,
+  trailing,
 }: {
   live: ReplyProposal[];
   recent: ReplyProposal[];
@@ -383,7 +432,17 @@ export function ProposalQueue({
   onCancelEdit: () => void;
   onDismiss: (id: string) => void;
   onRegenerate: (id: string) => void;
+  /** The PRD's unmeasurable metric, made measurable by the only person who can
+   *  see it. */
+  onFlag: (id: string, reason: string) => void;
+  /** Opens the shell's inspector on one reply. */
+  onInspect: (id: string) => void;
+  /** Narrow-layout drawer toggles. They belong in the header row, not floating
+   *  over it — an absolutely-positioned button landed on the counts. */
+  leading?: ReactNode;
+  trailing?: ReactNode;
 }) {
+  const [filter, setFilter] = useState<"all" | "blocked">("all");
   // An abstention is not a suggestion. When retrieval found nothing, the draft
   // is filler — "the host will get to that shortly" — and putting it on a card
   // with a Send button beside real grounded answers is how a queue fills with
@@ -397,22 +456,38 @@ export function ProposalQueue({
   const answerable = live.filter((p) => !groundless(p));
   const unanswerable = live.filter(groundless);
   const awaiting = answerable.filter((p) => p.status !== "drafting").length;
+  const blockedCount = answerable.filter((p) => p.status === "blocked").length;
+  const shown =
+    filter === "blocked" ? answerable.filter((p) => p.status === "blocked") : answerable;
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col bg-canvas">
-      <SectionHeader title="Proposals">
-        <span className="num text-[11px] text-text-secondary">{awaiting} awaiting</span>
-        {unanswerable.length > 0 && (
-          <span
-            title="Asked, but nothing in the catalog could ground an answer. These are the gaps the post-session report lists."
-            className="num rounded-[3px] border border-hairline-strong px-1.5 text-[11px] text-text-muted"
+    <section className="flex min-h-0 flex-1 flex-col bg-panel">
+      <SectionHeader title="Proposals" leading={leading}>
+        {/* The counts were already here; making them toggles costs no space and
+            gives the operator a blocked-only view during a bad run. */}
+        <BadgeButton
+          tone={filter === "all" ? "accent" : "neutral"}
+          onClick={() => setFilter("all")}
+        >
+          {awaiting} awaiting
+        </BadgeButton>
+        {blockedCount > 0 && (
+          <BadgeButton
+            tone={filter === "blocked" ? "bad" : "neutral"}
+            onClick={() => setFilter((f) => (f === "blocked" ? "all" : "blocked"))}
           >
-            {unanswerable.length} unanswerable
-          </span>
+            {blockedCount} blocked
+          </BadgeButton>
         )}
-        <span className="hidden text-[11px] text-text-muted lg:inline">
+        {unanswerable.length > 0 && (
+          <Badge title="Asked, but nothing in the catalog could ground an answer. These are the gaps the post-session report lists.">
+            {unanswerable.length} unanswerable
+          </Badge>
+        )}
+        <span className="hidden text-[11px] text-text-muted xl:inline">
           J/K move · Enter send · E edit · X dismiss · R regenerate
         </span>
+        {trailing}
       </SectionHeader>
 
       <div className="scroll-thin min-h-0 flex-1 overflow-y-auto p-3">
@@ -427,7 +502,7 @@ export function ProposalQueue({
           </div>
         ) : (
           <ul className="flex flex-col gap-2">
-            {answerable.map((p) => (
+            {shown.map((p) => (
               <ProposalCard
                 key={p.id}
                 p={p}
@@ -440,6 +515,7 @@ export function ProposalQueue({
                 onCancelEdit={onCancelEdit}
                 onDismiss={() => onDismiss(p.id)}
                 onRegenerate={() => onRegenerate(p.id)}
+                onInspect={() => onInspect(p.id)}
               />
             ))}
           </ul>
@@ -469,7 +545,7 @@ export function ProposalQueue({
             <div className="section-header mb-1 px-1">Recent</div>
             <ul className="overflow-hidden rounded-md border border-hairline bg-panel">
               {recent.map((p) => (
-                <SentLine key={p.id} p={p} />
+                <SentLine key={p.id} p={p} onFlag={(reason) => onFlag(p.id, reason)} />
               ))}
             </ul>
           </div>

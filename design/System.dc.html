@@ -1,0 +1,320 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+  <style>
+    :root{
+      --canvas:oklch(0.9800 0.0028 264.5);
+      --panel:oklch(1 0 0);
+      --elev:oklch(0.9690 0.0035 264.5);
+      --line:oklch(0.9154 0.0055 264.5);
+      --line2:oklch(0.8558 0.0082 264.5);
+      --ink:oklch(0.2359 0.0118 264.5);
+      --ink2:oklch(0.4518 0.0151 262.7);
+      --ink3:oklch(0.5180 0.0165 261.3);
+      --accent:oklch(0.5487 0.1908 262.3);
+      --ok:oklch(0.5421 0.1489 147.8);
+      --warn:oklch(0.5812 0.1264 71.5);
+      --bad:oklch(0.5468 0.2093 27.4);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--canvas);color:var(--ink);
+      font-family:"Inter",ui-sans-serif,system-ui,-apple-system,sans-serif;
+      font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased}
+    a{color:var(--accent);text-decoration:none}
+    a:hover{color:oklch(0.46 0.19 262.3)}
+    p{margin:0}
+    ul{margin:0;padding:0;list-style:none}
+    svg{display:block;flex:none}
+    .num{font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+      font-variant-numeric:tabular-nums;letter-spacing:-0.01em}
+    .sh{font-size:11px;line-height:1.2;text-transform:uppercase;letter-spacing:.08em;
+      color:var(--ink3);font-weight:600}
+    .r{display:flex;align-items:center}
+    .i{stroke:currentColor;stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+
+    /* ── v2 · denser, quieter, with a real depth model ─────────────────── */
+    :root{
+      --accent-soft:oklch(0.5487 0.1908 262.3/.08);
+      --accent-line:oklch(0.5487 0.1908 262.3/.32);
+      --ink4:oklch(0.6300 0.0150 261.3);
+      --e1:var(--z1);
+      --e2:var(--z3);
+      --e3:var(--z3);
+      --r-xs:3px; --r-sm:5px; --r-md:7px; --r-lg:10px;
+      --h-xs:22px; --h-sm:26px; --h-md:30px; --h-lg:36px;
+      --bar:40px; --subbar:34px;
+      --fast:120ms cubic-bezier(.2,.7,.3,1); --slow:180ms cubic-bezier(.2,.7,.3,1);
+    }
+
+    /* ── v2 · the shell, shared by every page ─────────────────────────── */
+    .navbar{height:var(--bar);display:flex;align-items:center;gap:12px;padding:0 14px;
+      background:var(--canvas);border-bottom:1px solid var(--line)}
+    .navwm{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:600;
+      letter-spacing:.14em;text-transform:uppercase;color:var(--ink)}
+    .navtabs{display:flex;align-items:center;gap:2px}
+    .navtab{display:inline-flex;align-items:center;gap:6px;height:var(--h-sm);padding:0 10px;
+      border-radius:var(--r-sm);font-size:12px;color:var(--ink2)}
+    .navtab.on{background:var(--elev);color:var(--ink);font-weight:500}
+    .navsub{height:var(--subbar);display:flex;align-items:center;gap:16px;padding:0 16px;
+      background:var(--panel);border-bottom:1px solid var(--line)}
+    .navlink{font-size:11.5px;color:var(--ink3);height:var(--subbar);display:flex;align-items:center;gap:5px}
+    .navlink.on{color:var(--ink);font-weight:500;box-shadow:inset 0 -2px 0 var(--accent)}
+    .navghost{display:inline-flex;align-items:center;gap:6px;height:var(--h-sm);padding:0 9px;
+      border-radius:var(--r-sm);border:1px solid var(--line);background:var(--canvas);
+      font-size:11.5px;color:var(--ink2);white-space:nowrap}
+    .navkbd{font-size:11px;display:inline-flex;align-items:center;justify-content:center;height:17px;min-width:17px;
+      padding:0 5px;border-radius:var(--r-xs);border:1px solid var(--line2);background:var(--panel);
+      font-family:"JetBrains Mono",monospace;font-size:9.5px;color:var(--ink3)}
+    .titlerow{display:flex;align-items:center;gap:12px;padding:14px 0 0}
+
+    /* ── v3 · one ring, four layers ───────────────────────────────────── */
+    :root{
+      --ring:0 0 0 1px oklch(0.9060 0.0055 264.5);
+      --z1:var(--ring);
+      --z2:var(--ring), 0 1px 2px oklch(0.2359 0.0118 264.5/.04);
+      --z3:0 0 0 1px oklch(0.8900 0.0060 264.5), 0 6px 20px oklch(0.2359 0.0118 264.5/.10);
+      --z4:0 0 0 1px oklch(0.8900 0.0060 264.5), 0 16px 40px oklch(0.2359 0.0118 264.5/.14);
+      --rail:52px;
+    }
+
+    /* liveness, focus, and the two motions the product actually uses */
+    @keyframes ss-pulse{0%,100%{opacity:1}50%{opacity:.30}}
+    @keyframes ss-spin{to{transform:rotate(360deg)}}
+    .anim{animation:ss-pulse 1.8s ease-in-out infinite}
+    .spin{animation:ss-spin .9s linear infinite}
+    :focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+    @media (prefers-reduced-motion: reduce){
+      .anim,.spin{animation:none}
+    }
+    .page{width:1340px;height:1520px;background:var(--canvas);padding:30px 34px;overflow:hidden}
+    .i{stroke:currentColor;stroke-width:1.5;fill:none;stroke-linecap:round;stroke-linejoin:round}
+    .lbl{font-size:12px;font-weight:500;color:var(--ink3);margin-bottom:9px}
+    .m{font-size:11.5px;line-height:1.55;color:var(--ink3)}
+    .p{font-size:12.5px;line-height:1.6;color:var(--ink2)}
+    .h3{font-size:15px;font-weight:600;letter-spacing:-0.008em}
+    .card{background:var(--panel);border-radius:var(--r-md);box-shadow:var(--z1);padding:16px}
+    .sw{height:46px;border-radius:var(--r-sm)}
+    .meta{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--ink3)}
+    .btn{display:inline-flex;align-items:center;gap:7px;height:28px;padding:0 10px;border-radius:var(--r-sm);
+      font-size:12.5px;font-weight:500}
+    .btn-p{background:var(--accent);color:oklch(0.99 0 0)}
+    .btn-s{background:var(--elev);color:var(--ink)}
+    .btn-g{color:var(--ink2)}
+    .btn-d{background:oklch(0.5468 0.2093 27.4/.12);color:oklch(0.4800 0.1900 27.4)}
+    .topic{display:inline-flex;align-items:center;gap:5px;border-radius:var(--r-sm);padding:3px 8px;
+      font-size:12px;font-weight:500}
+    /* ── v3 · normalised primitives. Loaded after each artboard's own CSS. */
+
+    /* one badge, three variants — no border, tinted fill, 20px tall */
+    .chip{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;border:1px solid transparent;
+      background:var(--elev);color:var(--ink2);border-radius:var(--r-sm);
+      padding:3px 8px;font-size:12px;line-height:14px;font-weight:500}
+    .g{display:inline-flex;align-items:center;gap:5px;border:1px solid transparent;border-radius:var(--r-sm);
+      padding:3px 8px;font-size:12px;line-height:14px;font-weight:500}
+    .g-ok{color:oklch(0.4600 0.1300 147.8);background:oklch(0.5421 0.1489 147.8/.13)}
+    .g-warn{color:oklch(0.4900 0.1150 71.5);background:oklch(0.5812 0.1264 71.5/.15)}
+    .g-bad{color:oklch(0.4800 0.1900 27.4);background:oklch(0.5468 0.2093 27.4/.13)}
+    .g-na{color:var(--ink3);background:var(--elev)}
+    .ev{display:inline-flex;align-items:center;gap:5px;border:1px solid transparent;background:var(--elev);
+      color:var(--ink2);border-radius:var(--r-sm);padding:3px 8px;font-size:12px;line-height:14px}
+    .kbd,.navkbd{display:inline-flex;align-items:center;justify-content:center;height:17px;min-width:17px;
+      padding:0 5px;border:1px solid transparent;background:var(--elev);color:var(--ink3);border-radius:var(--r-xs);
+      font-family:"JetBrains Mono",monospace;font-size:11px;line-height:1}
+
+    /* one label, one heading — sentence case, no tracking */
+    .sh,.lbl,.eyebrow{font-size:12px;line-height:1.3;text-transform:none;letter-spacing:0;
+      font-weight:500;color:var(--ink3)}
+    .h2{font-size:15px;line-height:1.25;text-transform:none;letter-spacing:-0.008em;
+      font-weight:600;color:var(--ink)}
+    .hint{font-size:12.5px;line-height:1.6;color:var(--ink3)}
+    .m{font-size:11.5px;line-height:1.55;color:var(--ink3)}
+    .p{font-size:12.5px;line-height:1.6;color:var(--ink2)}
+
+    /* panes and cards sit on their own surface, so they lose their outline */
+    .card{border:1px solid transparent;background:var(--panel);border-radius:var(--r-md);box-shadow:var(--z1)}
+    .tile{border:1px solid transparent;background:var(--panel);border-radius:var(--r-md);box-shadow:var(--z1)}
+    .panehdr{height:26px;display:flex;align-items:center;justify-content:space-between;gap:8px;
+      flex:none;border-bottom:0;padding:0 12px;font-size:12px;font-weight:500;color:var(--ink3)}
+
+    /* tables: one rule under the head, hover as the separator */
+    th{border-bottom:1px solid var(--line);font-size:11.5px;font-weight:500;
+      text-transform:none;letter-spacing:0;color:var(--ink3);padding:8px 12px}
+    td{border-bottom:0;font-size:12.5px;padding:9px 12px;color:var(--ink2)}
+    tbody tr:nth-child(even) td{background:oklch(0.9800 0.0028 264.5/.6)}
+
+    /* nothing below 11px, and 11px only on figures */
+    .num{font-variant-numeric:tabular-nums}
+
+    /* ── v3 · the shell: a 52px rail, a 44px content bar, a live strip ── */
+    .rail{width:var(--rail);flex:none;display:flex;flex-direction:column;align-items:center;gap:4px;
+      padding:10px 0;background:var(--panel);box-shadow:1px 0 0 var(--line)}
+    .rr{width:36px;height:32px;display:grid;place-items:center;border-radius:var(--r-sm);color:var(--ink3);position:relative}
+    .rr.on{background:var(--elev);color:var(--ink)}
+    .rr .live{position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:var(--bad)}
+    .rl2{font-size:10.5px;color:var(--ink4);margin-top:-2px}
+    .colmain{flex:1;min-width:0;display:flex;flex-direction:column}
+    .cbar{height:44px;flex:none;display:flex;align-items:center;gap:10px;padding:0 16px;
+      background:var(--panel);box-shadow:0 1px 0 var(--line)}
+    .ctitle{font-size:15px;font-weight:600;letter-spacing:-0.008em}
+    .strip{height:28px;flex:none;display:flex;align-items:center;gap:10px;padding:0 16px;
+      background:oklch(0.5468 0.2093 27.4/.06);box-shadow:0 1px 0 oklch(0.5468 0.2093 27.4/.18);font-size:12px}
+    .navsub{height:34px;background:var(--panel);border-bottom:0;box-shadow:0 1px 0 var(--line);gap:18px}
+    .navlink{font-size:12.5px}
+    .navghost{border:0;background:var(--elev);color:var(--ink2);font-size:12px}
+
+    /* stat tiles follow the same label rule */
+    .stat{border:1px solid transparent;background:var(--panel);border-radius:var(--r-md);box-shadow:var(--z1);padding:14px 16px}
+    .stat .l{font-size:12px;text-transform:none;letter-spacing:0;font-weight:500;color:var(--ink3)}
+    .stat .v{font-size:20px;line-height:1.1;margin-top:6px}
+    .stat .h{font-size:11.5px;line-height:1.5;color:var(--ink3);margin-top:6px}
+    .tgt{font-size:11px;padding:2px 6px;border-radius:var(--r-xs)}
+    .sec{margin-top:28px}
+    .wrap{padding-top:20px}
+
+    /* the focused card keeps its ring — .card.card-f outranks .card */
+    .card.card-f{box-shadow:0 0 0 1.5px var(--accent), var(--z2);background:var(--panel)}
+    /* an action is never a 20px chip */
+    .chip-btn{height:26px;padding:0 10px;border-radius:var(--r-sm)}
+    /* tables align with their card header */
+    th{padding:8px 14px}
+    td{padding:9px 14px}
+    /* .rl2 was never used and never passed contrast */
+    .rl2{font-size:11.5px;color:var(--ink3)}
+  </style>
+</helmet>
+<div class="page">
+  <div style="display:flex;align-items:baseline;gap:12px">
+    <h1 style="margin:0;font-family:'Archivo',Inter,sans-serif;font-size:24px;font-weight:700;font-stretch:110%;letter-spacing:-0.022em">Design system · v3</h1>
+    <span class="p">what changed in this pass, and the rules that now hold everywhere</span>
+  </div>
+
+  <div style="margin-top:24px;display:grid;grid-template-columns:1fr 1fr;gap:34px">
+
+    <!-- LEFT -->
+    <div style="display:flex;flex-direction:column;gap:26px">
+
+      <div>
+        <div class="lbl">Surfaces — the page is grey, the work is white</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+          <div><div class="sw" style="background:var(--canvas);box-shadow:var(--ring)"></div><div class="meta" style="margin-top:6px">canvas</div><div class="meta">.980 .0028 264</div></div>
+          <div><div class="sw" style="background:var(--panel);box-shadow:var(--z1)"></div><div class="meta" style="margin-top:6px">panel</div><div class="meta">1 0 0</div></div>
+          <div><div class="sw" style="background:var(--elev)"></div><div class="meta" style="margin-top:6px">elevated</div><div class="meta">.969 .0035 264</div></div>
+          <div><div class="sw" style="background:var(--panel);box-shadow:var(--z3)"></div><div class="meta" style="margin-top:6px">overlay</div><div class="meta">z3</div></div>
+        </div>
+        <p class="p" style="margin-top:10px"><strong style="color:var(--ink)">The inversion is the change.</strong> A 1.5% lightness step made hairlines carry all the separation, four borders deep around a single pill. Now a card is white on grey with one ring, and anything already sitting on its own surface loses its outline.</p>
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+          <span class="meta">z1 ring</span><span class="meta">z2 raised</span><span class="meta">z3 overlay</span><span class="meta">z4 modal</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="lbl">Type — five sizes, nothing below 11px</div>
+        <div style="display:flex;flex-direction:column;gap:11px">
+          <div style="display:flex;align-items:baseline;gap:14px"><span class="meta" style="width:96px;flex:none">11 · num only</span><span class="num" style="font-size:11px">v13 · 1.42s · 0.86 · h147</span></div>
+          <div style="display:flex;align-items:baseline;gap:14px"><span class="meta" style="width:96px;flex:none">12.5 · UI</span><span style="font-size:12.5px">Labels, table cells, chips, buttons, captions</span></div>
+          <div style="display:flex;align-items:baseline;gap:14px"><span class="meta" style="width:96px;flex:none">15 · content</span><span style="font-size:15px">The drafted reply, and every section heading</span></div>
+          <div style="display:flex;align-items:baseline;gap:14px"><span class="meta" style="width:96px;flex:none">20 · figure</span><span class="num" style="font-size:20px">$148.00</span></div>
+          <div style="display:flex;align-items:baseline;gap:14px"><span class="meta" style="width:96px;flex:none">32+ · display</span><span style="font-family:'Archivo',sans-serif;font-weight:700;font-stretch:110%;letter-spacing:-0.025em;font-size:32px">Marketing only</span></div>
+        </div>
+        <p class="p" style="margin-top:12px">242 declarations at 9 and 10px were the real base of the old design — that is what made it read as an admin panel. Shrinking text to fit more in is not density; cutting content is.</p>
+        <p class="p" style="margin-top:8px"><strong style="color:var(--ink)">And nothing shouts.</strong> Seven uppercase label classes with 23 letter-spacings became one: 12px, medium, sentence case, no tracking. Headings are 15px semibold — larger than the body they sit above, which was not previously true.</p>
+      </div>
+
+      <div>
+        <div class="lbl">Topic hues — re-spaced out of the band red and amber own</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          <span class="topic" style="background:oklch(0.955 0.030 105);color:oklch(0.44 0.13 105)">returns</span>
+          <span class="topic" style="background:oklch(0.955 0.030 145);color:oklch(0.44 0.13 145)">stock</span>
+          <span class="topic" style="background:oklch(0.955 0.030 175);color:oklch(0.44 0.13 175)">authenticity</span>
+          <span class="topic" style="background:oklch(0.955 0.030 205);color:oklch(0.44 0.13 205)">price</span>
+          <span class="topic" style="background:oklch(0.955 0.030 235);color:oklch(0.44 0.13 235)">shipping</span>
+          <span class="topic" style="background:oklch(0.955 0.030 265);color:oklch(0.44 0.13 265)">hype</span>
+          <span class="topic" style="background:oklch(0.955 0.030 295);color:oklch(0.44 0.13 295)">compare</span>
+          <span class="topic" style="background:oklch(0.955 0.030 320);color:oklch(0.44 0.13 320)">sizing</span>
+          <span class="topic" style="background:oklch(0.955 0.030 340);color:oklch(0.44 0.13 340)">discount</span>
+          <span class="topic" style="background:var(--elev);color:var(--ink3)">other</span>
+        </div>
+        <p class="p" style="margin-top:10px">“Discount” used to sit at hue 20 — two degrees from <span style="color:var(--bad)">bad</span> — so a topic chip read as an alert on the one screen where red means blocked or live. Topics now start at 105 and step by 30–40°, and <em>other</em> carries no hue at all, because it is not a topic.</p>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div style="display:flex;flex-direction:column;gap:26px">
+
+      <div>
+        <div class="lbl">One badge, one key — no borders</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+          <span class="g g-na">– price</span><span class="g g-ok">✓ stock</span>
+          <span class="g g-warn">! policy</span><span class="g g-bad">✕ grounding</span>
+          <span class="chip">app-only</span><span class="chip">best effort</span>
+          <span class="kbd">⏎</span><span class="kbd">E</span><span class="kbd">⌘K</span>
+        </div>
+        <p class="p" style="margin-top:10px">Seven pill systems with four heights and three radii became one badge — 20px, tinted fill, 12px medium — and one 17px key. The guard row keeps its fixed order and its <span class="num">–</span> for “nothing to check”, which remains the best idea in the product.</p>
+      </div>
+
+      <div>
+        <div class="lbl">Controls — the sizes, and where each one is allowed</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+          <span class="btn btn-p" style="height:24px">Approve</span>
+          <span class="btn btn-p">Send <span class="kbd" style="background:oklch(0.99 0 0/.2);color:oklch(0.99 0 0)">⏎</span></span>
+          <span class="btn btn-s">Edit <span class="kbd">E</span></span>
+          <span class="btn btn-g">Dismiss <span class="kbd">X</span></span>
+          <span class="btn btn-d">Delete session</span>
+          <span style="display:inline-flex;align-items:center;height:36px;padding:0 14px;border-radius:var(--r-sm);background:var(--accent);color:oklch(0.99 0 0);font-size:13px;font-weight:600">Start monitoring</span>
+        </div>
+        <div style="margin-top:10px;display:flex;gap:16px" class="meta">
+          <span>24 in-row</span><span>26 chip-button</span><span>28 default</span><span>36 primary</span><span>52 marketing</span>
+          <span>rows 28 / 36 / 44</span><span>radius 3 · 5 · 7 · 10 · 14 print</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="lbl">The shell</div>
+        <div class="card" style="padding:0;overflow:hidden;display:flex;height:150px">
+          <div class="rail" style="padding:8px 0">
+            <span class="rr" style="color:var(--bad)"><svg viewBox="0 0 16 16" width="16" height="16" class="i"><circle cx="8" cy="8" r="2"/><path d="M4.5 11.5a5 5 0 0 1 0-7M11.5 4.5a5 5 0 0 1 0 7"/></svg></span>
+            <span class="rr on"><svg viewBox="0 0 16 16" width="15" height="15" class="i"><path d="M2.5 3.5h11v9h-11z"/></svg><span class="live"></span></span>
+            <span class="rr"><svg viewBox="0 0 16 16" width="15" height="15" class="i"><path d="M3 12.5V9M8 12.5V5M13 12.5V7.5"/></svg></span>
+            <span class="rr"><svg viewBox="0 0 16 16" width="15" height="15" class="i"><rect x="2.5" y="4" width="11" height="8.5" rx="1.5"/></svg></span>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;background:var(--canvas)">
+            <div class="strip" style="font-size:11.5px">
+              <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:6px;height:6px;border-radius:50%;background:var(--bad)"></span><span style="font-weight:600;color:var(--bad);font-size:11px">LIVE</span></span>
+              <span class="num" style="font-size:11.5px">01:12:36</span><span style="color:var(--ink3)">2 awaiting · 1 blocked</span>
+            </div>
+            <div class="cbar" style="height:38px"><span class="ctitle" style="font-size:13.5px">Cost</span></div>
+            <div class="navsub" style="height:30px"><span class="navlink on">Overview</span><span class="navlink">By show</span><span class="navlink">Limits</span></div>
+            <div style="flex:1;display:grid;place-items:center" class="m">content · one width, one gutter</div>
+          </div>
+        </div>
+        <p class="p" style="margin-top:10px">52px rail · 28px live strip · 44px content bar · 34px sub-nav · 420px inspector. Navigation spends width, never height — the console cannot spare the vertical, and it was previously giving up 92px of chrome plus 216px of section bars.</p>
+      </div>
+
+      <div>
+        <div class="lbl">Input and focus — the two the sheet was missing</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+          <span style="display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:var(--r-sm);background:var(--panel);box-shadow:var(--ring);font-size:12.5px;color:var(--ink3)">rest</span>
+          <span style="display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:var(--r-sm);background:var(--panel);box-shadow:0 0 0 1.5px var(--accent);font-size:12.5px;color:var(--ink)">focused</span>
+          <span style="display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:var(--r-sm);background:var(--panel);box-shadow:0 0 0 1.5px var(--bad);font-size:12.5px;color:oklch(0.4800 0.1900 27.4)">that regex does not compile</span>
+          <span style="display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:var(--r-sm);background:var(--elev);font-size:12.5px;color:var(--ink3)">disabled · needs a live adapter</span>
+        </div>
+        <p class="p" style="margin-top:10px">Keyboard focus is <span class="num">2px accent, offset 1</span> on every control, and it is the same ring a focused proposal card carries — the console is driven from the keyboard, so focus is not decoration.</p>
+      </div>
+
+      <div class="card" style="background:var(--elev);box-shadow:none">
+        <div class="h3">The rule behind all of it</div>
+        <p class="p" style="margin-top:8px">The console is read in peripheral vision by someone talking to a camera. Colour means state, position means category, and nothing moves unless something changed. Every number that could be mistaken for a promise carries the version it was read at — and every element that can be explained opens the same inspector, never a fifth kind of popover.</p>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

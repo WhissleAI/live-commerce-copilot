@@ -367,11 +367,22 @@ export class MockDriver {
       currentTopic: "Chicago Reimagined pricing",
       listingInFocus: "lst_aj1chi",
       voice: {
-        topLabel: "EMOTION_HAPPY", topP: 0.61,
-        topK: [{ label: "EMOTION_HAPPY", p: 0.61 }, { label: "EMOTION_NEUTRAL", p: 0.29 }],
-        changed: false, prevLabel: null, heldMs: 4200, flips: 2, trusted: true,
+        topLabel: "EMOTION_HAPPY",
+        topP: 0.61,
+        topK: [
+          { label: "EMOTION_HAPPY", p: 0.61 },
+          { label: "EMOTION_NEUTRAL", p: 0.29 },
+        ],
+        changed: false,
+        prevLabel: null,
+        heldMs: 4200,
+        flips: 2,
+        trusted: true,
       },
-      onScreen: { text: "a red and white high-top sneaker held to camera", at: new Date().toISOString() },
+      onScreen: {
+        text: "a red and white high-top sneaker held to camera",
+        at: new Date().toISOString(),
+      },
       recentPoints: [
         "Showed the sail midsole on camera",
         "Confirmed 3-day return window",
@@ -1165,18 +1176,23 @@ export class MockDriver {
     const base = listing.priceCents;
     const comps: Comp[] = Array.from({ length: 6 }).map((_, i) => ({
       title: listing.title,
-      soldPriceCents: Math.round(base * rnd(0.82, 1.06)),
+      priceCents: Math.round(base * rnd(0.82, 1.06)),
       soldAt: new Date(Date.now() - (i + 1) * 86_400_000 * rnd(0.6, 2)).toISOString(),
       condition: pick(["DS", "VNDS", "USED"]),
       size: pick([listing.size, "9.5", "10.5", "11"]),
+      basis: "sold" as const,
     }));
-    const sorted = comps.map((c) => c.soldPriceCents).sort((a, b) => a - b);
+    const sorted = comps.map((c) => c.priceCents).sort((a, b) => a - b);
     const median = Math.round((sorted[2]! + sorted[3]!) / 2);
     return {
       query,
       listingId: listing.id,
       headline: `${listing.brand} ${listing.model} — ${listing.colorway}`,
       comps,
+      // Mock mode invents sales, and says so by claiming the stronger basis it
+      // is pretending to have. Real shows get whatever eBay actually answers.
+      marketBasis: "sold" as const,
+      marketSource: "seeded" as const,
       medianCents: median,
       suggestion:
         median < listing.priceCents

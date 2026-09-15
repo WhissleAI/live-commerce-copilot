@@ -21,10 +21,16 @@ import { cn } from "@/lib/utils";
 /** Emotion → hue. Tied to the label the metadata head emits, with no fallback
  *  colour: an unrecognised label is grey rather than confidently wrong. */
 const HUE: Record<string, number> = {
-  happy: 145, excited: 145, surprise: 95,
-  neutral: 255, calm: 255,
-  sad: 265, fear: 300,
-  angry: 25, disgust: 40, confused: 60,
+  happy: 145,
+  excited: 145,
+  surprise: 95,
+  neutral: 255,
+  calm: 255,
+  sad: 265,
+  fear: 300,
+  angry: 25,
+  disgust: 40,
+  confused: 60,
 };
 
 function hueFor(d: SignalDistribution | null | undefined): number | null {
@@ -34,7 +40,10 @@ function hueFor(d: SignalDistribution | null | undefined): number | null {
 
 /** `EMOTION_HAPPY` → `happy`. */
 function pretty(raw: string): string {
-  return raw.replace(/^(EMOTION|INTENT|SENTIMENT)_/i, "").toLowerCase().replace(/_/g, " ");
+  return raw
+    .replace(/^(EMOTION|INTENT|SENTIMENT)_/i, "")
+    .toLowerCase()
+    .replace(/_/g, " ");
 }
 
 export function TranscriptPanel({
@@ -86,9 +95,8 @@ export function TranscriptPanel({
       const amp = Math.max(1, v * (h * 0.46));
       const age = (win.length - i) / Math.max(1, win.length);
       const alpha = 0.3 + 0.7 * (1 - age);
-      ctx.fillStyle = hue != null
-        ? `oklch(0.60 0.15 ${hue} / ${alpha})`
-        : `oklch(0.62 0.02 255 / ${alpha})`;
+      ctx.fillStyle =
+        hue != null ? `oklch(0.60 0.15 ${hue} / ${alpha})` : `oklch(0.62 0.02 255 / ${alpha})`;
       ctx.fillRect(x, mid - amp, colW, amp * 2);
     });
 
@@ -99,18 +107,31 @@ export function TranscriptPanel({
   const listening = levels.length > 0 || transcript.length > 0;
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col border-t border-hairline">
-      <header className="flex h-9 shrink-0 items-center justify-between gap-2 border-b border-hairline px-3">
+    <section className="flex min-h-0 flex-1 flex-col shadow-[0_-1px_0_var(--hairline)]">
+      <header className="flex h-[26px] shrink-0 items-center justify-between gap-2 px-3">
         <div className="flex items-center gap-2">
-          {listening ? <Mic className="size-3.5 text-ok" aria-hidden /> : <MicOff className="size-3.5 text-text-muted" aria-hidden />}
-          <span className="text-[11px] uppercase tracking-[0.14em] text-text-muted">Host audio</span>
+          {listening ? (
+            <Mic className="size-3.5 text-ok" aria-hidden />
+          ) : (
+            <MicOff className="size-3.5 text-text-muted" aria-hidden />
+          )}
+          <span className="text-[11px] uppercase tracking-[0.14em] text-text-muted">
+            Host audio
+          </span>
           {context?.currentTopic && (
-            <span className="truncate text-[11px] text-text-secondary">· {context.currentTopic}</span>
+            <span className="truncate text-[11px] text-text-secondary">
+              · {context.currentTopic}
+            </span>
           )}
         </div>
         {bridgeUrl && (
-          <a href={bridgeUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[11px] text-accent hover:underline">
-            bridge <ExternalLink className="size-3" aria-hidden />
+          <a
+            href={bridgeUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-1 text-[11px] text-accent hover:underline"
+          >
+            Open bridge <ExternalLink className="size-3" aria-hidden />
           </a>
         )}
       </header>
@@ -124,7 +145,8 @@ export function TranscriptPanel({
         {!listening && (
           <div className="pointer-events-none absolute inset-0 grid place-items-center">
             <span className="text-[10px] text-text-muted">
-              no audio yet — open the bridge and tick <strong className="text-text">Share tab audio</strong>
+              no audio yet — open the bridge and tick{" "}
+              <strong className="text-text">Share tab audio</strong>
             </span>
           </div>
         )}
@@ -154,7 +176,6 @@ export function TranscriptPanel({
               {shown.emotion && <Bars kind="emotion" d={shown.emotion} />}
               {shown.intent && <Bars kind="intent" d={shown.intent} />}
             </div>
-
           </>
         ) : (
           <p className="text-[11px] leading-relaxed text-text-muted">
@@ -185,7 +206,9 @@ export function TranscriptPanel({
               )}
               {context.voice && (
                 <span
-                  title={context.voice.topK.map((k) => `${pretty(k.label)} ${Math.round(k.p * 100)}%`).join(" · ")}
+                  title={context.voice.topK
+                    .map((k) => `${pretty(k.label)} ${Math.round(k.p * 100)}%`)
+                    .join(" · ")}
                   className="rounded-[3px] border border-accent/40 bg-accent/5 px-1.5 py-0.5 text-[10px] text-accent"
                 >
                   sounds · {pretty(context.voice.topLabel)} {Math.round(context.voice.topP * 100)}%
@@ -222,13 +245,18 @@ function Bars({ kind, d }: { kind: string; d: SignalDistribution }) {
       <div className="mt-0.5 space-y-[2px]">
         {d.topK.slice(0, 3).map((k) => (
           <div key={k.label} className="flex items-center gap-1">
-            <span className="num w-12 shrink-0 truncate text-[9px] text-text-secondary">{pretty(k.label)}</span>
+            <span className="num w-12 shrink-0 truncate text-[9px] text-text-secondary">
+              {pretty(k.label)}
+            </span>
             <span className="h-[3px] flex-1 overflow-hidden rounded-full bg-hairline">
               <span
                 className="block h-full rounded-full"
                 style={{
                   width: `${Math.max(2, k.p * 100)}%`,
-                  background: k.label === d.topLabel && hue != null ? `oklch(0.58 0.15 ${hue})` : "oklch(0.72 0.01 255)",
+                  background:
+                    k.label === d.topLabel && hue != null
+                      ? `oklch(0.58 0.15 ${hue})`
+                      : "oklch(0.72 0.01 255)",
                 }}
               />
             </span>

@@ -3,17 +3,23 @@ import { ArrowDown, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ChatMessage } from "@/lib/types";
 import { Hover, IntentBadge, SectionHeader } from "./primitives";
+import { BadgeButton } from "@/components/ui/kit";
 
 export function ChatColumn({
   chat,
   onInject,
   onHoverProposal,
   linkedProposalIds,
+  onAnswerDropped,
 }: {
   chat: ChatMessage[];
   onInject: (text: string) => void;
   onHoverProposal: (id: string | null) => void;
   linkedProposalIds: Set<string>;
+  /** The gate dropped it and the operator disagrees. One show dropped 1,204
+   *  messages as reaction; the gate is right about nearly all of them and wrong
+   *  about some, and without this it is unarguable rather than merely strict. */
+  onAnswerDropped: (messageId: string) => void;
 }) {
   const [mode, setMode] = useState<"all" | "admitted">("all");
   const [pinnedToBottom, setPinnedToBottom] = useState(true);
@@ -60,7 +66,7 @@ export function ChatColumn({
   };
 
   return (
-    <section className="flex h-full min-h-0 flex-col border-r border-hairline bg-panel">
+    <section className="flex h-full min-h-0 flex-col bg-panel">
       <SectionHeader title="Buyer chat">
         <span className="num text-[11px] text-text-muted">{rate}/min</span>
         <div className="flex overflow-hidden rounded-[4px] border border-hairline-strong">
@@ -95,7 +101,7 @@ export function ChatColumn({
                   onMouseEnter={() => (linked ? onHoverProposal(m.proposalId!) : undefined)}
                   onMouseLeave={() => onHoverProposal(null)}
                   className={cn(
-                    "anim-in flex items-start gap-2 px-3 py-1 hover:bg-elevated/60",
+                    "anim-in group flex items-start gap-2 px-3 py-1.5 hover:bg-elevated/60",
                     linked && "border-l-2 border-accent pl-[10px]",
                     !m.admitted && "opacity-45",
                   )}
@@ -107,6 +113,18 @@ export function ChatColumn({
                     </span>{" "}
                     <span className="text-[12px] break-words text-text">{m.text}</span>
                   </div>
+                  {!m.admitted ? (
+                    <BadgeButton
+                      className="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+                      title="Draft a reply anyway — the gate dropped this one"
+                      onClick={(ev) => {
+                        ev.stopPropagation();
+                        onAnswerDropped(m.id);
+                      }}
+                    >
+                      answer
+                    </BadgeButton>
+                  ) : null}
                   {m.intent ? (
                     <IntentBadge
                       intent={m.intent}

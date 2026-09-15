@@ -1,42 +1,43 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { PanelLeft } from "lucide-react";
-import { api, API_BASE, USE_MOCKS, ensureSession, claimConsole } from "@/lib/api";
+import {
+  AlertTriangle,
+  ArrowRight,
+  BookOpen,
+  Keyboard,
+  PanelLeft,
+  PanelRight,
+  Search,
+  ShieldCheck,
+  Radio,
+  Sliders,
+  Wallet,
+  X,
+} from "lucide-react";
+import { api, API_BASE, USE_MOCKS, ensureSession, claimConsole, tokenQuery } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useShowStream } from "@/hooks/useShowStream";
-import type { Account, AutonomyLevel, ResearchCard } from "@/lib/types";
+import type {
+  Account,
+  AutonomyLevel,
+  BudgetState,
+  ConnectionState,
+  ResearchCard,
+  SourceStatus,
+} from "@/lib/types";
 import { TopBar } from "./TopBar";
 import { ChatColumn } from "./ChatColumn";
 import { ProposalQueue } from "./ProposalQueue";
 import { ShowRail } from "./ShowRail";
 import { CommandPalette } from "./CommandPalette";
 import { ShortcutsOverlay } from "./ShortcutsOverlay";
+import { LegendOverlay, legendSeen, markLegendSeen } from "./LegendOverlay";
 import { TranscriptPanel } from "./TranscriptPanel";
-import { Launcher } from "./Launcher";
 import { CostPanel } from "./CostPanel";
-import { AppHeader } from "@/components/app/AppHeader";
-
-/** Survives the reload that both entry paths do. Per-tab, not per-browser: two
- *  tabs on two shows should not fight over one flag. */
-const SESSION_KEY = "sidestage.session";
-
-function readSessionFlag(): boolean {
-  try {
-    return sessionStorage.getItem(SESSION_KEY) === "1";
-  } catch {
-    // Private windows and blocked site data throw on access. Falling back to
-    // the launcher is the safe direction: the operator picks again.
-    return false;
-  }
-}
-
-function setSessionFlag(on: boolean): void {
-  try {
-    if (on) sessionStorage.setItem(SESSION_KEY, "1");
-    else sessionStorage.removeItem(SESSION_KEY);
-  } catch {
-    /* the console still works, it just asks again after a reload */
-  }
-}
+import { Link } from "@tanstack/react-router";
+import { AppShell, type Command } from "@/components/app/AppShell";
+import { Inspector, inspectorTitle, type InspectorSubject } from "@/components/app/Inspector";
+import { Banner, Button, Card, EmptyState, Skeleton } from "@/components/ui/kit";
+import { ToastRail, useToasts } from "@/components/app/ToastRail";
 
 function isTyping(): boolean {
   const el = document.activeElement;
@@ -47,20 +48,26 @@ function isTyping(): boolean {
 
 export function Console() {
   const store = useShowStream();
-  const { show, listings, chat, live, recent, actions, audit, metrics, flashed, connection,
-    transcript, levels, seller, shows } = store;
-
-  // Mock mode is the standalone demo and has no backend to set a session up
-  // against, so it goes straight to the console. Against a real backend the
-  // operator picks a catalog and a show first.
-  //
-  // The choice is remembered for the tab, because both entry paths reload the
-  // page — the stream's `hello` is what seeds console state, and re-subscribing
-  // is simpler than reconciling two shows in place. Without this, opening a
-  // show bounced straight back to the launcher.
-  const [sessionStarted, setSessionStarted] = useState(
-    () => USE_MOCKS || readSessionFlag(),
-  );
+  const {
+    show,
+    listings,
+    chat,
+    live,
+    recent,
+    actions,
+    audit,
+    metrics,
+    flashed,
+    connection,
+    transcript,
+    levels,
+    seller,
+    shows,
+    source,
+    streamError,
+    budget,
+  } = store;
+  const toasts = useToasts();
 
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -68,14 +75,38 @@ export function Console() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  /** Below 1024 the show rail is a drawer rather than a column. */
+  const [railOpen, setRailOpen] = useState(false);
+  // Shown once per browser, the first time a card could possibly appear.
+  const [legendOpen, setLegendOpen] = useState(() => !legendSeen());
+  const closeLegend = useCallback(() => {
+    markLegendSeen();
+    setLegendOpen(false);
+  }, []);
   const [costOpen, setCostOpen] = useState(false);
+  // Every "tell me more" in this console opens the same panel. It and the cost
+  // column are the same real estate, so opening one closes the other rather
+  // than wrapping the grid onto a second row.
+  const [inspect, setInspect] = useState<InspectorSubject | null>(null);
+  const openInspect = useCallback((s: InspectorSubject | null) => {
+    setInspect(s);
+    if (s) setCostOpen(false);
+  }, []);
+  const toggleCost = useCallback(() => {
+    setCostOpen((v) => {
+      if (!v) setInspect(null);
+      return !v;
+    });
+  }, []);
 
   // Who this console is acting as. Minted on first load so the audit chain can
   // answer "who approved that markdown" — it could not, when every write was
   // anonymous.
   const [account, setAccount] = useState<Account | null>(null);
   useEffect(() => {
-    void ensureSession().then(setAccount).catch(() => setAccount(null));
+    void ensureSession()
+      .then(setAccount)
+      .catch(() => setAccount(null));
   }, []);
 
   const claim = useCallback(async () => {
@@ -119,10 +150,36 @@ export function Console() {
     [decidable, focusedId],
   );
 
-  const send = useCallback((id: string, text?: string) => {
-    setEditingId(null);
-    void api.sendProposal(id, text);
-  }, []);
+  const send = useCallback(
+    (id: string, text?: string) => {
+      setEditingId(null);
+      void api.sendProposal(id, text).then((p) => {
+        toasts.push({ tone: "ok", text: `Reply sent to ${p.message.author}` });
+      });
+    },
+    [toasts],
+  );
+
+  /** The PRD's unmeasurable metric, made measurable by the only person who can
+   *  see it. A floor, and the report says so. */
+  const flagWrong = useCallback(
+    (id: string, reason: string) => {
+      void api.flagProposal(id, reason).then(() => {
+        toasts.push({ tone: "warn", text: `Flagged as wrong · ${reason}` });
+      });
+    },
+    [toasts],
+  );
+
+  /** The gate dropped it and the operator disagrees. */
+  const answerDropped = useCallback(
+    (messageId: string) => {
+      void api.answerDropped(messageId).then(() => {
+        toasts.push({ tone: "neutral", text: "Drafting an answer for a dropped comment" });
+      });
+    },
+    [toasts],
+  );
 
   const research = useCallback(
     (query: string): Promise<ResearchCard> =>
@@ -137,7 +194,9 @@ export function Console() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const cmd = e.metaKey || e.ctrlKey;
-      if (cmd && e.key.toLowerCase() === "k") {
+      // ⌘J, not ⌘K: ⌘K is the shell's command bar, which every header promises.
+      // Research is one thing you can do, not the way into everything.
+      if (cmd && e.key.toLowerCase() === "j") {
         e.preventDefault();
         setPaletteOpen((o) => !o);
         return;
@@ -146,6 +205,7 @@ export function Console() {
         if (paletteOpen) setPaletteOpen(false);
         else if (shortcutsOpen) setShortcutsOpen(false);
         else if (editingId) setEditingId(null);
+        else if (inspect) setInspect(null);
         return;
       }
       if (isTyping() || paletteOpen) return;
@@ -210,10 +270,23 @@ export function Console() {
           );
           if (undoable) {
             e.preventDefault();
-            void api.rollbackAction(undoable.id);
+            void api
+              .rollbackAction(undoable.id)
+              .then(() => toasts.push({ tone: "neutral", text: "Rolled back" }));
           }
           break;
         }
+        case "i":
+        case "I":
+          if (focused) {
+            e.preventDefault();
+            openInspect(
+              inspect?.kind === "proposal" && inspect.id === focused.id
+                ? null
+                : { kind: "proposal", id: focused.id },
+            );
+          }
+          break;
         case "?":
           e.preventDefault();
           setShortcutsOpen((o) => !o);
@@ -222,46 +295,152 @@ export function Console() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [actions, decidable, editingId, focusedId, move, paletteOpen, send, shortcutsOpen]);
+  }, [
+    actions,
+    decidable,
+    editingId,
+    focusedId,
+    inspect,
+    move,
+    openInspect,
+    paletteOpen,
+    send,
+    shortcutsOpen,
+  ]);
 
   const liveSession = show?.source === "ebaylive";
 
-  // The launcher owns the screen until a live show is being monitored. Resuming
-  // is `activate` + reload: the stream's `hello` is what re-seeds the console,
-  // and re-subscribing is simpler than reconciling two shows' state in place.
-  if (!USE_MOCKS && !sessionStarted && !liveSession) {
+  // What ⌘K can do while you are on the console. Everything here already had a
+  // single-key shortcut or a button; the command bar is the surface for the
+  // operator who has not memorised either yet.
+  const commands = useMemo<Command[]>(
+    () => [
+      {
+        id: "console_research",
+        label: "Research a product",
+        hint: "comps, spec diff, a price to say out loud",
+        group: "On this show",
+        icon: Search,
+        keys: "⌘J",
+        run: () => setPaletteOpen(true),
+      },
+      {
+        id: "console_verify",
+        label: "Verify the audit chain",
+        hint: "re-hash every entry end to end",
+        group: "On this show",
+        icon: ShieldCheck,
+        run: () => window.dispatchEvent(new Event("sidestage:verify-chain")),
+      },
+      {
+        id: "console_cost",
+        label: costOpen ? "Hide what this show is costing" : "Show what this show is costing",
+        group: "On this show",
+        icon: Wallet,
+        run: toggleCost,
+      },
+      {
+        id: "console_autonomy",
+        label: "Change the autonomy level",
+        hint: "the ladder lives in the show bar",
+        group: "On this show",
+        icon: Sliders,
+        run: () => document.getElementById("autonomy-picker")?.click(),
+      },
+      {
+        id: "console_legend",
+        label: "What the pills mean",
+        hint: "how to read a proposal card",
+        group: "On this show",
+        icon: BookOpen,
+        run: () => setLegendOpen(true),
+      },
+      {
+        id: "console_shortcuts",
+        label: "Keyboard shortcuts",
+        group: "On this show",
+        icon: Keyboard,
+        keys: "?",
+        run: () => setShortcutsOpen(true),
+      },
+    ],
+    [costOpen, toggleCost],
+  );
+
+  // Attaching to a show is a Shows job now, not a screen the console owns —
+  // the launcher used to be the only way in and the only way out, which is why
+  // a seeded show could strand the operator inside it. And "is there a session"
+  // is not a flag in this tab's storage: it is whether the server is streaming
+  // one, which is the only version of that question with a true answer.
+  // Nothing on air is a real state, and it says so.
+  //
+  // It used to be impossible: a seeded show was created on every boot, so the
+  // console always had a scripted auction to render and a seller could not tell
+  // a working product from an idle one. With that gone, an empty console is the
+  // honest answer — and it is an answer, not a bounce to another screen, because
+  // the operator clicked Console.
+  if (!show) {
+    const idle = Boolean(streamError) || connection === "open";
     return (
-      <Launcher
-        account={account}
-        onClaim={claim}
-        existing={shows}
-        onStarted={() => {
-          setSessionFlag(true);
-          setSessionStarted(true);
-          window.location.reload();
-        }}
-        onResume={(showId) => {
-          setSessionFlag(true);
-          void api.activateShow(showId).then(() => window.location.reload());
-        }}
-      />
+      <AppShell
+        section="console"
+        title="Console"
+        subtitle={idle ? "no show is on air" : "connecting to the show stream…"}
+      >
+        {idle ? (
+          <Card className="mt-6">
+            <EmptyState
+              icon={<Radio className="size-5" aria-hidden />}
+              title="Nothing is on air."
+              action={
+                <Link to="/">
+                  <Button variant="primary">
+                    Monitor a show <ArrowRight className="size-3.5" aria-hidden />
+                  </Button>
+                </Link>
+              }
+            >
+              Paste an eBay Live link on Home and the copilot attaches to the stream — it builds
+              the lineup from the show itself, and this console fills as buyers start asking.
+            </EmptyState>
+          </Card>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-3 w-[60%]" />
+            <Skeleton className="h-3 w-[45%]" />
+            <Skeleton className="h-3 w-[52%]" />
+          </div>
+        )}
+      </AppShell>
     );
   }
 
-  if (!show)
-    return (
-      <div className="grid h-screen place-items-center text-[12px] text-text-muted">
-        Connecting to the show stream…
-      </div>
-    );
-
+  // The console keeps the rail like every other screen, but no live strip —
+  // it IS the live show — and no content bar, because the show bar below is
+  // that bar. `bare` hands it the full column and its own scrolling.
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-canvas">
-      {/* The application header stays up during a session. It was only on the
-          launcher and the two pages, so the moment a show opened the operator
-          lost the wordmark, the account and the way to analytics — exactly when
-          they have least attention to go looking for them. */}
-      <AppHeader account={account} onClaim={claim} compact />
+    <AppShell
+      section="console"
+      bare
+      commands={commands}
+      banner={
+        <IngestBanner
+          source={source}
+          streamError={streamError}
+          connection={connection}
+          budget={budget}
+        />
+      }
+      {...(inspect
+        ? {
+            inspectorTitle: inspectorTitle(inspect, [...live, ...recent]).title,
+            inspector: (
+              <Inspector subject={inspect} proposals={[...live, ...recent]} audit={audit} />
+            ),
+            onCloseInspector: () => setInspect(null),
+          }
+        : {})}
+    >
       <TopBar
         show={show}
         seller={seller}
@@ -278,16 +457,15 @@ export function Console() {
         // browser page that should be released, while a seeded show is just
         // left where it is so you can walk back into it.
         onEndSession={() => {
-          setSessionFlag(false);
           if (liveSession) {
             void api.endSession(show.id).finally(() => window.location.reload());
           } else {
             window.location.reload();
           }
         }}
-        endSessionLabel={liveSession ? "end session" : "switch show"}
+        endSessionLabel={liveSession ? "End session" : "Switch show"}
         costOpen={costOpen}
-        onToggleCost={() => setCostOpen((v) => !v)}
+        onToggleCost={toggleCost}
         account={account}
         onClaim={claim}
       />
@@ -299,20 +477,34 @@ export function Console() {
           wraps onto a second row. */}
       <div
         className={cn(
-          "grid min-h-0 flex-1",
-          costOpen
-            ? "grid-cols-[1fr_320px] xl:grid-cols-[260px_1fr_340px_300px]"
-            : "grid-cols-[1fr_380px] xl:grid-cols-[300px_1fr_380px]",
+          "relative grid min-h-0 flex-1 gap-2 bg-canvas p-2",
+          // Three bands, and the order things are given up in is the order they
+          // matter least while a buyer is waiting:
+          //   ≥1280  chat · proposals · show rail
+          //   ≥1024  proposals · show rail, chat in a drawer
+          //   <1024  proposals only, both in drawers
+          // The queue is the product; it is the one column that never folds.
+          inspect
+            ? "grid-cols-[1fr] lg:grid-cols-[1fr_340px]"
+            : costOpen
+              ? "grid-cols-[1fr] lg:grid-cols-[1fr_320px] xl:grid-cols-[260px_1fr_340px_300px]"
+              : "grid-cols-[1fr] lg:grid-cols-[1fr_380px] xl:grid-cols-[300px_1fr_380px]",
         )}
       >
         {/* Left rail: what is coming IN — the buyers typing, and the host talking. */}
-        <div className="hidden min-h-0 flex-col xl:flex">
+        <div
+          className={cn(
+            "hidden min-h-0 flex-col overflow-hidden rounded-md bg-panel z1",
+            !inspect && "xl:flex",
+          )}
+        >
           <div className="flex min-h-0 flex-[3] flex-col">
             <ChatColumn
               chat={chat}
               onInject={(text) => void api.injectChat("you", text)}
               onHoverProposal={setHighlightedId}
               linkedProposalIds={new Set(live.map((p) => p.id))}
+              onAnswerDropped={answerDropped}
             />
           </div>
           <div className="flex min-h-0 flex-[2] flex-col">
@@ -320,20 +512,35 @@ export function Console() {
               transcript={transcript}
               levels={levels}
               context={store.context}
-              bridgeUrl={USE_MOCKS ? null : `${API_BASE}/audio-bridge?showId=${encodeURIComponent(show.id)}`}
+              bridgeUrl={
+                USE_MOCKS ? null : `${API_BASE}/audio-bridge?showId=${encodeURIComponent(show.id)}&${tokenQuery()}`
+              }
             />
           </div>
         </div>
 
-        <div className="relative flex min-h-0 flex-col">
-          <button
-            type="button"
-            onClick={() => setDrawerOpen((o) => !o)}
-            className="absolute top-1.5 left-2 z-20 flex h-6 items-center gap-1 rounded-[4px] border border-hairline-strong bg-panel px-1.5 text-[11px] text-text-muted hover:text-text xl:hidden"
-          >
-            <PanelLeft className="size-3" aria-hidden /> Chat
-          </button>
+        <div className="relative flex min-h-0 flex-col overflow-hidden rounded-md bg-panel z1">
           <ProposalQueue
+            leading={
+              <button
+                type="button"
+                onClick={() => setDrawerOpen((o) => !o)}
+                className="flex h-[22px] shrink-0 items-center gap-1 rounded-sm bg-elevated px-1.5 text-[11px] text-text-muted hover:text-text xl:hidden"
+              >
+                <PanelLeft className="size-3" aria-hidden /> Chat
+              </button>
+            }
+            trailing={
+              /* The pinned lot, the action queue and the chain are not optional
+                 information — below 1024 they are one tap away, not gone. */
+              <button
+                type="button"
+                onClick={() => setRailOpen((o) => !o)}
+                className="flex h-[22px] shrink-0 items-center gap-1 rounded-sm bg-elevated px-1.5 text-[11px] text-text-muted hover:text-text lg:hidden"
+              >
+                <PanelRight className="size-3" aria-hidden /> Show
+              </button>
+            }
             live={live}
             recent={recent}
             focusedId={focusedId}
@@ -345,6 +552,8 @@ export function Console() {
             onCancelEdit={() => setEditingId(null)}
             onDismiss={(id) => void api.dismissProposal(id)}
             onRegenerate={(id) => void api.regenerateProposal(id)}
+            onFlag={flagWrong}
+            onInspect={(id) => openInspect({ kind: "proposal", id })}
           />
           {drawerOpen ? (
             <div className="anim-in absolute inset-y-0 left-0 z-30 w-[300px] xl:hidden">
@@ -353,26 +562,63 @@ export function Console() {
                 onInject={(text) => void api.injectChat("you", text)}
                 onHoverProposal={setHighlightedId}
                 linkedProposalIds={new Set(live.map((p) => p.id))}
+                onAnswerDropped={answerDropped}
               />
             </div>
           ) : null}
         </div>
 
-        <ShowRail
-          pinned={pinned}
-          queue={queue}
-          flashed={flashed}
-          actions={actions}
-          audit={audit}
-          onApprove={(id) => void api.approveAction(id)}
-          onReject={(id) => void api.rejectAction(id)}
-          onRollback={(id) => void api.rollbackAction(id)}
-        />
+        {/* One instance, two layouts: a column at ≥1024, an overlay below it.
+            Two instances would mean two subscriptions to the verify-chain
+            event and two chains verified on one click. */}
+        <div
+          className={cn(
+            "flex min-h-0 flex-col overflow-hidden rounded-md bg-panel",
+            railOpen
+              ? "absolute inset-y-2 right-2 z-30 w-[340px] z3 lg:static lg:inset-auto lg:z-auto lg:w-auto lg:z1"
+              : "hidden lg:flex lg:z1",
+          )}
+        >
+          {railOpen ? (
+            // The drawer gets its own close row rather than a floating ✕: the
+            // rail's first row already carries the lot version, and the two
+            // landed on each other.
+            <div className="flex h-[26px] shrink-0 items-center justify-between px-3 shadow-[0_1px_0_var(--hairline)] lg:hidden">
+              <span className="section-header">Show</span>
+              <button
+                type="button"
+                onClick={() => setRailOpen(false)}
+                aria-label="Close the show rail"
+                className="text-text-muted hover:text-text"
+              >
+                <X className="size-3.5" aria-hidden />
+              </button>
+            </div>
+          ) : null}
+          <ShowRail
+            pinned={pinned}
+            queue={queue}
+            flashed={flashed}
+            actions={actions}
+            audit={audit}
+            onApprove={(id) => void api.approveAction(id)}
+            onReject={(id) => void api.rejectAction(id)}
+            onRollback={(id) => void api.rollbackAction(id)}
+            onRename={(id, title) => {
+              void api
+                .nameLot(id, title)
+                .then((l) => toasts.push({ tone: "ok", text: `Lot named · ${l.title}` }));
+            }}
+            onInspect={(seq) => openInspect({ kind: "audit", seq })}
+          />
+        </div>
 
         {/* Opened on demand rather than resident: cost is a question the seller
             asks between lots, not something to watch while a buyer waits. */}
         {costOpen && <CostPanel showId={show.id} onClose={() => setCostOpen(false)} />}
       </div>
+
+      <ToastRail toasts={toasts} />
 
       <CommandPalette
         open={paletteOpen}
@@ -391,6 +637,88 @@ export function Console() {
         }}
       />
       <ShortcutsOverlay open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
-    </div>
+      <LegendOverlay open={legendOpen} onClose={closeLegend} />
+    </AppShell>
   );
+}
+
+/**
+ * Ingest health, in the one place a banner is allowed.
+ *
+ * The server has emitted a `source` event since the watcher was written and the
+ * browser never subscribed, so a watcher that had stopped reading the lot card
+ * looked exactly like a quiet chat. Silence that looks like calm is the worst
+ * failure mode a trust product has.
+ */
+/** Dollars, or an honest dash. A null balance is "we could not read it". */
+function money(usd: number | null | undefined): string {
+  return usd == null ? "—" : `$${usd.toFixed(2)}`;
+}
+
+function IngestBanner({
+  source,
+  streamError,
+  connection,
+  budget,
+}: {
+  source: SourceStatus | null;
+  streamError: string | null;
+  connection: ConnectionState;
+  budget: BudgetState | null;
+}) {
+  // The cap outranks everything else here. A console that has stopped drafting
+  // must say so above any other condition — "the watcher is retrying" is not
+  // the reason the queue went quiet.
+  if (budget?.capped) {
+    return (
+      <Banner
+        tone="bad"
+        title="This show reached its spend cap — the copilot has stopped drafting"
+        icon={<AlertTriangle className="size-3.5" aria-hidden />}
+      >
+        {money(budget.spentUsd)} of {money(budget.capUsd)}, measured as a wallet delta and so an
+        upper bound, not an invoice. Questions still arrive and are recorded; nothing is drafted.
+        Raise the cap in Settings · Automation to carry on.
+      </Banner>
+    );
+  }
+  if (budget?.lowBalance) {
+    return (
+      <Banner tone="warn" title="The workspace wallet is running low">
+        {money(budget.balanceUsd)} left. The copilot keeps working until the balance runs out, and
+        then every draft fails at the gateway rather than degrading quietly.
+      </Banner>
+    );
+  }
+  if (streamError) {
+    return (
+      <Banner
+        tone="bad"
+        title="The server does not know that show"
+        icon={<AlertTriangle className="size-3.5" aria-hidden />}
+      >
+        {streamError}
+      </Banner>
+    );
+  }
+  if (connection !== "open") {
+    return (
+      <Banner tone="neutral" title="Reconnecting to the show stream…">
+        Chat and lot changes backfill on reconnect. Nothing is sent while disconnected.
+      </Banner>
+    );
+  }
+  if (source && (source.state === "failing" || (source.consecutiveFailures ?? 0) > 1)) {
+    return (
+      <Banner
+        tone="warn"
+        title="The watcher cannot read the lot card"
+        icon={<AlertTriangle className="size-3.5" aria-hidden />}
+      >
+        {source.detail ?? "Retrying"} — the copilot still answers from the catalog and from what you
+        say out loud, but it will not see a price change until this clears.
+      </Banner>
+    );
+  }
+  return null;
 }

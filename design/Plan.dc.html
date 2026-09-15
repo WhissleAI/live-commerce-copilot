@@ -1,0 +1,331 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+  <style>
+    :root{
+      --canvas:oklch(0.9800 0.0028 264.5);
+      --panel:oklch(1 0 0);
+      --elev:oklch(0.9690 0.0035 264.5);
+      --line:oklch(0.9154 0.0055 264.5);
+      --line2:oklch(0.8558 0.0082 264.5);
+      --ink:oklch(0.2359 0.0118 264.5);
+      --ink2:oklch(0.4518 0.0151 262.7);
+      --ink3:oklch(0.5180 0.0165 261.3);
+      --accent:oklch(0.5487 0.1908 262.3);
+      --ok:oklch(0.5421 0.1489 147.8);
+      --warn:oklch(0.5812 0.1264 71.5);
+      --bad:oklch(0.5468 0.2093 27.4);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--canvas);color:var(--ink);
+      font-family:"Inter",ui-sans-serif,system-ui,-apple-system,sans-serif;
+      font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased}
+    a{color:var(--accent);text-decoration:none}
+    a:hover{color:oklch(0.46 0.19 262.3)}
+    p{margin:0}
+    ul{margin:0;padding:0;list-style:none}
+    svg{display:block;flex:none}
+    .num{font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+      font-variant-numeric:tabular-nums;letter-spacing:-0.01em}
+    .sh{font-size:11px;line-height:1.2;text-transform:uppercase;letter-spacing:.08em;
+      color:var(--ink3);font-weight:600}
+    .r{display:flex;align-items:center}
+    .i{stroke:currentColor;stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+
+    /* ── v2 · denser, quieter, with a real depth model ─────────────────── */
+    :root{
+      --accent-soft:oklch(0.5487 0.1908 262.3/.08);
+      --accent-line:oklch(0.5487 0.1908 262.3/.32);
+      --ink4:oklch(0.6300 0.0150 261.3);
+      --e1:var(--z1);
+      --e2:var(--z3);
+      --e3:var(--z3);
+      --r-xs:3px; --r-sm:5px; --r-md:7px; --r-lg:10px;
+      --h-xs:22px; --h-sm:26px; --h-md:30px; --h-lg:36px;
+      --bar:40px; --subbar:34px;
+      --fast:120ms cubic-bezier(.2,.7,.3,1); --slow:180ms cubic-bezier(.2,.7,.3,1);
+    }
+
+    /* ── v2 · the shell, shared by every page ─────────────────────────── */
+    .navbar{height:var(--bar);display:flex;align-items:center;gap:12px;padding:0 14px;
+      background:var(--canvas);border-bottom:1px solid var(--line)}
+    .navwm{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:600;
+      letter-spacing:.14em;text-transform:uppercase;color:var(--ink)}
+    .navtabs{display:flex;align-items:center;gap:2px}
+    .navtab{display:inline-flex;align-items:center;gap:6px;height:var(--h-sm);padding:0 10px;
+      border-radius:var(--r-sm);font-size:12px;color:var(--ink2)}
+    .navtab.on{background:var(--elev);color:var(--ink);font-weight:500}
+    .navsub{height:var(--subbar);display:flex;align-items:center;gap:16px;padding:0 16px;
+      background:var(--panel);border-bottom:1px solid var(--line)}
+    .navlink{font-size:11.5px;color:var(--ink3);height:var(--subbar);display:flex;align-items:center;gap:5px}
+    .navlink.on{color:var(--ink);font-weight:500;box-shadow:inset 0 -2px 0 var(--accent)}
+    .navghost{display:inline-flex;align-items:center;gap:6px;height:var(--h-sm);padding:0 9px;
+      border-radius:var(--r-sm);border:1px solid var(--line);background:var(--canvas);
+      font-size:11.5px;color:var(--ink2);white-space:nowrap}
+    .navkbd{font-size:11px;display:inline-flex;align-items:center;justify-content:center;height:17px;min-width:17px;
+      padding:0 5px;border-radius:var(--r-xs);border:1px solid var(--line2);background:var(--panel);
+      font-family:"JetBrains Mono",monospace;font-size:9.5px;color:var(--ink3)}
+    .titlerow{display:flex;align-items:center;gap:12px;padding:14px 0 0}
+
+    /* ── v3 · one ring, four layers ───────────────────────────────────── */
+    :root{
+      --ring:0 0 0 1px oklch(0.9060 0.0055 264.5);
+      --z1:var(--ring);
+      --z2:var(--ring), 0 1px 2px oklch(0.2359 0.0118 264.5/.04);
+      --z3:0 0 0 1px oklch(0.8900 0.0060 264.5), 0 6px 20px oklch(0.2359 0.0118 264.5/.10);
+      --z4:0 0 0 1px oklch(0.8900 0.0060 264.5), 0 16px 40px oklch(0.2359 0.0118 264.5/.14);
+      --rail:52px;
+    }
+
+    /* liveness, focus, and the two motions the product actually uses */
+    @keyframes ss-pulse{0%,100%{opacity:1}50%{opacity:.30}}
+    @keyframes ss-spin{to{transform:rotate(360deg)}}
+    .anim{animation:ss-pulse 1.8s ease-in-out infinite}
+    .spin{animation:ss-spin .9s linear infinite}
+    :focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+    @media (prefers-reduced-motion: reduce){
+      .anim,.spin{animation:none}
+    }
+    .page{width:1440px;height:4770px;background:var(--canvas);overflow:hidden}
+    .in{margin:0 auto;width:1240px;padding:0 24px}
+    .hero{border-bottom:1px solid var(--line);padding:40px 0 32px}
+    .disp{font-family:'Archivo',Inter,sans-serif;font-weight:700;font-stretch:112%;letter-spacing:-0.024em;line-height:1.05;margin:0}
+    .eyebrow{font-size:12px;font-weight:500;color:var(--ink3)}
+    .h2{font-family:'Archivo',Inter,sans-serif;font-weight:700;font-stretch:108%;letter-spacing:-0.018em;font-size:22px;line-height:1.15;margin:0}
+    .sec{padding:30px 0;border-bottom:1px solid var(--line)}
+    .p{font-size:13px;line-height:1.65;color:var(--ink2)}
+    .card{border:1px solid var(--line);border-radius:var(--r-md);background:var(--panel);padding:16px}
+    .chip{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;border:1px solid var(--line2);border-radius:var(--r-sm);padding:3px 8px;font-size:11.5px;color:var(--ink2)}
+    .tag{display:inline-flex;align-items:center;white-space:nowrap;border-radius:3px;padding:1px 6px;
+      font-family:"JetBrains Mono",monospace;font-size:11px}
+    .t-be{background:oklch(0.5487 0.1908 262.3/.10);color:var(--accent)}
+    .t-fe{background:oklch(0.5421 0.1489 147.8/.12);color:var(--ok)}
+    .t-db{background:oklch(0.5812 0.1264 71.5/.14);color:var(--warn)}
+    table{width:100%;border-collapse:collapse}
+    th{text-align:left;font-weight:500;font-size:11.5px;
+      color:var(--ink3);padding:0 10px 8px;border-bottom:1px solid var(--line2)}
+    td{padding:10px;border-bottom:1px solid var(--line);font-size:12.5px;line-height:1.6;color:var(--ink2);vertical-align:top}
+    td.n{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--ink3);white-space:nowrap}
+    td.k{color:var(--ink);font-weight:500}
+    tr:last-child td{border-bottom:0}
+    .ph{display:flex;align-items:baseline;gap:12px;margin-bottom:4px}
+    .phn{font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--bad)}
+    .i{stroke:currentColor;stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+  </style>
+</helmet>
+<div class="page">
+
+  <div class="hero">
+    <div class="in">
+      <span class="eyebrow">Build plan · after the review</span>
+      <h1 class="disp" style="margin-top:14px;font-size:42px;max-width:960px">Six phases. The first two are mostly wiring; the third is the system itself.</h1>
+      <p class="p" style="margin-top:14px;max-width:800px;font-size:15px">Ordered so the riskiest claims get evidence first: correctness before surface, surface before features. Each row names the backend work, the frontend work, and the sentence that has to be true before it is done.</p>
+      <div style="margin-top:18px;display:flex;gap:8px;flex-wrap:wrap">
+        <span class="chip"><span class="tag t-be">BE</span> backend</span>
+        <span class="chip"><span class="tag t-fe">FE</span> frontend</span>
+        <span class="chip"><span class="tag t-db">DB</span> migration</span>
+        <span class="chip">S · under a day</span>
+        <span class="chip">M · one to two days</span>
+        <span class="chip">L · longer</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- phase 0 -->
+  <div class="sec">
+    <div class="in">
+      <div class="ph"><span class="phn">PHASE 0</span><h2 class="h2">Correctness — half a day, no new UI</h2></div>
+      <p class="p" style="max-width:820px">Six defects the review turned up. Two of them are trust claims the product makes and does not keep.</p>
+      <table style="margin-top:18px">
+        <thead><tr><th style="width:40px">#</th><th style="width:260px">Item</th><th style="width:300px">Work</th><th>Done when</th><th style="width:44px">Size</th></tr></thead>
+        <tbody>
+          <tr><td class="n">0.1</td><td class="k">Guard the autonomy route</td><td><span class="tag t-be">BE</span> <span class="num">mustWrite()</span> on <span class="num">POST /api/autonomy</span>, as on send and approve</td><td>A guest token gets 403 when it tries to switch a show to auto-reply; a test asserts it.</td><td class="n">S</td></tr>
+          <tr><td class="n">0.2</td><td class="k">Scope promotion to the account</td><td><span class="tag t-be">BE</span> join <span class="num">show_reports</span> to <span class="num">shows.owner_account_id</span> in <span class="num">promotionReadiness</span></td><td>Another account's clean shows no longer count toward your rung. Covered by a test with two owners.</td><td class="n">S</td></tr>
+          <tr><td class="n">0.3</td><td class="k">Subscribe to ingest health</td><td><span class="tag t-fe">FE</span> add <span class="num">source</span> and <span class="num">error</span> to the event list and the wire type</td><td>Killing the eBay watcher shows a failing state in the show bar within one poll.</td><td class="n">S</td></tr>
+          <tr><td class="n">0.4</td><td class="k">Stream the show you opened</td><td><span class="tag t-fe">FE</span> pass <span class="num">showId</span> on the EventSource URL the server already accepts</td><td>Two tabs on two shows each show their own chat.</td><td class="n">S</td></tr>
+          <tr><td class="n">0.5</td><td class="k">Show vision spend</td><td><span class="tag t-fe">FE</span> add <span class="num">visual_read</span> to the door list and label it “Camera reads”</td><td>Camera reads appear in the cost rail with their own p50/p95.</td><td class="n">S</td></tr>
+          <tr><td class="n">0.6</td><td class="k">A failed report still leaves a row</td><td><span class="tag t-be">BE</span> list ended shows from <span class="num">shows</span>, left-joined to reports; log the report failure loudly</td><td>A session that crashed mid-report is still listed, marked “report unavailable”.</td><td class="n">S</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- phase 1 -->
+  <div class="sec">
+    <div class="in">
+      <div class="ph"><span class="phn">PHASE 1</span><h2 class="h2">Connect what is already built — 1–2 days</h2></div>
+      <p class="p" style="max-width:820px">Seven endpoints exist, are tested, and have no caller. This phase is a client method, a type and a screen for each.</p>
+      <table style="margin-top:18px">
+        <thead><tr><th style="width:40px">#</th><th style="width:260px">Item</th><th style="width:300px">Work</th><th>Done when</th><th style="width:44px">Size</th></tr></thead>
+        <tbody>
+          <tr><td class="n">1.1</td><td class="k">Post-session report page</td><td><span class="tag t-fe">FE</span> route <span class="num">/shows/$id/report</span>, <span class="num">ShowReport</span> + <span class="num">PrdMetrics</span> types, stop discarding the report <span class="num">endSession</span> returns</td><td>Ending a show lands on its report instead of reloading the launcher, and an old show's report opens from home.</td><td class="n">M</td></tr>
+          <tr><td class="n">1.2</td><td class="k">Targets beside the numbers</td><td><span class="tag t-fe">FE</span> render the PRD target and the seller's own baseline on each headline metric</td><td>Answered rate reads “78% · target &gt;85%” and is coloured by whether it met it.</td><td class="n">S</td></tr>
+          <tr><td class="n">1.3</td><td class="k">Your shows, with delete</td><td><span class="tag t-fe">FE</span> home list from <span class="num">GET /api/reports</span>; confirm dialog; call the existing <span class="num">DELETE /api/shows/:id</span></td><td>Deleting a past show removes it, deletes its Whissle agent, and the dialog said so before it happened.</td><td class="n">M</td></tr>
+          <tr><td class="n">1.4</td><td class="k">Readiness before the first question</td><td><span class="tag t-fe">FE</span> call <span class="num">/api/catalogs/:id/readiness</span>; blockers disable Start, warnings do not</td><td>Starting with the audio bridge unopened is possible and warned; starting with no knowledge base is not.</td><td class="n">M</td></tr>
+          <tr><td class="n">1.5</td><td class="k">Catalog fit, where it decides something</td><td><span class="tag t-fe">FE</span> <span class="num">/api/show/fit</span> on setup and on each home tile</td><td>A stranger's fragrance show shows “mismatch” before the operator attaches a denim catalog to it.</td><td class="n">S</td></tr>
+          <tr><td class="n">1.6</td><td class="k">Autonomy readiness table</td><td><span class="tag t-fe">FE</span> render the criteria from <span class="num">/api/autonomy/readiness</span> on analytics and in the ladder menu</td><td>The ladder shows 2 of 3 shows toward L2, and <span class="num">unknown</span> renders as not met.</td><td class="n">M</td></tr>
+          <tr><td class="n">1.7</td><td class="k">Live-now grid, honest about empty</td><td><span class="tag t-fe">FE</span> <span class="num">/api/shows/discover</span> behind a “best effort” label, with an empty state that points at the paste field</td><td>When eBay refuses, the grid says so in one line instead of rendering nothing.</td><td class="n">S</td></tr>
+          <tr><td class="n">1.8</td><td class="k">Followed sellers <span style="color:var(--ink3);font-weight:400">· decision 2</span></td><td><span class="tag t-db">DB</span> <span class="num">followed_sellers</span>. <span class="tag t-be">BE</span> poll each seller's own show page every 10 min; emit when one goes live. <span class="tag t-fe">FE</span> the row on home</td><td>Following a seller surfaces their next show without asking eBay for a listing grid, and the two paths are never presented as equivalent.</td><td class="n">M</td></tr>
+          <tr><td class="n">1.9</td><td class="k">L4 locked, with its reason <span style="color:var(--ink3);font-weight:400">· decision 3</span></td><td><span class="tag t-be">BE</span> refuse L4 while no live adapter is configured. <span class="tag t-fe">FE</span> same sentence in the ladder, readiness, settings and the landing page</td><td>Nobody can select auto-act against a mock marketplace, and every surface gives the same reason.</td><td class="n">S</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+
+  <!-- phase 1.5 -->
+  <div class="sec">
+    <div class="in">
+      <div class="ph"><span class="phn">PHASE 1.5</span><h2 class="h2">The shell and the system — 3–4 days</h2></div>
+      <p class="p" style="max-width:820px">Added after the design review. None of the screens above can be built consistently until these exist, because today every inconsistency traces back to the same cause: there is no component, only copies.</p>
+      <table style="margin-top:18px">
+        <thead><tr><th style="width:40px">#</th><th style="width:260px">Item</th><th style="width:300px">Work</th><th>Done when</th><th style="width:44px">Size</th></tr></thead>
+        <tbody>
+          <tr><td class="n">1.5.1</td><td class="k">Token layer</td><td><span class="tag t-fe">FE</span> surfaces inverted (grey canvas, white panels), <span class="num">--ring</span> and four z-layers, five type sizes, three control heights, re-spaced topic hues</td><td>No stylesheet declares a font below 11px, an uppercase label, or a shadow that is not a token.</td><td class="n">M</td></tr>
+          <tr><td class="n">1.5.2</td><td class="k">Eight primitives, extracted</td><td><span class="tag t-fe">FE</span> <span class="num">Badge · GuardPill · Card · SectionLabel · Button · Key · Row · StatTile</span></td><td>The proposal card is defined once and rendered on the console, the anatomy sheet and the landing page from the same component.</td><td class="n">M</td></tr>
+          <tr><td class="n">1.5.3</td><td class="k">The rail and the content bar</td><td><span class="tag t-fe">FE</span> 52px rail, 44px bar, 34px sub-nav, routes behind each destination</td><td>Every screen is reachable in one click from anywhere, and no screen invents its own header.</td><td class="n">M</td></tr>
+          <tr><td class="n">1.5.4</td><td class="k">The live session strip</td><td><span class="tag t-fe">FE</span> mounted on every non-console route while a show is live, fed by the existing stream</td><td>Opening Cost mid-show still shows the clock, the queue depth and a keystroke back.</td><td class="n">S</td></tr>
+          <tr><td class="n">1.5.5</td><td class="k">One inspector</td><td><span class="tag t-fe">FE</span> 420px right dock, tabbed: guard verdict · facts · audit entry · sent reply, Esc to close</td><td>Every pill, evidence chip and audit row opens the same panel, and flag-wrong is a labelled button inside it.</td><td class="n">M</td></tr>
+          <tr><td class="n">1.5.6</td><td class="k">⌘K navigates, ⌘J asks</td><td><span class="tag t-fe">FE</span> command palette (go, do, search) separate from the research palette</td><td>⌘K jumps to a show, sets autonomy or ends a session; research keeps its own key.</td><td class="n">M</td></tr>
+          <tr><td class="n">1.5.7</td><td class="k">Three responsive bands</td><td><span class="tag t-fe">FE</span> ≥1280 full · 1024–1280 right rail collapses to the inspector · 768–1024 both rails become a segmented control</td><td>The console is usable on a laptop and a tablet without a second interaction model.</td><td class="n">M</td></tr>
+          <tr><td class="n">1.5.8</td><td class="k">The landing page</td><td><span class="tag t-fe">FE</span> hero loop of the block-and-correct, dark proof band, price, autonomy track, limits</td><td>The first screen shows the product refusing to answer wrongly, and the honest numbers are above the fold.</td><td class="n">M</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- phase 2 -->
+  <div class="sec">
+    <div class="in">
+      <div class="ph"><span class="phn">PHASE 2</span><h2 class="h2">The three pages that do not exist — 2–3 days</h2></div>
+      <p class="p" style="max-width:820px">Cost and Settings both need storage before they can be honest. That is the work, not the layout.</p>
+      <table style="margin-top:18px">
+        <thead><tr><th style="width:40px">#</th><th style="width:260px">Item</th><th style="width:300px">Work</th><th>Done when</th><th style="width:44px">Size</th></tr></thead>
+        <tbody>
+          <tr><td class="n">2.1</td><td class="k">Per-show cost, persisted</td><td><span class="tag t-db">DB</span> <span class="num">show_costs</span> — show_id, calls by door, context chars, wallet delta, opened/closed. <span class="tag t-be">BE</span> write it at session close from the meter and the spend window</td><td>A restart no longer erases what a show cost, and the numbers survive into a chart.</td><td class="n">M</td></tr>
+          <tr><td class="n">2.2</td><td class="k">Cost page</td><td><span class="tag t-be">BE</span> <span class="num">GET /api/cost?days=</span> over <span class="num">show_costs</span> + wallet. <span class="tag t-fe">FE</span> route <span class="num">/cost</span></td><td>Spend by show, calls by purpose and workspace consumption reconcile against each other on one screen.</td><td class="n">M</td></tr>
+          <tr><td class="n">2.3</td><td class="k">Settings, four tabs</td><td><span class="tag t-fe">FE</span> tab shell; Guardrails moves into it unchanged</td><td>Guardrails and the other tabs share one header, one nav and one spec.</td><td class="n">S</td></tr>
+          <tr><td class="n">2.4</td><td class="k">Stream agents, listed and deletable</td><td><span class="tag t-be">BE</span> <span class="num">GET /api/agents</span> from <span class="num">shows.agent_id</span> where owned; standalone delete for an orphan</td><td>Every agent this app created is visible with its show, and an orphan can be removed without deleting a show.</td><td class="n">M</td></tr>
+          <tr><td class="n">2.5</td><td class="k">Ingestion toggles that do something</td><td><span class="tag t-db">DB</span> widen the settings blob. <span class="tag t-be">BE</span> honour each flag in the pipeline and say so in the abstain reason</td><td>Turning host audio off makes the copilot abstain on “last one in this waist” instead of guessing.</td><td class="n">M</td></tr>
+          <tr><td class="n">2.6</td><td class="k">Automation defaults</td><td><span class="tag t-be">BE</span> move starting rung, undo window, confidence floor and action budget out of env into the editable policy</td><td>A new show starts at the rung the seller chose, with their undo window.</td><td class="n">M</td></tr>
+          <tr><td class="n">2.7</td><td class="k">Home: first run, and every other state</td><td><span class="tag t-fe">FE</span> empty, attaching, agent building, reconnecting, ended · report ready</td><td>A brand-new account sees one field and one sentence, not an empty grid.</td><td class="n">S</td></tr>
+          <tr><td class="n">2.8</td><td class="k">The states artboard, built</td><td><span class="tag t-fe">FE</span> the twelve states and dialogs as real components: empty, loading, unreachable, out of credit, watcher failing, delete confirm, flag-wrong, lot correction, pill legend, dry run, discovery empty, toast rail</td><td>Every screen has an empty, a loading and a failed state, and no destructive action happens without a sentence naming what it destroys.</td><td class="n">M</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- phase 3 -->
+  <div class="sec">
+    <div class="in">
+      <div class="ph"><span class="phn">PHASE 3</span><h2 class="h2">Trust features — 2–3 days</h2></div>
+      <p class="p" style="max-width:820px">Each one closes a loop the PRD opens: the unmeasurable metric, the questions the gate drops, the wording the seller keeps rewriting.</p>
+      <table style="margin-top:18px">
+        <thead><tr><th style="width:40px">#</th><th style="width:260px">Item</th><th style="width:300px">Work</th><th>Done when</th><th style="width:44px">Size</th></tr></thead>
+        <tbody>
+          <tr><td class="n">3.1</td><td class="k">Mark a sent reply wrong</td><td><span class="tag t-db">DB</span> <span class="num">reply_proposals.flagged_wrong</span> + reason. <span class="tag t-be">BE</span> flag route, audit entry. <span class="tag t-fe">FE</span> control on a sent line</td><td>The report's trust section stops saying “not self-measurable” and starts counting what the operator flagged.</td><td class="n">M</td></tr>
+          <tr><td class="n">3.2</td><td class="k">Answer a dropped comment</td><td><span class="tag t-be">BE</span> force-draft route bypassing the admission gate. <span class="tag t-fe">FE</span> action on any chat row</td><td>A question the gate dropped can be answered in two keystrokes, and the drop reason is recorded as a gate miss.</td><td class="n">S</td></tr>
+          <tr><td class="n">3.3</td><td class="k">Dry run a question</td><td><span class="tag t-be">BE</span> run the full pipeline without sending. <span class="tag t-fe">FE</span> panel in Settings and on setup</td><td>A guardrail change can be tested between shows and shows the same six pills.</td><td class="n">M</td></tr>
+          <tr><td class="n">3.4</td><td class="k">Correct the lot on screen</td><td><span class="tag t-be">BE</span> operator override on the observed lot, versioned like any other change. <span class="tag t-fe">FE</span> affordance on the pinned card</td><td>Naming the lot corrects every subsequent answer, and the audit says a human did it.</td><td class="n">M</td></tr>
+          <tr><td class="n">3.5</td><td class="k">Canned answers</td><td><span class="tag t-db">DB</span> <span class="num">canned_answers</span>. <span class="tag t-be">BE</span> save on edit, prefer on match. <span class="tag t-fe">FE</span> “save this wording”</td><td>The second time a question is asked, the seller's own wording comes back.</td><td class="n">M</td></tr>
+          <tr><td class="n">3.6</td><td class="k">Console rehydration</td><td><span class="tag t-be">BE</span> history route over <span class="num">chat_messages</span> + <span class="num">reply_proposals</span>. <span class="tag t-fe">FE</span> seed on hello</td><td>A refresh mid-show returns the queue and the chat, not an empty console beside a live audit chain.</td><td class="n">M</td></tr>
+          <tr><td class="n">3.7</td><td class="k">Toasts, banners, and the pill legend</td><td><span class="tag t-fe">FE</span> one toast rail carrying the undo; credit and disconnection banners; a one-time legend</td><td>A commit, a rollback and a 402 each produce something the operator can see without hunting.</td><td class="n">S</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- phase 4 -->
+  <div class="sec">
+    <div class="in">
+      <div class="ph"><span class="phn">PHASE 4</span><h2 class="h2">Depth — after the submission</h2></div>
+      <table style="margin-top:18px">
+        <thead><tr><th style="width:40px">#</th><th style="width:260px">Item</th><th style="width:300px">Work</th><th>Done when</th><th style="width:44px">Size</th></tr></thead>
+        <tbody>
+          <tr><td class="n">4.1</td><td class="k">Across-shows trends</td><td><span class="tag t-be">BE</span> aggregate <span class="num">show_reports</span> into a series. <span class="tag t-fe">FE</span> the four sparklines</td><td>Answered rate, p95, block rate and GMV per hour each plot nine shows against their target.</td><td class="n">M</td></tr>
+          <tr><td class="n">4.2</td><td class="k">Break it down by intent</td><td><span class="tag t-be">BE</span> group proposals by intent. <span class="tag t-fe">FE</span> table on analytics</td><td>The L3 allow-list can be argued from data instead of assumed.</td><td class="n">M</td></tr>
+          <tr><td class="n">4.3</td><td class="k">Promotion as an action</td><td><span class="tag t-be">BE</span> accept-promotion route writing an audit entry. <span class="tag t-fe">FE</span> the prompt when a rung is earned</td><td>Climbing the ladder is a recorded decision with a name against it.</td><td class="n">S</td></tr>
+          <tr><td class="n">4.4</td><td class="k">Budget cap with a stop</td><td><span class="tag t-be">BE</span> enforce a per-show cap in the metering seam. <span class="tag t-fe">FE</span> the field and the banner</td><td>A runaway show stops spending and says why, instead of draining a wallet quietly.</td><td class="n">S</td></tr>
+          <tr><td class="n">4.5</td><td class="k">Gaps become catalog edits</td><td><span class="tag t-be">BE</span> apply a field to the named lots. <span class="tag t-fe">FE</span> action on each gap row</td><td>“No fabric field on denim lots × 6” can be fixed from the report, on a show you own.</td><td class="n">L</td></tr>
+          <tr><td class="n">4.6</td><td class="k">Replay and export</td><td><span class="tag t-fe">FE</span> scrub audio, proposals and lot changes together; PDF export of the report</td><td>A show can be reviewed after the fact and handed to someone who was not there.</td><td class="n">L</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="in">
+      <span class="eyebrow">Status · after the build</span>
+      <h2 class="h2" style="margin-top:12px">Phases 0–3 shipped. Phase 4 shipped except 4.3. A fifth phase happened that this plan did not foresee.</h2>
+      <p class="p" style="margin-top:10px;max-width:840px">Read against the code on 14 Sep. Every row below is a claim that was checked by opening the screen it names; where a row says something the app does not do, the row was changed, not the app.</p>
+      <table style="margin-top:18px">
+        <thead><tr><th style="width:120px">Phase</th><th style="width:140px">State</th><th>What is true now</th></tr></thead>
+        <tbody>
+          <tr><td class="n">0 · Correctness</td><td><span class="g g-ok">done</span></td><td>Autonomy route guarded, promotion scoped to the account, ingest health and errors subscribed, per-show stream, camera reads metered, failed reports still listed.</td></tr>
+          <tr><td class="n">1 · Connect</td><td><span class="g g-ok">done</span></td><td>Report page, targets beside numbers, your shows with delete, readiness gate, catalog fit, autonomy readiness, followed sellers. 1.7 changed shape: Discover is session-gated and preparable, not best-effort — see Phase 5.</td></tr>
+          <tr><td class="n">1.5 · Shell</td><td><span class="g g-ok">done</span></td><td>Token layer, primitives, rail (now seven destinations, ⌘1–⌘7), live strip, one inspector, ⌘K/⌘J/⌘O, three bands, landing page.</td></tr>
+          <tr><td class="n">2 · Pages</td><td><span class="g g-ok">done</span></td><td>Per-show cost persisted, Cost page, Settings in five tabs (the fourth is eBay, not “Finding shows” — following lives on Shows), stream agents listed and droppable, ingestion toggles honoured at the door, automation defaults editable, every state built.</td></tr>
+          <tr><td class="n">3 · Trust</td><td><span class="g g-ok">done · 3.5 not</span></td><td>Mark wrong, answer a dropped comment, dry run, correct the lot, console rehydration, toasts and banners. <strong style="color:var(--ink)">3.5 canned answers</strong> is not built: an edit is kept in the report and counted in the edit rate, but not replayed on the next identical question.</td></tr>
+          <tr><td class="n">Accounts</td><td><span class="g g-ok">live</span></td><td>No guest door. A seller registers with an email and a password (scrypt; <span class="num">/api/auth/register · login · logout</span>) and every API route answers 401 without a session — the audit chain names a person. The front door is a landing page built from the Figma brand file (<span class="num">/</span>), with <span class="num">/login</span> and <span class="num">/register</span>; the stream and the audio bridge carry the session as a query parameter because neither can set a header.</td></tr>
+          <tr><td class="n">Deployed</td><td><span class="g g-ok">live</span></td><td>Frontend on Vercel (<span class="num">sidestage-five.vercel.app</span>, TanStack Start on the Nitro Vercel preset) with <span class="num">/privacy</span> and <span class="num">/terms</span>, which eBay's redirect registration requires over https. Backend on one t3.small in us-east-1: Postgres, the app and a real Chrome in Docker Compose behind Caddy, which issues the certificate for <span class="num">35-173-35-240.sslip.io</span> — an https origin without a domain. <span class="num">scripts/deploy-aws.sh up|deploy</span> is the whole procedure. The eBay Live session travels as Playwright storage state, never as the Chrome profile: macOS Chrome encrypts cookies with the Keychain. Measured from the box: attaching a show by link works (the player page renders chat after eBay's JavaScript challenge); the signed-in grid does not — eBay answers a datacenter address with an anonymous grid even on a valid session — so Discover and Prepare remain features of the seller's own machine, and the deployed empty state says exactly that.</td></tr>
+          <tr><td class="n">4 · Depth</td><td><span class="g g-ok">done · 4.3 not</span></td><td>4.1 across-shows overview, 4.2 by topic, 4.4 spend cap with a stop, 4.5 gaps answered into the catalog, 4.6 replay (the Timeline tab) and export (JSON + PDF). <strong style="color:var(--ink)">4.3 promotion as an action</strong> stays a switch on the show bar, recorded in the audit as <span class="num">autonomy_changed</span> — no separate accept route.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="in">
+      <div class="ph"><span class="phn">PHASE 5</span><h2 class="h2">What the seller's real shop needed — built, not planned</h2></div>
+      <p class="p" style="margin-top:10px;max-width:840px">None of this was in the six phases. It came from putting real eBay credentials in, signing into eBay Live, and asking what the copilot could know before a show starts and after it ends.</p>
+      <table style="margin-top:18px">
+        <thead><tr><th style="width:40px">#</th><th style="width:260px">Item</th><th style="width:300px">Work</th><th>Done when</th><th style="width:44px">Size</th></tr></thead>
+        <tbody>
+          <tr><td class="n">5.1</td><td class="k">eBay as a read source</td><td><span class="tag t-be">BE</span> Browse, Marketplace Insights (sold comps), Taxonomy (required aspects); market cache off the request path</td><td>Comps are sold prices where eBay has them and say “asking” where it does not; Setup names the aspect a category requires and the catalog lacks.</td><td class="n">L</td></tr>
+          <tr><td class="n">5.2</td><td class="k">eBay as a write target</td><td><span class="tag t-db">DB</span> ebay_accounts. <span class="tag t-be">BE</span> authorization-code consent, adapter with a value-based optimistic lock, withdraw-not-delete, per-show write target</td><td>A show can be switched from the mock to the seller's real sandbox listings, and a stale plan is refused rather than applied.</td><td class="n">L</td></tr>
+          <tr><td class="n">5.3</td><td class="k">Discover, session-gated</td><td><span class="tag t-be">BE</span> persistent Chrome profile signed into by the seller, live-grid reader, seller-page schedule reader. <span class="tag t-fe">FE</span> the grid, the three empty states</td><td>Signed out shows nothing and says why; signed in shows what eBay shows, with viewers and tags.</td><td class="n">L</td></tr>
+          <tr><td class="n">5.4</td><td class="k">Prepare a show before it starts</td><td><span class="tag t-db">DB</span> prepared_shows. <span class="tag t-be">BE</span> resolve the seller's username, pull their listings, build a catalog and an agent per event. <span class="tag t-fe">FE</span> Prepare / Monitor on every tile, prepared rows, agents listed in Settings</td><td>Attaching a prepared show reuses its agent and catalog, and the first question is answered from a full lineup.</td><td class="n">L</td></tr>
+          <tr><td class="n">5.5</td><td class="k">The show's signals, kept</td><td><span class="tag t-db">DB</span> show_transcript · show_frames · show_audio. <span class="tag t-be">BE</span> utterances with their distributions, the frames the agent read, ten-second audio chunks; media routes; export</td><td>A finished show can be played back against what was said and shown, and deleting the show deletes the bytes.</td><td class="n">M</td></tr>
+          <tr><td class="n">5.6</td><td class="k">The report in five sections</td><td><span class="tag t-be">BE</span> host summary as probability mass, the platform's session summary pulled, the agent's conclusion with typed next actions. <span class="tag t-fe">FE</span> Did it help · What the host did · Can I trust it · What the agent concluded · Fix before the next show; Replies, Actions, Audit and Timeline tabs</td><td>The report says how the show was hosted and what to change, in the agent's words, from evidence on the same page.</td><td class="n">M</td></tr>
+          <tr><td class="n">5.7</td><td class="k">Catalog page</td><td><span class="tag t-fe">FE</span> route /catalog; every lot with the market beside it and the match behind the delta; eBay search, sold vs asking</td><td>A seller can see the whole lineup priced against the market before a show, not one lot at a time in the research palette.</td><td class="n">M</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- not doing -->
+  <div class="sec" style="border-bottom:0">
+    <div class="in">
+      <span class="eyebrow">Deliberately not doing</span>
+      <h2 class="h2" style="margin-top:12px">Three things, and why — two of them changed.</h2>
+      <div style="margin-top:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+        <div class="card" style="background:var(--elev);border-color:var(--line2)">
+          <div style="font-size:15px;font-weight:600">A phone glance view</div>
+          <p class="p" style="margin-top:8px;font-size:12px">Splitting the interaction model while the desktop one is still being proven costs a week and answers a question nobody has asked yet. Revisit after the first pilot show.</p>
+        </div>
+        <div class="card" style="background:var(--elev);border-color:var(--line2)">
+          <div style="font-size:15px;font-weight:600">Defeating bot detection</div>
+          <p class="p" style="margin-top:8px;font-size:12px">Still not doing this. What changed is the premise: the grid was never refused, it was gated on a session. The seller signs in once, in a real browser, themselves — nothing here types a credential, and the profile is kept like a password. With the session, discovery is reliable and preparable; without it, the empty state says exactly that.</p>
+        </div>
+        <div class="card" style="background:var(--elev);border-color:var(--line2)">
+          <div style="font-size:15px;font-weight:600">Unlocking L4</div>
+          <p class="p" style="margin-top:8px;font-size:12px">An eBay adapter now exists, sandbox-only, switched on per show. L4 still stays locked: it needs a show that writes to eBay <em>and</em> a rollback rate under 10% across five shows. The reason on every surface changed from “no live adapter” to “until a show writes to eBay”.</p>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px;padding:16px 18px">
+        <div style="font-size:14px;font-weight:600">What gets tested as we go</div>
+        <p class="p" style="margin-top:8px;max-width:1000px;font-size:12px">Phase 0 adds an auth test per guarded route and a two-owner promotion test. Phase 1 adds a contract test per newly-called endpoint, so a shape change breaks a test rather than a screen. Phase 2 adds a migration round-trip and a cost-reconciliation test — the per-show rows must sum to the door totals. Phase 3 extends the guardrail eval with the flagged-wrong cases the operators produce, which is the first time the suite learns from live traffic rather than from its author.</p>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

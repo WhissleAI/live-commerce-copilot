@@ -1,0 +1,367 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+</head>
+<body>
+
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+  <style>
+    :root{
+      --canvas:oklch(0.9800 0.0028 264.5);
+      --panel:oklch(1 0 0);
+      --elev:oklch(0.9690 0.0035 264.5);
+      --line:oklch(0.9154 0.0055 264.5);
+      --line2:oklch(0.8558 0.0082 264.5);
+      --ink:oklch(0.2359 0.0118 264.5);
+      --ink2:oklch(0.4518 0.0151 262.7);
+      --ink3:oklch(0.5180 0.0165 261.3);
+      --accent:oklch(0.5487 0.1908 262.3);
+      --ok:oklch(0.5421 0.1489 147.8);
+      --warn:oklch(0.5812 0.1264 71.5);
+      --bad:oklch(0.5468 0.2093 27.4);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--canvas);color:var(--ink);
+      font-family:"Inter",ui-sans-serif,system-ui,-apple-system,sans-serif;
+      font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased}
+    a{color:var(--accent);text-decoration:none}
+    a:hover{color:oklch(0.46 0.19 262.3)}
+    p{margin:0}
+    ul{margin:0;padding:0;list-style:none}
+    svg{display:block;flex:none}
+    .num{font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+      font-variant-numeric:tabular-nums;letter-spacing:-0.01em}
+    .sh{font-size:11px;line-height:1.2;text-transform:uppercase;letter-spacing:.08em;
+      color:var(--ink3);font-weight:600}
+    .r{display:flex;align-items:center}
+    .i{stroke:currentColor;stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+
+    /* ── v2 · denser, quieter, with a real depth model ─────────────────── */
+    :root{
+      --accent-soft:oklch(0.5487 0.1908 262.3/.08);
+      --accent-line:oklch(0.5487 0.1908 262.3/.32);
+      --ink4:oklch(0.6300 0.0150 261.3);
+      --e1:var(--z1);
+      --e2:var(--z3);
+      --e3:var(--z3);
+      --r-xs:3px; --r-sm:5px; --r-md:7px; --r-lg:10px;
+      --h-xs:22px; --h-sm:26px; --h-md:30px; --h-lg:36px;
+      --bar:40px; --subbar:34px;
+      --fast:120ms cubic-bezier(.2,.7,.3,1); --slow:180ms cubic-bezier(.2,.7,.3,1);
+    }
+
+    /* ── v2 · the shell, shared by every page ─────────────────────────── */
+    .navbar{height:var(--bar);display:flex;align-items:center;gap:12px;padding:0 14px;
+      background:var(--canvas);border-bottom:1px solid var(--line)}
+    .navwm{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:600;
+      letter-spacing:.14em;text-transform:uppercase;color:var(--ink)}
+    .navtabs{display:flex;align-items:center;gap:2px}
+    .navtab{display:inline-flex;align-items:center;gap:6px;height:var(--h-sm);padding:0 10px;
+      border-radius:var(--r-sm);font-size:12px;color:var(--ink2)}
+    .navtab.on{background:var(--elev);color:var(--ink);font-weight:500}
+    .navsub{height:var(--subbar);display:flex;align-items:center;gap:16px;padding:0 16px;
+      background:var(--panel);border-bottom:1px solid var(--line)}
+    .navlink{font-size:11.5px;color:var(--ink3);height:var(--subbar);display:flex;align-items:center;gap:5px}
+    .navlink.on{color:var(--ink);font-weight:500;box-shadow:inset 0 -2px 0 var(--accent)}
+    .navghost{display:inline-flex;align-items:center;gap:6px;height:var(--h-sm);padding:0 9px;
+      border-radius:var(--r-sm);border:1px solid var(--line);background:var(--canvas);
+      font-size:11.5px;color:var(--ink2);white-space:nowrap}
+    .navkbd{font-size:11px;display:inline-flex;align-items:center;justify-content:center;height:17px;min-width:17px;
+      padding:0 5px;border-radius:var(--r-xs);border:1px solid var(--line2);background:var(--panel);
+      font-family:"JetBrains Mono",monospace;font-size:9.5px;color:var(--ink3)}
+    .titlerow{display:flex;align-items:center;gap:12px;padding:14px 0 0}
+
+    /* ── v3 · one ring, four layers ───────────────────────────────────── */
+    :root{
+      --ring:0 0 0 1px oklch(0.9060 0.0055 264.5);
+      --z1:var(--ring);
+      --z2:var(--ring), 0 1px 2px oklch(0.2359 0.0118 264.5/.04);
+      --z3:0 0 0 1px oklch(0.8900 0.0060 264.5), 0 6px 20px oklch(0.2359 0.0118 264.5/.10);
+      --z4:0 0 0 1px oklch(0.8900 0.0060 264.5), 0 16px 40px oklch(0.2359 0.0118 264.5/.14);
+      --rail:52px;
+    }
+
+    /* liveness, focus, and the two motions the product actually uses */
+    @keyframes ss-pulse{0%,100%{opacity:1}50%{opacity:.30}}
+    @keyframes ss-spin{to{transform:rotate(360deg)}}
+    .anim{animation:ss-pulse 1.8s ease-in-out infinite}
+    .spin{animation:ss-spin .9s linear infinite}
+    :focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+    @media (prefers-reduced-motion: reduce){
+      .anim,.spin{animation:none}
+    }
+    .page{width:1440px;height:5480px;background:var(--canvas);overflow:hidden}
+    .in{margin:0 auto;width:1240px;padding:0 24px}
+    .hero{border-bottom:1px solid var(--line);padding:40px 0 32px}
+    .disp{font-family:'Archivo',Inter,sans-serif;font-weight:700;font-stretch:112%;letter-spacing:-0.024em;line-height:1.05;margin:0}
+    .eyebrow{font-size:12px;font-weight:500;color:var(--ink3)}
+    .h2{font-family:'Archivo',Inter,sans-serif;font-weight:700;font-stretch:108%;letter-spacing:-0.018em;font-size:24px;line-height:1.15;margin:0}
+    .sec{padding:34px 0;border-bottom:1px solid var(--line)}
+    .p{font-size:13px;line-height:1.65;color:var(--ink2)}
+    .card{border:1px solid var(--line);border-radius:var(--r-md);background:var(--panel);padding:16px}
+    .chip{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;border:1px solid var(--line2);border-radius:var(--r-sm);padding:3px 8px;font-size:11.5px;color:var(--ink2)}
+    .sev{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;border-radius:3px;
+      padding:1px 6px;font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:0}
+    .s-p0{background:oklch(0.5468 0.2093 27.4/.12);color:var(--bad)}
+    .s-p1{background:oklch(0.5812 0.1264 71.5/.14);color:var(--warn)}
+    .s-p2{background:oklch(0.5487 0.1908 262.3/.10);color:var(--accent)}
+    table{width:100%;border-collapse:collapse}
+    th{text-align:left;font-weight:500;font-size:11.5px;
+      color:var(--ink3);padding:0 12px 8px;border-bottom:1px solid var(--line2)}
+    td{padding:10px 12px;border-bottom:1px solid var(--line);font-size:12.5px;line-height:1.6;color:var(--ink2);vertical-align:top}
+    td.k{color:var(--ink);font-weight:500;white-space:nowrap}
+    tr:last-child td{border-bottom:0}
+    .i{stroke:currentColor;stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+  </style>
+
+<div class="page">
+
+  <div class="hero">
+    <div class="in">
+      <span class="eyebrow">Design review · before we build</span>
+      <h1 class="disp" style="margin-top:14px;font-size:42px;max-width:900px">Eighteen artboards, read as one product.</h1>
+      <p class="p" style="margin-top:14px;max-width:760px;font-size:15px">What is missing, what is cluttered, and what the design promises that the code cannot do yet. Everything here is scoped against the PRD's one user — a solo seller who is on camera while the show runs.</p>
+      <div style="margin-top:18px;display:flex;gap:8px">
+        <span class="chip"><span class="sev s-p0">P0</span> blocks the core loop or the submission</span>
+        <span class="chip"><span class="sev s-p1">P1</span> trust and completeness</span>
+        <span class="chip"><span class="sev s-p2">P2</span> worth doing, not now</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- cross-cutting -->
+  <div class="sec">
+    <div class="in">
+      <span class="eyebrow">Cross-cutting</span>
+      <h2 class="h2" style="margin-top:12px">Six things every screen needs and none of them has.</h2>
+      <div style="margin-top:22px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+        <div class="card">
+          <div style="display:flex;align-items:center;gap:8px"><span class="sev s-p0">P0</span><span style="font-size:14px;font-weight:600">Three states, not one</span></div>
+          <p class="p" style="margin-top:8px">Every surface is drawn full of data. Empty, loading and failed are the states an operator actually meets first — a show with no proposals yet, a gateway that 402s mid-show, a catalog that never finished indexing.</p>
+        </div>
+        <div class="card">
+          <div style="display:flex;align-items:center;gap:8px"><span class="sev s-p0">P0</span><span style="font-size:14px;font-weight:600">Destructive actions need a sentence</span></div>
+          <p class="p" style="margin-top:8px">Delete removes the session, its Whissle agent and its knowledge base. The confirm has to name all three, and say what survives — the audit chain does not, and that is worth knowing before you click.</p>
+        </div>
+        <div class="card">
+          <div style="display:flex;align-items:center;gap:8px"><span class="sev s-p1">P1</span><span style="font-size:14px;font-weight:600">The six pills are unexplained on first use</span></div>
+          <p class="p" style="margin-top:8px">Position carries meaning only once someone has learned the row. A one-time legend on the first proposal of a seller's first show, dismissed forever after.</p>
+        </div>
+        <div class="card">
+          <div style="display:flex;align-items:center;gap:8px"><span class="sev s-p1">P1</span><span style="font-size:14px;font-weight:600">Nothing confirms what just happened</span></div>
+          <p class="p" style="margin-top:8px">A send, a commit, a rollback each change the world and produce no acknowledgement outside the card that scrolled away. One toast rail, bottom-left, carrying the undo for the last committed action.</p>
+        </div>
+        <div class="card">
+          <div style="display:flex;align-items:center;gap:8px"><span class="sev s-p1">P1</span><span style="font-size:14px;font-weight:600">Reload loses the conversation</span></div>
+          <p class="p" style="margin-top:8px">Chat and proposals are persisted per show but the console does not rehydrate them, so a refresh mid-show shows an empty queue beside a live audit chain. The rows exist; the read does not.</p>
+        </div>
+        <div class="card">
+          <div style="display:flex;align-items:center;gap:8px"><span class="sev s-p2">P2</span><span style="font-size:14px;font-weight:600">Desktop only, for someone holding a phone</span></div>
+          <p class="p" style="margin-top:8px">The console is <span class="num">h-screen</span> with the chat rail hidden below 1280px. The seller in the PRD is on camera with a phone propped beside them. A glance view is a decision, not a stylesheet — flagged under Open decisions.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- per surface -->
+  <div class="sec">
+    <div class="in">
+      <span class="eyebrow">Surface by surface</span>
+      <h2 class="h2" style="margin-top:12px">Refinements, in the order an operator meets them.</h2>
+
+      <table style="margin-top:22px">
+        <thead><tr><th style="width:150px">Surface</th><th style="width:56px">Pri</th><th style="width:290px">Refinement</th><th>Why it matters</th></tr></thead>
+        <tbody>
+          <tr><td class="k" rowspan="4">1 · Home</td><td><span class="sev s-p0">P0</span></td><td class="k" style="white-space:normal">First-run empty state</td><td>Today the page assumes four saved shows and five live ones. A new seller sees an empty grid with no idea that one URL is the whole setup.</td></tr>
+          <tr><td><span class="sev s-p0">P0</span></td><td class="k" style="white-space:normal">Delete confirmation naming the agent</td><td>The endpoint exists and nothing calls it. Wiring it without a confirm would delete a Whissle agent on a mis-click.</td></tr>
+          <tr><td><span class="sev s-p1">P1</span></td><td class="k" style="white-space:normal">Show state beyond live/ended</td><td>A card needs to say <em>attaching</em>, <em>agent building</em>, <em>reconnecting</em> and <em>ended · report ready</em>. Those states exist in the runtime and are invisible in the UI.</td></tr>
+          <tr><td><span class="sev s-p1">P1</span></td><td class="k" style="white-space:normal">Discovery is best-effort — design for empty</td><td><span class="num">GET /api/shows/discover</span> exists and returns what it can; eBay refuses automated browsers often enough that an empty grid is the normal case, not the error case. Pair it with followed sellers, which needs no grid at all.</td></tr>
+
+          <tr><td class="k" rowspan="4">2 · Setup</td><td><span class="sev s-p0">P0</span></td><td class="k" style="white-space:normal">Blocking vs advisory checks</td><td>Seven checks are drawn identically. Only two can stop a session; the audio bridge is advisory. The button state has to follow that distinction.</td></tr>
+          <tr><td><span class="sev s-p1">P1</span></td><td class="k" style="white-space:normal">Each check gets a fix, not a verdict</td><td>“Host audio not connected” should carry the button that opens the bridge; “knowledge base indexed” should link to what was indexed.</td></tr>
+          <tr><td><span class="sev s-p1">P1</span></td><td class="k" style="white-space:normal">Carry last show's gaps in</td><td>The report ends with eleven questions the catalog could not answer. Setup is where a seller can still fix them, and it currently does not mention them.</td></tr>
+          <tr><td><span class="sev s-p2">P2</span></td><td class="k" style="white-space:normal">Estimated cost for this show</td><td>Per-show spend is measured after the fact. A one-line estimate from the last comparable show closes the loop before the money is spent.</td></tr>
+
+          <tr><td class="k" rowspan="6">3 · Console</td><td><span class="sev s-p0">P0</span></td><td class="k" style="white-space:normal">Mark a sent reply wrong</td><td>The PRD's one unmeasurable metric. One control on a sent line turns it into a counted number, feeds the report's trust section, and is the input the weekly pilot review needs.</td></tr>
+          <tr><td><span class="sev s-p0">P0</span></td><td class="k" style="white-space:normal">Answer a dropped comment</td><td>1,204 messages were filtered on one show. When the gate is wrong, the operator currently has no way to say “answer that one”.</td></tr>
+          <tr><td><span class="sev s-p1">P1</span></td><td class="k" style="white-space:normal">Correct the pinned lot</td><td>Lot titles arrive as placeholders and are named from speech and camera. When that guesses wrong every downstream answer is wrong, and only the operator can see it.</td></tr>
+          <tr><td><span class="sev s-p1">P1</span></td><td class="k" style="white-space:normal">Queue filters as counts</td><td>“2 awaiting · 3 unanswerable” are already counts. Making them toggles costs no space and gives the operator a blocked-only view during a bad run.</td></tr>
+          <tr><td><span class="sev s-p1">P1</span></td><td class="k" style="white-space:normal">Credit and connection banners</td><td>A 402 stops proposals appearing. Silence looks identical to a quiet chat, which is the worst possible failure mode for a trust product.</td></tr>
+          <tr><td><span class="sev s-p2">P2</span></td><td class="k" style="white-space:normal">Latency meter opens its spans</td><td>The per-stage breakdown is already carried on every proposal; hover shows percentiles but not where the time went.</td></tr>
+
+          <tr><td class="k" rowspan="2">4 · Proposal</td><td><span class="sev s-p1">P1</span></td><td class="k" style="white-space:normal">Save an edited reply as canned</td><td>Live chat asks the same six questions all night. An edit is the seller teaching the system its own wording, and it is thrown away.</td></tr>
+          <tr><td><span class="sev s-p2">P2</span></td><td class="k" style="white-space:normal">Show the repair, not just the badge</td><td>“repaired” hides the more interesting artefact: the first draft, and what the guard changed.</td></tr>
+
+          <tr><td class="k" rowspan="3">6 · Report</td><td><span class="sev s-p0">P0</span></td><td class="k" style="white-space:normal">Nothing on the client asks for it</td><td>It is built, stored and served at <span class="num">GET /api/shows/:id/report</span> — and <span class="num">endSession</span> throws away the copy the server hands back, then reloads the page. The strongest artefact in the product is one fetch away.</td></tr>
+          <tr><td><span class="sev s-p1">P1</span></td><td class="k" style="white-space:normal">Gaps become tasks</td><td>“No fabric field on denim lots × 6” should offer to add the field to those lots on a show you own — otherwise the list is homework with no pencil.</td></tr>
+          <tr><td><span class="sev s-p2">P2</span></td><td class="k" style="white-space:normal">Replay the show</td><td>Audio timeline, proposals and lot changes on one scrub bar. Everything needed is already persisted per show.</td></tr>
+
+          <tr><td class="k" rowspan="2">7 · Analytics</td><td><span class="sev s-p1">P1</span></td><td class="k" style="white-space:normal">Break the numbers down by intent</td><td>Which topics get answered, blocked or abstained decides what belongs on the L3 allow-list. Right now that list is a constant.</td></tr>
+          <tr><td><span class="sev s-p1">P1</span></td><td class="k" style="white-space:normal">Promotion has to be an action</td><td>The readiness table says “2 of 3 shows”. When it reaches three, something has to offer the promotion — and record that the seller accepted it.</td></tr>
+
+          <tr><td class="k" rowspan="2">8 · Cost</td><td><span class="sev s-p1">P1</span></td><td class="k" style="white-space:normal">A per-show budget with a stop</td><td>The page warns at $5.00 but nothing enforces anything. A cap the seller sets, enforced in the metering seam, is a half-day of work.</td></tr>
+          <tr><td><span class="sev s-p2">P2</span></td><td class="k" style="white-space:normal">History needs a table to live in</td><td>Per-show spend is computed from wallet deltas at read time, so it cannot be charted after the fact. One row per show at session close fixes it permanently.</td></tr>
+
+          <tr><td class="k" rowspan="3">9 · Settings</td><td><span class="sev s-p0">P0</span></td><td class="k" style="white-space:normal">Dry-run a question</td><td>“Ask what it would say” with the full guard strip, without a show running. It is the fastest way to trust a guardrail change, and it reuses the whole pipeline.</td></tr>
+          <tr><td><span class="sev s-p1">P1</span></td><td class="k" style="white-space:normal">Ingestion toggles need a backend</td><td>The switches are drawn; the sources are hard-wired. Each one off is a class of question the copilot must abstain on rather than guess.</td></tr>
+          <tr><td><span class="sev s-p2">P2</span></td><td class="k" style="white-space:normal">Export and import the policy</td><td>A seller's never-say list is the most portable thing they own, and today it lives in one Postgres row.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+
+  <!-- built but unreachable -->
+  <div class="sec">
+    <div class="in">
+      <span class="eyebrow">Built, and never called</span>
+      <h2 class="h2" style="margin-top:12px">Seven server capabilities the interface does not use.</h2>
+      <p class="p" style="margin-top:10px;max-width:800px">This is the cheapest work in the plan and the largest visible gain: the data model, the computation and the routes already exist and are tested. What is missing is a fetch and a screen.</p>
+      <table style="margin-top:20px">
+        <thead><tr><th style="width:300px">Endpoint</th><th style="width:300px">What it already returns</th><th>What it unlocks</th></tr></thead>
+        <tbody>
+          <tr><td class="n">GET /api/shows/:id/report</td><td>Engagement, safety by guard with real block examples, inventory, actions, gaps, and the nested PRD metrics</td><td class="k" style="white-space:normal">The whole post-session report page</td></tr>
+          <tr><td class="n">GET /api/reports</td><td>The last 50 shows as summary rows — title, duration, questions, sent, blocked</td><td class="k" style="white-space:normal">“Your shows” on the home page</td></tr>
+          <tr><td class="n">GET /api/show/prd</td><td>GMV per show hour, sell-through with an answer, operator load, trust rates — every number §4 of the PRD promises</td><td class="k" style="white-space:normal">Targets beside the numbers on the report</td></tr>
+          <tr><td class="n">GET /api/catalogs/:id/readiness</td><td>Checks already carrying <span class="num">blocker | warning | info</span>, including a live read-back of what is armed on the agent</td><td class="k" style="white-space:normal">The readiness screen, with the right button state</td></tr>
+          <tr><td class="n">GET /api/show/fit</td><td>Catalog-to-lineup overlap verdict: match, weak, mismatch, unknown</td><td class="k" style="white-space:normal">The catalog-fit chips on home and setup</td></tr>
+          <tr><td class="n">GET /api/autonomy/readiness</td><td>Per-criterion progress: shows seen vs required, measured value vs target, met / not met / <em>unknown</em></td><td class="k" style="white-space:normal">The autonomy readiness table on analytics</td></tr>
+          <tr><td class="n">GET /api/shows/discover</td><td>Live eBay shows, best effort, capped at 30</td><td class="k" style="white-space:normal">The “live right now” grid, when it answers</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- correctness -->
+  <div class="sec">
+    <div class="in">
+      <span class="eyebrow">Found while reviewing</span>
+      <h2 class="h2" style="margin-top:12px">Six defects the design made visible.</h2>
+      <div style="margin-top:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+        <div class="card">
+          <div style="display:flex;align-items:center;gap:8px"><span class="sev s-p0">P0</span><span style="font-size:14px;font-weight:600">Anyone can move the autonomy rung</span></div>
+          <p class="p" style="margin-top:8px;font-size:12px"><span class="num">POST /api/autonomy</span> has no write guard, while send, approve and rollback all do. A guest — or an unauthenticated caller — can switch a show to auto-reply.</p>
+        </div>
+        <div class="card">
+          <div style="display:flex;align-items:center;gap:8px"><span class="sev s-p0">P0</span><span style="font-size:14px;font-weight:600">Promotion counts other people's shows</span></div>
+          <p class="p" style="margin-top:8px;font-size:12px">Readiness reads the last five reports globally, not the ones belonging to this account. A stranger's clean show can promote you, which is exactly the guarantee the ladder is supposed to make.</p>
+        </div>
+        <div class="card">
+          <div style="display:flex;align-items:center;gap:8px"><span class="sev s-p1">P1</span><span style="font-size:14px;font-weight:600">Ingest health is emitted and ignored</span></div>
+          <p class="p" style="margin-top:8px;font-size:12px">The server sends a <span class="num">source</span> event carrying connecting / connected / failing for the eBay watcher, and an <span class="num">error</span> event for an unknown show. The browser subscribes to neither — the same bug already fixed once for audio levels.</p>
+        </div>
+        <div class="card">
+          <div style="display:flex;align-items:center;gap:8px"><span class="sev s-p1">P1</span><span style="font-size:14px;font-weight:600">The stream ignores which show you opened</span></div>
+          <p class="p" style="margin-top:8px;font-size:12px">The console opens its event stream with no show id, so it always follows whichever show the server considers active. Two tabs on two shows cannot work, and the server already supports the parameter.</p>
+        </div>
+        <div class="card">
+          <div style="display:flex;align-items:center;gap:8px"><span class="sev s-p1">P1</span><span style="font-size:14px;font-weight:600">Vision spend is invisible</span></div>
+          <p class="p" style="margin-top:8px;font-size:12px">The meter counts a <span class="num">visual_read</span> door; the client's door list does not include it, so every camera read is metered and then rendered nowhere.</p>
+        </div>
+        <div class="card">
+          <div style="display:flex;align-items:center;gap:8px"><span class="sev s-p1">P1</span><span style="font-size:14px;font-weight:600">A show that failed to report disappears</span></div>
+          <p class="p" style="margin-top:8px;font-size:12px">The shows list is built from reports, and report generation swallows its own failure. A session that ended badly — the one you most want to look at — leaves no row.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- feature enhancements -->
+  <div class="sec">
+    <div class="in">
+      <span class="eyebrow">Feature enhancements</span>
+      <h2 class="h2" style="margin-top:12px">Five that change what the product is, not how it looks.</h2>
+      <div style="margin-top:22px;display:grid;grid-template-columns:repeat(5,1fr);gap:14px">
+        <div class="card">
+          <span class="sev s-p0">P0</span>
+          <div style="margin-top:10px;font-size:15px;font-weight:600">Wrong-reply flag</div>
+          <p class="p" style="margin-top:8px;font-size:12px">One control on a sent reply. Turns the PRD's unmeasurable metric into a counted one and gives the pilot its weekly review queue.</p>
+          <p class="num" style="margin-top:10px;font-size:11.5px;color:var(--ink3)">console · report · analytics</p>
+        </div>
+        <div class="card">
+          <span class="sev s-p0">P0</span>
+          <div style="margin-top:10px;font-size:15px;font-weight:600">Dry run</div>
+          <p class="p" style="margin-top:8px;font-size:12px">Ask the copilot anything against the current catalog and see the full guard strip. Trust is built between shows, not during them.</p>
+          <p class="num" style="margin-top:10px;font-size:11.5px;color:var(--ink3)">settings · setup</p>
+        </div>
+        <div class="card">
+          <span class="sev s-p1">P1</span>
+          <div style="margin-top:10px;font-size:15px;font-weight:600">Canned answers</div>
+          <p class="p" style="margin-top:8px;font-size:12px">Every edit a seller makes is their own wording. Save it, reuse it on the same question, and the cache stops being a latency trick and becomes a voice.</p>
+          <p class="num" style="margin-top:10px;font-size:11.5px;color:var(--ink3)">console · settings</p>
+        </div>
+        <div class="card">
+          <span class="sev s-p1">P1</span>
+          <div style="margin-top:10px;font-size:15px;font-weight:600">Followed sellers</div>
+          <p class="p" style="margin-top:8px;font-size:12px">One link per seller, watched for their next show. Replaces a discovery grid that has no lawful source with something that needs none.</p>
+          <p class="num" style="margin-top:10px;font-size:11.5px;color:var(--ink3)">home · backend poller</p>
+        </div>
+        <div class="card">
+          <span class="sev s-p1">P1</span>
+          <div style="margin-top:10px;font-size:15px;font-weight:600">Lot correction</div>
+          <p class="p" style="margin-top:8px;font-size:12px">Tell the copilot what is actually on screen. The one human input that fixes every downstream answer at once, and the placeholder-title problem needs it.</p>
+          <p class="num" style="margin-top:10px;font-size:11.5px;color:var(--ink3)">console · ingest</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- what the v3 pass changed -->
+  <div class="sec">
+    <div class="in">
+      <span class="eyebrow">Second pass · after an outside read</span>
+      <h2 class="h2" style="margin-top:12px">Nine things the design was doing that dated it.</h2>
+      <p class="p" style="margin-top:10px;max-width:840px">A senior product designer reviewed the whole set cold. The findings were structural rather than cosmetic, and all nine are now fixed across every artboard.</p>
+      <table style="margin-top:20px">
+        <thead><tr><th style="width:250px">What was wrong</th><th style="width:320px">The evidence</th><th>What it is now</th></tr></thead>
+        <tbody>
+          <tr><td class="k" style="white-space:normal">The declared base size was fiction</td><td>10px appeared 226 times and 9px 28 times; 13px — the “base” — only 66. Shrinking text to fit more in is the defining move of admin UI.</td><td>Five sizes: 11 for figures only, 12.5 UI, 15 content and headings, 20 figures, 32+ display. 242 sub-11px declarations removed.</td></tr>
+          <tr><td class="k" style="white-space:normal">Headings were smaller than body text</td><td>Section headings at 12px uppercase sat above 13px paragraphs.</td><td>15px semibold, sentence case, above 12.5px body.</td></tr>
+          <tr><td class="k" style="white-space:normal">Seven label styles doing one job</td><td>43 uppercase declarations across 23 different letter-spacings.</td><td>One label: 12px, medium, no tracking, no transform.</td></tr>
+          <tr><td class="k" style="white-space:normal">Borders carried all the separation</td><td>A 1.5% lightness step between surfaces made the ladder invisible, so a guard pill sat inside four concentric hairlines.</td><td>Grey canvas, white panels, one ring token and four z-layers. Anything on its own surface lost its outline.</td></tr>
+          <tr><td class="k" style="white-space:normal">Seven pill systems</td><td>Four heights and three radii on a single proposal card, with a 2px baseline jitter between two pills in the same row.</td><td>One badge and one key.</td></tr>
+          <tr><td class="k" style="white-space:normal">Topic colour collided with meaning</td><td>“Discount” sat at hue 20, two degrees from the red that means blocked, on the screen where red is load-bearing.</td><td>Topics start at 105 and step 30–40°; “other” carries no hue at all.</td></tr>
+          <tr><td class="k" style="white-space:normal">Blue meant six things</td><td>Links, primary buttons, focus, the L1 rung — and every username in the chat column, which made the narrowest rail the loudest thing on screen.</td><td>Accent means one thing. Usernames are ink.</td></tr>
+          <tr><td class="k" style="white-space:normal">The console spent 308px on chrome</td><td>36px app header + 56px show bar + six 36px ruled section bars, in a 900px window.</td><td>52px rail (width, not height), 44px bar, 34px strip, borderless pane labels.</td></tr>
+          <tr><td class="k" style="white-space:normal">There was no navigation</td><td>Four different page headers, three content widths, and an account dropdown as the only way between sections.</td><td>One shell on every product screen, and a live strip so a running show is never out of sight.</td></tr>
+        </tbody>
+      </table>
+      <p class="p" style="margin-top:16px;max-width:840px"><strong style="color:var(--ink)">The cause underneath all nine:</strong> 2,181 inline style attributes and no components. The proposal card was written three times and diverged three ways. Extracting eight primitives is item 1.5.2 in the plan and the prerequisite for the rest holding.</p>
+    </div>
+  </div>
+
+  <!-- open decisions -->
+  <div class="sec" style="border-bottom:0">
+    <div class="in">
+      <span class="eyebrow">Open decisions</span>
+      <h2 class="h2" style="margin-top:12px">Three calls — two of them now made.</h2>
+      <div style="margin-top:22px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+        <div class="card" style="background:var(--elev);border-color:var(--line2)">
+          <span class="sev s-p2" style="font-size:11px">OPEN</span>
+          <div style="margin-top:8px;font-size:15px;font-weight:600">A phone glance view?</div>
+          <p class="p" style="margin-top:8px;font-size:12px">The seller is on camera with their hands full. A phone view showing only the top proposal and a send button is either the most-used surface in the product or a distraction from the desktop console. It is roughly a week either way.</p>
+          <p class="p" style="margin-top:8px;font-size:12px;color:var(--ink3)"><strong style="color:var(--ink)">My call:</strong> not before the submission. It splits the interaction model while the desktop one is still being proven.</p>
+        </div>
+        <div class="card" style="background:var(--elev);border-color:var(--line2)">
+          <span class="sev s-p1" style="font-size:11px">DECIDED</span>
+          <div style="margin-top:8px;font-size:15px;font-weight:600">How hard do we push discovery?</div>
+          <p class="p" style="margin-top:8px;font-size:12px">The endpoint exists and answers when eBay lets it. Making it reliable means defeating a bot-detection control on a site we do not own.</p>
+          <p class="p" style="margin-top:8px;font-size:12px;color:var(--ink3)"><strong style="color:var(--ink)">Settled:</strong> best-effort, labelled “best effort” everywhere it appears, with a real empty state that points at the paste field. Followed sellers — one link per seller, polled on their own show page — is the dependable path, and the two are never presented as equivalent.</p>
+        </div>
+        <div class="card" style="background:var(--elev);border-color:var(--line2)">
+          <span class="sev s-p1" style="font-size:11px">DECIDED</span>
+          <div style="margin-top:8px;font-size:15px;font-weight:600">Does L4 ship at all?</div>
+          <p class="p" style="margin-top:8px;font-size:12px">Bounded auto-acting only ever runs against a mock marketplace today. Drawing the rung is honest; enabling it against a mock and calling it autonomy is not.</p>
+          <p class="p" style="margin-top:8px;font-size:12px;color:var(--ink3)"><strong style="color:var(--ink)">Settled:</strong> visible and locked, everywhere — the ladder menu, the readiness table, automation defaults and the landing page all carry the same reason: no live marketplace adapter. It unlocks when an adapter does, not when the rollback rate says so.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

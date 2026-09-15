@@ -11,9 +11,10 @@
  */
 
 @theme inline {
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
+  --radius-xs: 3px;
+  --radius-sm: 5px;
+  --radius-md: 7px;
+  --radius-lg: 10px;
 
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -29,6 +30,7 @@
   --color-text: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
   --color-text-muted: var(--text-muted);
+  --color-text-faint: var(--text-faint);
 
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
@@ -60,20 +62,25 @@
 
   --radius: 6px;
 
-  /* Light. The ramp is inverted, not recoloured: every token keeps the role it
-     had, so `canvas` is still the furthest-back surface and `elevated` is still
-     the one that comes forward under a cursor. The console is read at a glance
-     while a show is on air, so separation between the three surfaces has to
-     survive on a bright screen without turning into visible boxes. */
-  --canvas: oklch(1 0 0);
-  --panel: oklch(0.9848 0.0018 264.5);
-  --elevated: oklch(0.9642 0.0038 264.5);
+  /* The ladder is inverted: the PAGE is grey and the WORK is white.
+     It used to be the other way round with 1.5% between steps, which on a
+     bright screen is nothing — so hairlines carried all of the separation and
+     the console rendered as nested rectangles, four borders deep around a
+     single pill. A card is now white on grey with one ring, and anything that
+     already sits on its own surface has no outline at all. */
+  --canvas: oklch(0.9800 0.0028 264.5);
+  --panel: oklch(1 0 0);
+  --elevated: oklch(0.9690 0.0035 264.5);
   --hairline: oklch(0.9154 0.0055 264.5);
   --hairline-strong: oklch(0.8558 0.0082 264.5);
 
   --text-primary: oklch(0.2359 0.0118 264.5);
   --text-secondary: oklch(0.4518 0.0151 262.7);
-  --text-muted: oklch(0.6012 0.0163 261.3);
+  /* Darkened from 0.6012, which was ~3.9:1 on white — under AA, and this is the
+     colour every hint, sub-label, table header and rail icon uses. One token,
+     about two hundred declarations. */
+  --text-muted: oklch(0.5180 0.0165 261.3);
+  --text-faint: oklch(0.6300 0.0150 261.3);
 
   /* The status colours are darkened rather than reused: the dark theme's greens
      and ambers were tuned against a near-black canvas and fail contrast on
@@ -84,6 +91,21 @@
   --ok: oklch(0.5421 0.1489 147.8);
   --warn: oklch(0.5812 0.1264 71.5);
   --bad: oklch(0.5468 0.2093 27.4);
+
+  /* Depth, declared once. Four layers and a single ring, so "selected" stops
+     being five different treatments across five files. */
+  --ring: 0 0 0 1px oklch(0.9060 0.0055 264.5);
+  --z1: var(--ring);
+  --z2: var(--ring), 0 1px 2px oklch(0.2359 0.0118 264.5 / 0.04);
+  --z3: 0 0 0 1px oklch(0.8900 0.0060 264.5), 0 6px 20px oklch(0.2359 0.0118 264.5 / 0.10);
+  --z4: 0 0 0 1px oklch(0.8900 0.0060 264.5), 0 16px 40px oklch(0.2359 0.0118 264.5 / 0.14);
+
+  /* The shell. Navigation spends width, never height — the console cannot
+     spare the vertical. */
+  --rail: 52px;
+  --cbar: 44px;
+  --subbar: 34px;
+  --strip: 28px;
 
   --background: var(--canvas);
   --foreground: var(--text-primary);
@@ -120,7 +142,7 @@
     color: var(--color-text);
     font-family: var(--font-sans);
     font-size: 13px;
-    line-height: 1.45;
+    line-height: 1.5;
     overflow: hidden;
     -webkit-font-smoothing: antialiased;
   }
@@ -138,14 +160,30 @@
   letter-spacing: -0.01em;
 }
 
+/* One label style. There used to be seven near-identical tracked-uppercase
+   classes doing this job, and section headings that were SMALLER than the body
+   text beneath them. */
 @utility section-header {
-  font-size: 11px;
-  line-height: 1.2;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  font-size: 12px;
+  line-height: 1.3;
+  letter-spacing: 0;
   color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+@utility section-heading {
+  font-size: 15px;
+  line-height: 1.25;
+  letter-spacing: -0.008em;
+  color: var(--color-text);
   font-weight: 600;
 }
+
+/* Depth, as utilities, so a component never invents its own shadow. */
+@utility z1 { box-shadow: var(--z1); }
+@utility z2 { box-shadow: var(--z2); }
+@utility z3 { box-shadow: var(--z3); }
+@utility z4 { box-shadow: var(--z4); }
 
 @utility hatch {
   background-image: repeating-linear-gradient(
@@ -250,4 +288,20 @@
     opacity: 1;
     transform: none;
   }
+}
+
+/* Landing page: sections below the fold fade up once as they enter. Visible
+   by default — the `pre` class is only added by JS once it knows the tab is
+   visible and motion is allowed, so nothing is ever parked at opacity 0. */
+[data-reveal] {
+  scroll-margin-top: 76px;
+}
+[data-reveal].pre {
+  opacity: 0;
+  transform: translateY(14px);
+}
+[data-reveal].in {
+  opacity: 1;
+  transform: none;
+  transition: opacity 0.55s ease, transform 0.55s ease;
 }

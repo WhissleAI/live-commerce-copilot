@@ -1,0 +1,255 @@
+{
+  "pages": [
+    {
+      "id": "page-1",
+      "name": "Product"
+    },
+    {
+      "id": "page-2",
+      "name": "Brand"
+    },
+    {
+      "id": "page-3",
+      "name": "Review & plan"
+    }
+  ],
+  "artboards": [
+    {
+      "file": "Home.dc.html",
+      "x": 1560,
+      "y": 0,
+      "w": 1440,
+      "h": 1900,
+      "page": "page-1",
+      "title": "1 · Shows — your show, what is live, prepare ahead"
+    },
+    {
+      "file": "Setup.dc.html",
+      "x": 3120,
+      "y": 0,
+      "w": 1440,
+      "h": 1180,
+      "page": "page-1",
+      "title": "2 · Setup — ready to answer?"
+    },
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 2100,
+      "w": 1440,
+      "h": 900,
+      "page": "page-1",
+      "title": "3 · Live console"
+    },
+    {
+      "file": "Proposal.dc.html",
+      "x": 1560,
+      "y": 2100,
+      "w": 960,
+      "h": 700,
+      "page": "page-1",
+      "title": "4 · Proposal anatomy"
+    },
+    {
+      "file": "Details.dc.html",
+      "x": 2640,
+      "y": 2100,
+      "w": 728,
+      "h": 1330,
+      "page": "page-1",
+      "title": "5 · Menus & overlays"
+    },
+    {
+      "file": "Report.dc.html",
+      "x": 0,
+      "y": 3570,
+      "w": 1440,
+      "h": 2760,
+      "page": "page-1",
+      "title": "6 · Report — one finished show, five sections"
+    },
+    {
+      "file": "Analytics.dc.html",
+      "x": 1560,
+      "y": 3570,
+      "w": 1440,
+      "h": 1900,
+      "page": "page-1",
+      "title": "7 · Analytics — across shows, by topic"
+    },
+    {
+      "file": "Cost.dc.html",
+      "x": 3120,
+      "y": 3570,
+      "w": 1440,
+      "h": 1320,
+      "page": "page-1",
+      "title": "8 · Cost"
+    },
+    {
+      "file": "Settings.dc.html",
+      "x": 0,
+      "y": 6760,
+      "w": 1440,
+      "h": 2240,
+      "page": "page-1",
+      "title": "9 · Settings — agents, ingestion, automation, eBay"
+    },
+    {
+      "file": "Guardrails.dc.html",
+      "x": 1560,
+      "y": 6760,
+      "w": 1440,
+      "h": 1120,
+      "page": "page-1",
+      "title": "10 · Settings — guardrails"
+    },
+    {
+      "file": "Landing.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 5860,
+      "page": "page-2",
+      "print": "flow",
+      "title": "Marketing landing page"
+    },
+    {
+      "file": "System.dc.html",
+      "x": 1560,
+      "y": 0,
+      "w": 1340,
+      "h": 1520,
+      "page": "page-2",
+      "title": "Design system"
+    },
+    {
+      "file": "Review.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 6500,
+      "page": "page-3",
+      "print": "flow",
+      "title": "Design review — findings"
+    },
+    {
+      "file": "Plan.dc.html",
+      "x": 1560,
+      "y": 0,
+      "w": 1440,
+      "h": 6400,
+      "page": "page-3",
+      "print": "flow",
+      "title": "Build plan — six phases"
+    },
+    {
+      "file": "States.dc.html",
+      "x": 3120,
+      "y": 6760,
+      "w": 1440,
+      "h": 1420,
+      "page": "page-1",
+      "title": "11 · States, dialogs & overlays"
+    },
+    {
+      "file": "Shell.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 1640,
+      "page": "page-1",
+      "title": "0 · Navigation shell"
+    },
+    {
+      "file": "Menus.dc.html",
+      "x": 0,
+      "y": 9120,
+      "w": 1440,
+      "h": 1760,
+      "page": "page-1",
+      "title": "12 · Menus, panels & overlays"
+    },
+    {
+      "file": "Journey.dc.html",
+      "x": 3120,
+      "y": 0,
+      "w": 1440,
+      "h": 1560,
+      "page": "page-3",
+      "title": "Experience map — end to end"
+    },
+    {
+      "file": "Catalog.dc.html",
+      "x": 4680,
+      "y": 0,
+      "w": 1440,
+      "h": 1240,
+      "page": "page-1",
+      "title": "2b · Catalog — priced against the market"
+    },
+    {
+      "file": "Timeline.dc.html",
+      "x": 3120,
+      "y": 5000,
+      "w": 1440,
+      "h": 1180,
+      "page": "page-1",
+      "title": "6b · Report — the show, played back"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "matched-from-app",
+      "x": 0,
+      "y": -170,
+      "w": 440,
+      "page": "page-1",
+      "text": "Matched to the shipped app, not invented: every colour, size, radius and control height is lifted from src/styles.css and the console components — Inter 13px, JetBrains Mono for anything comparable, 6px radii, hairline borders, no shadows.\n\nStatic mockups, numbered in the order an operator meets them."
+    },
+    {
+      "id": "one-surface-each",
+      "x": 480,
+      "y": -170,
+      "w": 440,
+      "page": "page-1",
+      "text": "Each page answers one question, so nothing is said twice: the report is ONE finished show against the PRD's targets, analytics is ACROSS shows plus autonomy readiness, cost is the money, settings is configuration in four tabs. The in-session cost rail stays in the console, where it is read against the queue."
+    },
+    {
+      "id": "new-in-this-pass",
+      "x": 960,
+      "y": -170,
+      "w": 440,
+      "page": "page-1",
+      "text": "Third pass, after the build: every artboard here was re-read against the shipped app and corrected to it — seven rail destinations, ⌘-number keys, session-gated Discover with prepare-ahead, a Setup that carries last show's gaps, a Report in five sections with the host's signals, the agent's conclusion and a playable timeline, Analytics by topic, and an eBay tab. What is drawn is what runs."
+    },
+    {
+      "id": "discovery-needs-source",
+      "x": 1440,
+      "y": -170,
+      "w": 420,
+      "page": "page-1",
+      "text": "Discover is session-gated, not best-effort: eBay Live streams nothing to a signed-out visitor and 224 events to a signed-in one. `npm run ebay:signin` opens a real browser the seller signs into themselves; the profile is kept like a password, outside the repo. With it, every live show can be PREPARED — its own agent and catalog — before it starts. Deployed on AWS the grid is refused even with the session — eBay tells a datacenter address apart — so Discover and Prepare run on the seller's machine; attaching by link runs anywhere."
+    },
+    {
+      "id": "landing-paginates",
+      "x": 0,
+      "y": -130,
+      "w": 420,
+      "page": "page-2",
+      "text": "The landing artboard is set to flow, so Export PDF paginates it. Every number on it is a measured one with its caveat attached — no invented market statistics, no testimonials."
+    },
+    {
+      "id": "plan-reads-with-canvas",
+      "x": 0,
+      "y": -130,
+      "w": 460,
+      "page": "page-3",
+      "text": "Read these two beside the Product page: every row names the surface it changes. Priorities are P0 blocks the core loop, P1 trust and completeness, P2 worth doing later.\n\nThe inventory behind it was taken from the two repos, not from memory — seven endpoints already exist with no caller."
+    }
+  ],
+  "launch": {
+    "view": "canvas",
+    "page": "page-1"
+  }
+}

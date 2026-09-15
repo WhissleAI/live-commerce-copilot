@@ -126,8 +126,28 @@ export function CommandPalette({
               <h2 className="text-[13px] font-semibold text-text">{card.headline}</h2>
               <div className="num mt-1 text-[26px] leading-none text-text">
                 {formatMoney(card.medianCents)}
-                <span className="ml-2 text-[11px] text-text-muted">median comp</span>
+                {/* The label is the finding. "median comp" over a set of active
+                    asking prices is the confident wrongness the guardrails
+                    exist to catch — it must not appear on our own card. */}
+                <span className="ml-2 text-[11px] text-text-muted">
+                  {card.marketBasis === "asking"
+                    ? "median ASKING price"
+                    : card.marketBasis === "sold"
+                      ? "median sold price"
+                      : "no comparables"}
+                </span>
               </div>
+              <p className="mt-1 text-[11px] text-text-muted">
+                {card.marketSource === "ebay-sold"
+                  ? `${card.comps.length} completed eBay sales in the last 90 days — what these actually went for.`
+                  : card.marketSource === "ebay-active"
+                    ? `${card.comps.length} active eBay listings, right now. No completed sales matched, so this is what sellers are asking.`
+                    : card.marketSource === "checking"
+                      ? "Checking eBay for comparables…"
+                      : card.marketSource === "seeded"
+                        ? "Seeded comparable sales — this show is running without live market data."
+                        : "Nothing comparable found."}
+              </p>
             </div>
 
             <table className="w-full text-[11px]">
@@ -136,8 +156,12 @@ export function CommandPalette({
                   <th className="font-normal">title</th>
                   <th className="font-normal">size</th>
                   <th className="font-normal">cond</th>
-                  <th className="text-right font-normal">sold</th>
-                  <th className="text-right font-normal">date</th>
+                  <th className="text-right font-normal">
+                    {card.marketBasis === "asking" ? "asking" : "sold"}
+                  </th>
+                  <th className="text-right font-normal">
+                    {card.marketBasis === "asking" ? "listed" : "date"}
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -146,9 +170,22 @@ export function CommandPalette({
                     <td className="max-w-[280px] truncate py-0.5">{c.title}</td>
                     <td className="num">{c.size}</td>
                     <td>{c.condition}</td>
-                    <td className="num text-right text-text">{formatMoney(c.soldPriceCents)}</td>
+                    <td className="num text-right text-text">{formatMoney(c.priceCents)}</td>
                     <td className="num text-right">
-                      {new Date(c.soldAt).toISOString().slice(0, 10)}
+                      {c.soldAt ? (
+                        new Date(c.soldAt).toISOString().slice(0, 10)
+                      ) : c.url ? (
+                        <a
+                          href={c.url}
+                          target="_blank"
+                          rel="noreferrer noopener"
+                          className="text-accent hover:underline"
+                        >
+                          live
+                        </a>
+                      ) : (
+                        "live"
+                      )}
                     </td>
                   </tr>
                 ))}

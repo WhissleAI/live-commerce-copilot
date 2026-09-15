@@ -1,0 +1,216 @@
+<div class="page">
+  <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:18px">
+    <h1 style="margin:0;font-family:'Archivo',Inter,sans-serif;font-size:22px;font-weight:700;font-stretch:110%;letter-spacing:-0.02em">Menus, panels and overlays</h1>
+    <span style="font-size:11.5px;color:var(--ink3)">one grammar — 7px radius, hairline border, a single shadow, 26px rows, shortcut on the right</span>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px 22px;align-items:start">
+
+    <!-- show switcher -->
+    <div>
+      <div class="lbl">Show switcher · ⌘O — the command bar, opened to your shows</div>
+      <div class="menu">
+        <div class="mh">
+          <svg viewBox="0 0 16 16" width="12" height="12" class="i" style="color:var(--ink3)"><circle cx="7.2" cy="7.2" r="4"/><path d="M10.2 10.2 13.5 13.5"/></svg>
+          <span style="flex:1;font-size:11.5px;color:var(--ink3)">Find a show or paste a link…</span>
+        </div>
+        <div class="mg">Live now</div>
+        <div class="mi on"><span class="dot" style="background:var(--bad)"></span><span>Denim Vault — Friday Night Drop<span class="sub">@northsidethrift · 412 watching · 01:12</span></span></div>
+        <div class="mi"><span class="dot" style="background:var(--bad)"></span><span>Raw Denim &amp; Workwear<span class="sub">@pacificrawgoods · followed · 42m in</span></span></div>
+        <div class="mg">Recent</div>
+        <div class="mi"><span class="dot" style="background:var(--line2)"></span><span>Card Break Sunday<span class="sub">Sun · report ready</span></span></div>
+        <div class="mi"><span class="dot" style="background:var(--line2)"></span><span>Sneaker Vault Wednesday<span class="sub">Wed · report ready</span></span></div>
+        <div class="mf"><svg viewBox="0 0 16 16" width="11" height="11" class="i"><path d="M8 3.5v9M3.5 8h9"/></svg>Monitor a new show<span class="kbd" style="margin-left:auto">⏎</span></div>
+      </div>
+    </div>
+
+    <!-- command palette -->
+    <div>
+      <div class="lbl">Command palette · ⌘K — go, do, find</div>
+      <div class="menu">
+        <div class="mh"><span style="flex:1;font-size:12px">ver</span><span class="kbd">esc</span></div>
+        <div class="mg">On this show</div>
+        <div class="mi on"><svg viewBox="0 0 16 16" width="13" height="13" class="i" style="color:var(--ink3)"><path d="M8 2.2 13 4v4c0 3-2.2 5.2-5 6-2.8-.8-5-3-5-6V4l5-1.8z"/></svg><span>Verify the audit chain<span class="sub">re-hash every entry end to end</span></span></div>
+        <div class="mi"><svg viewBox="0 0 16 16" width="13" height="13" class="i" style="color:var(--ink3)"><circle cx="7.2" cy="7.2" r="4"/><path d="M10.2 10.2 13.5 13.5"/></svg><span>Research a product<span class="sub">comps, spec diff, a price to say out loud</span></span><span class="k">⌘J</span></div>
+        <div class="mi"><svg viewBox="0 0 16 16" width="13" height="13" class="i" style="color:var(--ink3)"><path d="M3 12.5V9M8 12.5V6M13 12.5V3.5"/></svg><span>Change the autonomy level<span class="sub">the ladder lives in the show bar</span></span></div>
+        <div class="mg">Go to</div>
+        <div class="mi"><svg viewBox="0 0 16 16" width="13" height="13" class="i" style="color:var(--ink3)"><path d="M4 2.5h5l3 3v8H4z"/></svg><span>Reports</span><span class="k">⌘4</span></div>
+        <div class="mg">Shows</div>
+        <div class="mi"><svg viewBox="0 0 16 16" width="13" height="13" class="i" style="color:var(--ink3)"><path d="M4 2.5h5l3 3v8H4z"/></svg><span>Card Break Sunday — PSA slabs<span class="sub">finished — open the report</span></span></div>
+        <div class="mf">↑↓ move · ⏎ run · ⌘J asks instead</div>
+
+      </div>
+    </div>
+
+    <!-- autonomy -->
+    <div>
+      <div class="lbl">Autonomy · on the show strip</div>
+      <div class="menu">
+        <div class="mi"><span class="num" style="width:18px;font-size:11.5px;color:var(--ink3)">L0</span><span>Observe<span class="sub">Classifies chat, suggests nothing</span></span></div>
+        <div class="mi on"><span class="num" style="width:18px;font-size:11.5px;color:var(--accent)">L1</span><span style="color:var(--accent)">Suggest<span class="sub" style="color:var(--ink3)">Drafts every reply; you send them</span></span><svg viewBox="0 0 16 16" width="12" height="12" class="i" style="margin-left:auto;color:var(--accent)"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg></div>
+        <div class="mi"><span class="num" style="width:18px;font-size:11.5px;color:var(--ink3)">L2</span><span>One-tap<span class="sub">1 more clean show to unlock</span></span><span class="k">2/3</span></div>
+        <div class="mi" style="opacity:.55"><span class="num" style="width:18px;font-size:11.5px;color:var(--ink3)">L3</span><span>Auto-reply<span class="sub">Allow-listed topics, never price</span></span><svg viewBox="0 0 16 16" width="11" height="11" class="i" style="margin-left:auto;color:var(--ink3)"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg></div>
+        <div class="mi" style="opacity:.55"><span class="num" style="width:18px;font-size:11.5px;color:var(--ink3)">L4</span><span>Auto-act<span class="sub" style="color:var(--warn)">Locked until a show writes to eBay</span></span><svg viewBox="0 0 16 16" width="11" height="11" class="i" style="margin-left:auto;color:var(--ink3)"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg></div>
+        <div class="mf">A guardrail block never auto-sends, at any rung.</div>
+      </div>
+    </div>
+
+    <!-- account -->
+    <div>
+      <div class="lbl">Account</div>
+      <div class="menu">
+        <div style="padding:10px;border-bottom:1px solid var(--line)">
+          <div style="font-size:12px;font-weight:500">Guest session</div>
+          <div class="m" style="margin-top:2px">Can watch and read every proposal. Cannot send a reply or approve an action.</div>
+          <span style="margin-top:8px;display:flex;align-items:center;justify-content:center;gap:6px;height:26px;border-radius:var(--r-sm);background:var(--accent);color:oklch(0.99 0 0);font-size:11px;font-weight:500">Take control</span>
+        </div>
+        <div class="mi"><svg viewBox="0 0 16 16" width="13" height="13" class="i" style="color:var(--ink3)"><circle cx="8" cy="8" r="2.2"/><path d="M8 2.5v1.6M8 11.9v1.6M13.5 8h-1.6M4.1 8H2.5M11.9 4.1l-1.1 1.1M5.2 10.8l-1.1 1.1M11.9 11.9l-1.1-1.1M5.2 5.2 4.1 4.1"/></svg><span>Settings · Account &amp; data</span><span class="k">⌘7</span></div>
+        <div class="mi"><svg viewBox="0 0 16 16" width="13" height="13" class="i" style="color:var(--ink3)"><path d="M8 2.2 13 4v4c0 3-2.2 5.2-5 6-2.8-.8-5-3-5-6V4l5-1.8z"/></svg><span>Guardrail policy<span class="sub">17 rules · 15 armed on the agent</span></span></div>
+        <div class="mf">Signed replies and approvals are recorded against this account.</div>
+      </div>
+    </div>
+
+    <!-- proposal overflow with submenu -->
+    <div>
+      <div class="lbl">Proposal · “why this reply” opens the inspector</div>
+      <div style="position:relative">
+        <div class="menu" style="width:210px">
+          <div class="mi"><svg viewBox="0 0 16 16" width="13" height="13" class="i" style="color:var(--ink3)"><rect x="5" y="5" width="8" height="8" rx="1.5"/><path d="M3 11V3.5h7.5"/></svg><span>Copy reply</span><span class="k">⌘C</span></div>
+          <div class="mi on"><svg viewBox="0 0 16 16" width="13" height="13" class="i" style="color:var(--ink3)"><circle cx="8" cy="8" r="6"/><path d="M8 7.2v4M8 4.9v.2"/></svg><span>Why this reply?</span><span class="k">I</span><svg viewBox="0 0 16 16" width="11" height="11" class="i" style="margin-left:auto"><path d="M6.5 4.5 10 8l-3.5 3.5"/></svg></div>
+          <div class="mi"><svg viewBox="0 0 16 16" width="13" height="13" class="i" style="color:var(--ink3)"><path d="M4 14V3.2M4 3.2h7.2l-.9 2.4.9 2.4H4"/></svg><span>Mark wrong… <span class="sub">wrong fact · out of date · wrong lot · tone · should have abstained</span></span></div>
+          <div class="mi" style="color:var(--bad)"><svg viewBox="0 0 16 16" width="13" height="13" class="i"><path d="M4 4l8 8M12 4l-8 8"/></svg><span>Dismiss</span><span class="k">X</span></div>
+        </div>
+        <div class="menu" style="position:absolute;left:198px;top:52px;width:236px">
+          <div class="mg">3 facts, at the version read</div>
+          <div class="mi" style="align-items:flex-start"><svg viewBox="0 0 16 16" width="12" height="12" class="i" style="margin-top:2px;color:var(--ink3)"><path d="M3 3.5h10v9H3z"/><path d="M8 3.5v9"/></svg><span style="font-size:11px">Shipping policy · intl rate<span class="sub">“Canada — flat $18.50, 1 business day handling.”</span></span></div>
+          <div class="mi" style="align-items:flex-start"><svg viewBox="0 0 16 16" width="12" height="12" class="i" style="margin-top:2px;color:var(--ink3)"><path d="M2.8 8.3 8 3h5v5l-5.3 5.2a1 1 0 0 1-1.4 0L2.8 9.7a1 1 0 0 1 0-1.4z"/></svg><span style="font-size:11px">Lot #007 · v13<span class="sub">score 0.91 · read 1.4s before the draft</span></span></div>
+          <div class="mf">Open in the inspector <span class="kbd" style="margin-left:auto">I</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- chat context menu -->
+    <div style="margin-top:0">
+      <div class="lbl">Chat row · right click</div>
+      <div class="menu" style="width:100%">
+        <div class="mi"><svg viewBox="0 0 16 16" width="13" height="13" class="i" style="color:var(--ink3)"><path d="M3 3.5h10v7H8.5L6 13v-2.5H3z"/></svg><span>Answer this<span class="sub">drafts even though the gate dropped it</span></span></div>
+        <div class="mi"><svg viewBox="0 0 16 16" width="13" height="13" class="i" style="color:var(--ink3)"><circle cx="8" cy="8" r="6"/><path d="M8 7.2v4M8 4.9v.2"/></svg><span>Why was this dropped?<span class="sub">reaction · no question detected</span></span></div>
+        <div class="mf">Dropped comments keep their reason; “answer this” records a gate miss.</div>
+      </div>
+    </div>
+
+    <!-- filter -->
+    <div>
+      <div class="lbl">Queue filter · the counts are the toggles</div>
+      <div class="menu">
+        <div class="mg">Status</div>
+        <div class="mi"><span style="width:13px;height:13px;border-radius:3px;background:var(--accent);display:grid;place-items:center;color:oklch(0.99 0 0)"><svg viewBox="0 0 16 16" width="9" height="9" class="i" style="stroke-width:2.4"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg></span><span>Awaiting</span><span class="k">2</span></div>
+        <div class="mi"><span style="width:13px;height:13px;border-radius:3px;border:1px solid var(--line2)"></span><span>Blocked</span><span class="k">1</span></div>
+        <div class="mi"><span style="width:13px;height:13px;border-radius:3px;border:1px solid var(--line2)"></span><span>Unanswerable</span><span class="k">3</span></div>
+        <div class="mf">Unanswerable is a count, not a filter — those are the gaps, listed under the queue.</div>
+      </div>
+    </div>
+
+    <!-- range + export -->
+    <div>
+      <div class="lbl">Range, and export</div>
+      <div class="menu" style="margin-bottom:12px">
+        <div class="mi"><span>Last 7 days</span></div>
+        <div class="mi on"><span>Last 30 days</span><svg viewBox="0 0 16 16" width="12" height="12" class="i" style="margin-left:auto;color:var(--accent)"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg></div>
+        <div class="mi"><span>Last 90 days</span></div>
+      </div>
+      <div class="menu">
+        <div class="mi"><span>Export report as PDF<span class="sub">what a seller forwards to a partner</span></span></div>
+        <div class="mi"><span>Export the show as JSON<span class="sub">report, every reply, action and audit entry, and the timeline — media by link</span></span></div>
+      </div>
+    </div>
+
+    <!-- inspector -->
+    <div>
+      <div class="lbl">Inspector · 380px, opens beside the work</div>
+      <div style="border:1px solid var(--line);border-radius:var(--r-md);background:var(--panel);overflow:hidden">
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line)">
+          <span style="font-size:11.5px;font-weight:600;flex:1">Proposal · carl_w</span>
+          <span class="kbd">I</span>
+          <svg viewBox="0 0 16 16" width="12" height="12" class="i" style="color:var(--ink3)"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+        </div>
+        <div style="padding:10px;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;gap:4px;flex-wrap:wrap">
+            <span class="g g-na"><span class="num">–</span>price</span><span class="g g-na"><span class="num">–</span>stock</span>
+            <span class="g g-ok"><span class="num">✓</span>policy</span><span class="g g-ok"><span class="num">✓</span>grounding</span>
+            <span class="g g-ok"><span class="num">✓</span>tone</span><span class="g g-ok"><span class="num">✓</span>pii</span>
+          </div>
+          <div>
+            <div class="m">Evidence</div>
+            <div style="margin-top:5px;display:flex;flex-direction:column;gap:5px">
+              <div style="border:1px solid var(--line);border-radius:var(--r-sm);background:var(--canvas);padding:7px 8px">
+                <div style="font-size:11px">“Canada — flat $18.50, 1 business day handling.”</div>
+                <div class="num" style="margin-top:3px;display:flex;justify-content:space-between;font-size:11px;color:var(--ink3)"><span>policy:shipping#intl</span><span>0.94</span></div>
+              </div>
+              <div style="border:1px solid var(--line);border-radius:var(--r-sm);background:var(--canvas);padding:7px 8px">
+                <div style="font-size:11px">Lot #007 · Levi's 505, 34×32 · $142.00</div>
+                <div class="num" style="margin-top:3px;display:flex;justify-content:space-between;font-size:11px;color:var(--ink3)"><span>listing:007#price · v13</span><span>0.91</span></div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="m">Timing</div>
+            <div style="margin-top:5px;display:flex;height:7px;border-radius:99px;overflow:hidden">
+              <span style="width:14%;background:var(--ink3)"></span><span style="width:36%;background:var(--accent)"></span>
+              <span style="width:38%;background:oklch(0.5487 0.1908 262.3/.45)"></span><span style="width:12%;background:var(--ok)"></span>
+            </div>
+            <div class="num" style="margin-top:5px;display:flex;justify-content:space-between;font-size:11px;color:var(--ink3)">
+              <span>admit 0.2s</span><span>retrieve 0.5s</span><span>draft 0.5s</span><span>guards 0.2s</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- sheet -->
+    <div>
+      <div class="lbl">Setup · a page, reached by attaching</div>
+      <div style="border:1px solid var(--line);border-radius:var(--r-md);background:var(--canvas);overflow:hidden;box-shadow:var(--z3)">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 11px;border-bottom:1px solid var(--line)">
+          <span style="font-size:12px;font-weight:600;flex:1">Monitor a show</span>
+          <span class="kbd">esc</span>
+        </div>
+        <div style="padding:11px;display:flex;flex-direction:column;gap:9px">
+          <div style="border:1px solid var(--line2);border-radius:var(--r-sm);background:var(--panel);padding:7px 9px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3)">ebay.com/ebaylive/events/…</div>
+          <div style="display:flex;align-items:center;gap:7px">
+            <span class="chip" style="border-color:oklch(0.5421 0.1489 147.8/.4);color:var(--ok)">0 blockers</span>
+            <span class="chip" style="border-color:oklch(0.5812 0.1264 71.5/.45);color:var(--warn)">1 warning</span>
+            <span class="m">host audio not connected</span>
+          </div>
+          <div style="display:flex;gap:7px">
+            <span style="display:inline-flex;align-items:center;height:28px;padding:0 11px;border-radius:var(--r-sm);background:var(--accent);color:oklch(0.99 0 0);font-size:11.5px;font-weight:500">Start monitoring</span>
+            <span style="display:inline-flex;align-items:center;height:28px;padding:0 11px;border-radius:var(--r-sm);border:1px solid var(--line);font-size:11.5px;color:var(--ink2)">Readiness detail</span>
+          </div>
+        </div>
+      </div>
+      <p class="m" style="margin-top:8px">Attaching from Shows lands here full width — readiness needs the room. A modal only for something destructive; a popover for something you read and dismiss.</p>
+    </div>
+
+    <!-- tooltip / popover spec -->
+    <div>
+      <div class="lbl">Tooltip and popover</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:inline-flex;align-self:flex-start;align-items:center;gap:6px;background:var(--ink);color:oklch(0.99 0 0);border-radius:var(--r-sm);padding:4px 8px;font-size:11px;box-shadow:var(--z3)">
+          Blocked by the price guard <span class="num" style="opacity:.6">v12 ≠ v13</span>
+        </div>
+        <div style="border:1px solid var(--line);border-radius:var(--r-md);background:var(--canvas);padding:9px 10px;box-shadow:var(--z3)">
+          <div style="font-size:11.5px;font-weight:500">price · block</div>
+          <p class="p" style="margin-top:4px">The amount was read from listing v12; the listing is now v13.</p>
+          <div class="num" style="margin-top:6px;border-top:1px solid var(--line);padding-top:6px;font-size:11.5px">
+            expected <span style="color:var(--ok)">$142.00</span> · found <span style="color:var(--bad)">$132.00</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <div class="m">tooltip · dark, one line, 400ms delay, no actions</div>
+          <div class="m">popover · light, rich, opens on click, can contain a link</div>
+          <div class="m">inspector · anything you would keep open while working</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

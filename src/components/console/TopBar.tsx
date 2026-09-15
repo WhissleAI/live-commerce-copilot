@@ -1,8 +1,25 @@
 import { useEffect, useRef, useState } from "react";
-import { Radio, Users, ArrowUp, ArrowDown, Link2Off, LogOut, Lock, Wallet, ChevronDown } from "lucide-react";
+import {
+  Radio,
+  Users,
+  ArrowUp,
+  ArrowDown,
+  Link2Off,
+  LogOut,
+  Lock,
+  Wallet,
+  ChevronDown,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatMs, formatPct, formatSeconds } from "@/lib/format";
-import type { Account, AutonomyLevel, ConnectionState, Metrics, SellerProfile, ShowState } from "@/lib/types";
+import type {
+  Account,
+  AutonomyLevel,
+  ConnectionState,
+  Metrics,
+  SellerProfile,
+  ShowState,
+} from "@/lib/types";
 import { Bar, ConsoleButton, Hover } from "./primitives";
 import { useNow } from "@/hooks/useNow";
 
@@ -125,7 +142,10 @@ function AutonomyLadder({
       }
     };
     const esc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { setOpen(false); setConfirming(null); }
+      if (e.key === "Escape") {
+        setOpen(false);
+        setConfirming(null);
+      }
     };
     document.addEventListener("mousedown", away);
     document.addEventListener("keydown", esc);
@@ -141,6 +161,8 @@ function AutonomyLadder({
     <div ref={box} className="relative shrink-0">
       <button
         type="button"
+        // Addressable, so ⌘K's "change the autonomy level" has something to open.
+        id="autonomy-picker"
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={open}
@@ -174,7 +196,10 @@ function AutonomyLadder({
                   role="menuitemradio"
                   aria-checked={selected}
                   onClick={() => {
-                    if (needsConfirm && !selected) { setConfirming(l.level); return; }
+                    if (needsConfirm && !selected) {
+                      setConfirming(l.level);
+                      return;
+                    }
                     onChange(l.level);
                     setOpen(false);
                   }}
@@ -183,15 +208,26 @@ function AutonomyLadder({
                     selected && "bg-accent/5",
                   )}
                 >
-                  <span className={cn("num mt-[1px] w-5 shrink-0 text-[11px]", selected ? "text-accent" : "text-text-muted")}>
+                  <span
+                    className={cn(
+                      "num mt-[1px] w-5 shrink-0 text-[11px]",
+                      selected ? "text-accent" : "text-text-muted",
+                    )}
+                  >
                     {l.short}
                   </span>
                   <span className="min-w-0">
-                    <span className={cn("block text-[12px]", selected ? "text-accent" : "text-text")}>
+                    <span
+                      className={cn("block text-[12px]", selected ? "text-accent" : "text-text")}
+                    >
                       {l.name}
-                      {selected && <span className="ml-1.5 text-[10px] text-text-muted">active</span>}
+                      {selected && (
+                        <span className="ml-1.5 text-[10px] text-text-muted">active</span>
+                      )}
                     </span>
-                    <span className="mt-0.5 block text-[10px] leading-snug text-text-muted">{l.def}</span>
+                    <span className="mt-0.5 block text-[10px] leading-snug text-text-muted">
+                      {l.def}
+                    </span>
                   </span>
                 </button>
 
@@ -203,7 +239,11 @@ function AutonomyLadder({
                     <ConsoleButton
                       variant="primary"
                       className="ml-auto h-6"
-                      onClick={() => { onChange(l.level); setConfirming(null); setOpen(false); }}
+                      onClick={() => {
+                        onChange(l.level);
+                        setConfirming(null);
+                        setOpen(false);
+                      }}
                     >
                       Enable
                     </ConsoleButton>
@@ -260,7 +300,12 @@ export function TopBar({
           title, the other a permanent state that never changes during a session.
           Both are now the title's own tooltip and a single lock glyph, which
           leaves the one thing that differs between shows actually readable. */}
-      <div className="flex min-w-0 items-baseline gap-2">
+      {/* Priority order when the bar runs out of room, and it is the reverse of
+          what it used to be: chips held their width while the show's NAME
+          shrank to nothing. The name is the one thing that differs between two
+          consoles, so it is the last thing dropped — everything measurable is
+          also on a screen of its own. */}
+      <div className="flex min-w-[120px] flex-1 items-baseline gap-2">
         <h1
           title={
             (show.readOnly
@@ -280,9 +325,9 @@ export function TopBar({
             type="button"
             onClick={onEndSession}
             title="Leave this show and pick another"
-            className="flex shrink-0 items-center gap-1 rounded-[4px] border border-hairline-strong px-1.5 py-0.5 text-[10px] text-text-muted hover:text-text"
+            className="hidden shrink-0 items-center gap-1 rounded-[4px] border border-hairline-strong px-1.5 py-0.5 text-[10px] text-text-muted hover:text-text sm:flex"
           >
-            <LogOut className="size-2.5" aria-hidden /> {endSessionLabel ?? "end session"}
+            <LogOut className="size-2.5" aria-hidden /> {endSessionLabel ?? "End session"}
           </button>
         )}
       </div>
@@ -293,7 +338,7 @@ export function TopBar({
         <span className="num text-[12px] text-text">{formatSeconds(elapsed)}</span>
       </div>
 
-      <div className="flex items-center gap-1.5 text-text-secondary">
+      <div className="hidden items-center gap-1.5 text-text-secondary lg:flex">
         <Users className="size-3.5" aria-hidden />
         <span className="num text-[13px] text-text">{show.viewers}</span>
         <span
@@ -311,7 +356,11 @@ export function TopBar({
         </span>
       </div>
 
-      {metrics ? <LatencyMeter metrics={metrics} /> : null}
+      {metrics ? (
+        <span className="hidden lg:flex">
+          <LatencyMeter metrics={metrics} />
+        </span>
+      ) : null}
 
       <AutonomyLadder level={show.autonomyLevel} onChange={onAutonomy} />
 
@@ -330,22 +379,22 @@ export function TopBar({
             : "border-hairline-strong text-text-secondary hover:text-text",
         )}
       >
-        <Wallet className="size-3" aria-hidden /> cost
+        <Wallet className="size-3" aria-hidden /> Cost
       </button>
 
       {connection !== "open" ? (
         <span className="flex items-center gap-1.5 rounded-[4px] border border-warn/40 bg-warn/10 px-2 py-1 text-[11px] text-warn">
           <Link2Off className="size-3" aria-hidden />
-          reconnecting…
+          Reconnecting…
         </span>
       ) : (
-        <span className="flex items-center gap-1 text-[11px] text-text-muted">
+        <span className="hidden items-center gap-1 text-[11px] text-text-muted xl:flex">
           <Radio className="size-3" aria-hidden />
-          stream
+          Stream
         </span>
       )}
 
-      <div className="ml-auto flex items-center gap-3 text-[11px] text-text-muted">
+      <div className="ml-auto hidden items-center gap-3 text-[11px] text-text-muted xl:flex">
         {metrics ? (
           <>
             <span>

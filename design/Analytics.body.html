@@ -1,0 +1,179 @@
+<div class="page">
+  <div class="rail">
+    <span class="rr" style="margin-bottom:6px;color:var(--bad)"><svg viewBox="0 0 16 16" width="18" height="18" class="i"><circle cx="8" cy="8" r="2"/><path d="M4.5 11.5a5 5 0 0 1 0-7M11.5 4.5a5 5 0 0 1 0 7"/></svg></span>
+    <span class="rr" title="Shows"><svg viewBox="0 0 16 16" width="16" height="16" class="i"><path d="M2.5 4.5h11v8h-11z"/><path d="M6.5 7.5 10 9l-3.5 1.5z"/></svg></span>
+    <span class="rr" title="Console"><svg viewBox="0 0 16 16" width="16" height="16" class="i"><path d="M2.5 3.5h11v9h-11z"/><path d="M5 6.5 7 8l-2 1.5M8.5 10h3"/></svg><span class="live"></span></span>
+    <span class="rr" title="Catalog"><svg viewBox="0 0 16 16" width="16" height="16" class="i"><path d="M2.5 5.2 8 2.5l5.5 2.7v5.6L8 13.5 2.5 10.8z"/><path d="M2.5 5.2 8 8l5.5-2.8M8 8v5.5"/></svg></span>
+    <span class="rr" title="Reports"><svg viewBox="0 0 16 16" width="16" height="16" class="i"><path d="M4 2.5h5l3 3v8H4z"/><path d="M9 2.5v3h3M6 8.5h4M6 10.5h3"/></svg></span>
+    <span class="rr on" title="Analytics"><svg viewBox="0 0 16 16" width="16" height="16" class="i"><path d="M3 12.5V9M8 12.5V5M13 12.5V7.5"/></svg></span>
+    <span class="rr" title="Cost"><svg viewBox="0 0 16 16" width="16" height="16" class="i"><rect x="2.5" y="4" width="11" height="8.5" rx="1.5"/><path d="M10.5 8.2h3"/></svg></span>
+    <span class="rr" title="Settings"><svg viewBox="0 0 16 16" width="16" height="16" class="i"><circle cx="8" cy="8" r="2.2"/><path d="M8 2.5v1.6M8 11.9v1.6M13.5 8h-1.6M4.1 8H2.5M11.9 4.1l-1.1 1.1M5.2 10.8l-1.1 1.1M11.9 11.9l-1.1-1.1M5.2 5.2 4.1 4.1"/></svg></span>
+    <span style="margin-top:auto"></span>
+    <span class="rr" title="Account"><svg viewBox="0 0 16 16" width="16" height="16" class="i"><circle cx="8" cy="5.6" r="2.6"/><path d="M2.8 13.5c0-2.7 2.3-4.2 5.2-4.2s5.2 1.5 5.2 4.2"/></svg></span>
+  </div>
+  <div class="colmain">
+    <div class="strip">
+      <span style="display:inline-flex;align-items:center;gap:5px"><span class="anim" style="width:6px;height:6px;border-radius:50%;background:var(--bad)"></span><span style="font-weight:600;color:var(--bad);font-size:11px;letter-spacing:.04em">LIVE</span></span>
+      <span class="num" style="font-size:12px">01:12:36</span>
+      <span style="color:var(--ink2)">Denim Vault — Friday Night Drop</span>
+      <span style="color:var(--ink3)">2 awaiting · 1 blocked</span>
+      <span style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;color:var(--ink2)">Return to console <span class="navkbd">&#8984;2</span></span>
+    </div>
+    <div class="cbar">
+      <div style="min-width:0;flex:1">
+        <div class="ctitle">Analytics</div>
+        <div style="font-size:11.5px;color:var(--ink3);margin-top:1px">9 shows · last 30 days</div>
+      </div>
+      <span style="display:flex;align-items:center;gap:8px"><span class="navghost" style="height:26px;padding:0 9px;border-radius:var(--r-sm);display:inline-flex;align-items:center;gap:6px;color:var(--ink3);width:200px"><svg viewBox="0 0 16 16" width="12" height="12" class="i"><circle cx="7.2" cy="7.2" r="4"/><path d="M10.2 10.2 13.5 13.5"/></svg>Search or run a command<span class="navkbd" style="margin-left:auto">&#8984;K</span></span><span style="display:inline-flex;gap:4px"><span class="navghost" style="height:26px;padding:0 9px;border-radius:var(--r-sm);display:inline-flex;align-items:center">7d</span><span style="height:26px;padding:0 9px;border-radius:var(--r-sm);display:inline-flex;align-items:center;background:var(--accent);color:oklch(0.99 0 0);font-size:12px">30d</span><span class="navghost" style="height:26px;padding:0 9px;border-radius:var(--r-sm);display:inline-flex;align-items:center">90d</span></span><span class="navghost" style="height:26px;padding:0 9px;border-radius:var(--r-sm);display:inline-flex;align-items:center">Refresh</span></span>
+    </div>
+    <div class="navsub"><span class="navlink on">Overview</span><span class="navlink">Topics</span><span class="navlink">Autonomy</span><span class="navlink">Live show</span></div>
+
+  <div class="wrap">
+
+    <!-- across shows: sums and rates over persisted reports -->
+    <div>
+      <div class="h2">Did it help</div>
+      <p class="hint">Across every finished show in the window. Every number is a sum or a rate over the report each session left behind — it survives restarts and it is the same number tomorrow. Where a per-show statistic cannot honestly be summed it is labelled as what it is.</p>
+      <div style="margin-top:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+        <div class="stat"><div class="l">Answered rate</div><div class="v">78%<span class="tgt t-no" style="margin-left:8px">target &gt;85%</span></div><div class="h">617 of 791 questions asked</div></div>
+        <div class="stat"><div class="l">Worst p95</div><div class="v">2.41s<span class="tgt t-no" style="margin-left:8px">target &lt;2s</span></div><div class="h">median of per-show medians 1.12s</div></div>
+        <div class="stat"><div class="l">Comments seen</div><div class="v">14.2k</div><div class="h">791 were questions · 14.7h on air</div></div>
+        <div class="stat"><div class="l">Cache hit rate</div><div class="v">29%</div><div class="h">repeat questions answered free</div></div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="h2">Can I trust it</div>
+      <p class="hint">Every guard runs on every reply, so these counts are independent — one reply can be caught by more than one. Flagged wrong is what you marked after sending: a floor, never a total.</p>
+      <div style="margin-top:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+        <div class="stat"><div class="l">Block rate</div><div class="v">1.9%<span class="tgt t-ok" style="margin-left:8px">target &lt;2%</span></div><div class="h">12 blocked · 41 revised · 118 abstained</div></div>
+        <div class="stat"><div class="l">Flagged wrong</div><div class="v" style="color:var(--warn)">7</div><div class="h">marked by you after sending</div></div>
+        <div class="stat"><div class="l">Rolled back</div><div class="v">3</div><div class="h">27 committed · 1 failed</div></div>
+        <div class="stat"><div class="l">Audit chains intact</div><div class="v" style="color:var(--ok)">9/9</div><div class="h">hash-verified end to end, per show</div></div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="h2">By show</div>
+      <p class="hint">Newest first. A show without a report is listed — that is the one to open.</p>
+      <div class="card" style="margin-top:14px;overflow:hidden">
+        <table>
+          <thead><tr><th>Show</th><th class="rt">On air</th><th class="rt">Answered</th><th class="rt">p95</th><th class="rt">Blocked</th><th class="rt">GMV</th><th>Chain</th></tr></thead>
+          <tbody>
+            <tr><td style="color:var(--ink)">Denim Vault — Friday Night Drop<span class="num" style="display:block;font-size:11px;color:var(--ink3)">Fri 11 Sep</span></td><td class="num rt">2h 02m</td><td class="num rt">77%</td><td class="num rt" style="color:var(--bad)">2.11s</td><td class="num rt">2</td><td class="num rt">$4,182</td><td><span class="g g-ok">intact</span></td></tr>
+            <tr><td style="color:var(--ink)">Card Break Sunday — PSA slabs<span class="num" style="display:block;font-size:11px;color:var(--ink3)">Sun 6 Sep</span></td><td class="num rt">2h 06m</td><td class="num rt">84%</td><td class="num rt">1.62s</td><td class="num rt">1</td><td class="num rt">$6,410</td><td><span class="g g-ok">intact</span></td></tr>
+            <tr><td style="color:var(--ink)">Sneaker Vault Wednesday<span class="num" style="display:block;font-size:11px;color:var(--ink3)">Wed 2 Sep</span></td><td class="num rt">1h 52m</td><td class="num rt">81%</td><td class="num rt">1.88s</td><td class="num rt">3</td><td class="num rt">$3,905</td><td><span class="g g-ok">intact</span></td></tr>
+            <tr><td style="color:var(--ink)">Fragrance Friday — Decants<span class="num" style="display:block;font-size:11px;color:var(--ink3)">Fri 29 Aug</span></td><td class="num rt">—</td><td class="num rt">0%</td><td class="num rt">—</td><td class="num rt">0</td><td class="num rt" style="color:var(--ink4)">—</td><td><span class="g g-warn">no report</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- autonomy readiness -->
+    <div class="sec">
+      <div class="h2">Autonomy readiness <span style="margin-left:8px;font-weight:400;color:var(--ink3)">· the Autonomy tab</span></div>
+      <p class="hint">Each rung promotes on evidence from your own finished shows. A criterion that cannot be computed counts as unmet, never as met — so nobody climbs the ladder on missing data.</p>
+      <div class="card" style="margin-top:14px">
+        <div class="rung">
+          <span class="num" style="font-size:12px;color:var(--ink3)">L0</span>
+          <span><span style="font-size:12px">Observe</span><span style="display:block;font-size:11.5px;color:var(--ink3)">Baseline week — classified 2,140 comments, proposed nothing.</span></span>
+          <span style="font-size:11.5px;color:var(--ink3)">complete</span>
+          <span style="display:flex;justify-content:flex-end"><span class="chip" style="border-color:oklch(0.5421 0.1489 147.8/.4);color:var(--ok)">passed</span></span>
+        </div>
+        <div class="rung" style="background:oklch(0.5487 0.1908 262.3/.05)">
+          <span class="num" style="font-size:12px;color:var(--accent)">L1</span>
+          <span><span style="font-size:12px;color:var(--accent)">Suggest <span style="font-size:11.5px;color:var(--ink3)">· active</span></span><span style="display:block;font-size:11.5px;color:var(--ink3)">Drafts every reply; you send all of them.</span></span>
+          <span style="font-size:11.5px;color:var(--ink3)">edit rate &lt;20% across 3 shows — <span class="num" style="color:var(--ok)">9.4%</span></span>
+          <span style="display:flex;justify-content:flex-end"><span class="chip" style="border-color:oklch(0.5421 0.1489 147.8/.4);color:var(--ok)">met</span></span>
+        </div>
+        <div class="rung">
+          <span class="num" style="font-size:12px;color:var(--ink3)">L2</span>
+          <span><span style="font-size:12px">One-tap</span><span style="display:block;font-size:11.5px;color:var(--ink3)">Drafts pre-approved for a single keystroke.</span></span>
+          <span style="font-size:11.5px;color:var(--ink3)">block rate &lt;2% and no blocked reply sent unedited, 3 shows — <span class="num" style="color:var(--ok)">1.6%</span></span>
+          <span style="display:flex;align-items:center;justify-content:flex-end;gap:8px">
+            <span style="display:flex;gap:3px"><span style="width:16px;height:5px;border-radius:3px;background:var(--ok)"></span><span style="width:16px;height:5px;border-radius:3px;background:var(--ok)"></span><span style="width:16px;height:5px;border-radius:3px;background:var(--ok)"></span></span>
+            <span class="num" style="font-size:11.5px;color:var(--ink3)">2/3</span>
+          </span>
+        </div>
+        <div class="rung">
+          <span class="num" style="font-size:12px;color:var(--ink3)">L3</span>
+          <span><span style="font-size:12px">Auto-reply</span><span style="display:block;font-size:11.5px;color:var(--ink3)">Allow-listed intents only: shipping, returns, sizing, authenticity, availability — never price or discount.</span></span>
+          <span style="font-size:11.5px;color:var(--ink3)">zero buyer corrections on auto-sent replies, 5 shows</span>
+          <span style="display:flex;justify-content:flex-end"><span class="chip" style="color:var(--ink3)">locked</span></span>
+        </div>
+        <div class="rung">
+          <span class="num" style="font-size:12px;color:var(--ink3)">L4</span>
+          <span><span style="font-size:12px">Auto-act</span><span style="display:block;font-size:11.5px;color:var(--ink3)">Only markdowns and stock fixes — the two whose preflight is fully decidable from catalog state.</span></span>
+          <span style="font-size:11.5px;color:var(--ink3)">rollback rate &lt;5% across 5 shows at L3 — <span class="num" style="color:var(--warn)">16.7%</span></span>
+          <span style="display:flex;justify-content:flex-end"><span class="chip" title="Bounded auto-acting needs a show that writes to eBay and a rollback rate under 10% across five shows" style="color:var(--ink3)">locked · until a show writes to eBay</span></span>
+        </div>
+      </div>
+      <div class="card" style="margin-top:12px;display:flex;align-items:center;gap:16px;padding:12px 14px">
+        <div style="min-width:0;flex:1">
+          <div style="font-size:12px;font-weight:600">L2 is earned. Three clean shows, block rate 1.6%.</div>
+          <p style="margin-top:3px;font-size:11px;line-height:1.55;color:var(--ink2)">Promotion is a decision you make and we record — the change lands in the audit chain against your name as <span class="num">autonomy_changed</span>, and you can drop back a rung at any time from the same menu.</p>
+        </div>
+        <span class="chip" style="flex:none">switch it on from the console's show bar</span>
+      </div>
+      <p style="margin-top:10px;font-size:11.5px;line-height:1.55;color:var(--ink3)">Two rules hold at every rung and are not configurable: a guardrail block never auto-sends, and ending a listing or swapping the pinned lot always needs a human, because both change what the show <em>is</em>.</p>
+    </div>
+
+
+    <!-- by intent -->
+    <div class="sec">
+      <div class="h2">Where it is strong, and where it is not <span style="margin-left:8px;font-weight:400;color:var(--ink3)">· the Topics tab</span></div>
+      <p class="hint">By topic, across every finished show in the window. The last column is what the ladder allows to auto-send at L3; the columns before it are the evidence that allow-list should be argued from. Rates are over proposals — a comment the gate dropped never got a topic.</p>
+      <div class="card" style="margin-top:14px;overflow:hidden">
+        <table>
+          <thead><tr><th>Topic</th><th class="rt">Asked</th><th class="rt">Answered</th><th class="rt">Abstained</th><th class="rt">Blocked</th><th class="rt">Edited</th><th>Auto-reply</th></tr></thead>
+          <tbody>
+            <tr><td style="color:var(--ink)">shipping</td><td class="num rt">212</td><td class="num rt">96%</td><td class="num rt">3%</td><td class="num rt">1</td><td class="num rt">4%</td><td><span class="chip" style="border-color:oklch(0.5421 0.1489 147.8/.4);color:var(--ok)">allow-listed</span></td></tr>
+            <tr><td style="color:var(--ink)">returns</td><td class="num rt">88</td><td class="num rt">98%</td><td class="num rt">1%</td><td class="num rt">0</td><td class="num rt">2%</td><td><span class="chip" style="border-color:oklch(0.5421 0.1489 147.8/.4);color:var(--ok)">allow-listed</span></td></tr>
+            <tr><td style="color:var(--ink)">sizing</td><td class="num rt">176</td><td class="num rt">71%</td><td class="num rt">26%</td><td class="num rt">2</td><td class="num rt">11%</td><td><span class="chip" style="border-color:oklch(0.5421 0.1489 147.8/.4);color:var(--ok)">allow-listed</span></td></tr>
+            <tr><td style="color:var(--ink)">authenticity</td><td class="num rt">64</td><td class="num rt">84%</td><td class="num rt">9%</td><td class="num rt">4</td><td class="num rt">9%</td><td><span class="chip" style="border-color:oklch(0.5421 0.1489 147.8/.4);color:var(--ok)">allow-listed</span></td></tr>
+            <tr><td style="color:var(--ink)">availability</td><td class="num rt">301</td><td class="num rt">93%</td><td class="num rt">5%</td><td class="num rt">3</td><td class="num rt">6%</td><td><span class="chip" style="border-color:oklch(0.5421 0.1489 147.8/.4);color:var(--ok)">allow-listed</span></td></tr>
+            <tr><td style="color:var(--ink)">price</td><td class="num rt">264</td><td class="num rt">88%</td><td class="num rt">6%</td><td class="num rt">9</td><td class="num rt">14%</td><td><span class="chip" style="color:var(--ink3)">never</span></td></tr>
+            <tr><td style="color:var(--ink)">discount</td><td class="num rt">143</td><td class="num rt">62%</td><td class="num rt">31%</td><td class="num rt">6</td><td class="num rt">22%</td><td><span class="chip" style="color:var(--ink3)">never</span></td></tr>
+            <tr><td style="color:var(--ink3)">other</td><td class="num rt">97</td><td class="num rt">41%</td><td class="num rt">57%</td><td class="num rt">1</td><td class="num rt">18%</td><td><span class="chip" style="color:var(--ink3)">never</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin-top:10px;font-size:11.5px;line-height:1.55;color:var(--ink3)">Sizing abstains on a quarter of what it is asked — that is the measurement fields the catalog does not carry, and it is the same finding every report's gaps list has made.</p>
+    </div>
+
+    <!-- what the agent did -->
+    <div class="sec" style="margin-bottom:28px">
+      <div class="h2">What the agent did <span style="margin-left:8px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink3)">· the Live show tab, only while one is on air</span></div>
+      <p class="hint">Per turn, from the Whissle session trace: which provider and model answered, whether it failed over, and what it cost in tokens. “The copilot is slow” and “hop 0 went to gpt-oss-120b, 916 ms on 3,830 input tokens” are different sentences, and only one is actionable.</p>
+      <div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="card" style="overflow:hidden">
+          <table>
+            <thead><tr><th>Model</th><th>Provider</th><th class="rt">Turns</th><th class="rt">Tokens</th><th class="rt">p50</th></tr></thead>
+            <tbody>
+              <tr><td class="num" style="color:var(--ink)">gpt-oss-120b</td><td>bedrock</td><td class="num rt">186</td><td class="num rt">742.9k</td><td class="num rt">916ms</td></tr>
+              <tr><td class="num" style="color:var(--ink)">gpt-oss-20b</td><td>bedrock</td><td class="num rt">21</td><td class="num rt">61.2k</td><td class="num rt">602ms</td></tr>
+              <tr><td class="num" style="color:var(--ink)">gemini-2.5-flash</td><td>google</td><td class="num rt">4</td><td class="num rt">8.3k</td><td class="num rt">1244ms</td></tr>
+            </tbody>
+          </table>
+          <div style="display:flex;gap:16px;border-top:1px solid var(--line);padding:10px 14px;font-size:11px;color:var(--ink3)">
+            <span>turns <span class="num" style="color:var(--ink)">211</span></span>
+            <span>failovers <span class="num" style="color:var(--warn)">4</span></span>
+            <span>tokens in → out <span class="num" style="color:var(--ink)">812.4k → 18.1k</span></span>
+          </div>
+        </div>
+        <div class="card" style="overflow:hidden">
+          <table>
+            <thead><tr><th>Recent turn</th><th class="rt">Latency</th><th class="rt">In → out</th><th>Ended</th></tr></thead>
+            <tbody>
+              <tr><td>does it ship to canada</td><td class="num rt">874ms</td><td class="num rt">3.8k → 61</td><td style="color:var(--ink3)">stop</td></tr>
+              <tr><td>would you do 120 for the trucker</td><td class="num rt">1204ms</td><td class="num rt">4.1k → 74</td><td style="color:var(--ink3)">stop</td></tr>
+              <tr><td>is the 505 still available <span style="color:var(--warn)">· failed over</span></td><td class="num rt">2416ms</td><td class="num rt">3.9k → 58</td><td style="color:var(--ink3)">stop</td></tr>
+              <tr><td>measurements on the 517</td><td class="num rt">1688ms</td><td class="num rt">4.4k → 132</td><td style="color:var(--warn)">max_tokens</td></tr>
+              <tr><td>what's the return window</td><td class="num rt">742ms</td><td class="num rt">3.6k → 44</td><td style="color:var(--ink3)">stop</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <p style="margin-top:10px;font-size:11.5px;line-height:1.55;color:var(--ink3)">A turn that ends on <span class="num">max_tokens</span> is a truncated answer to a buyer, not a neutral fact — it is coloured for that reason. What any of this cost is on <span style="color:var(--accent)">Cost</span>.</p>
+    </div>
+  </div>
+  </div>
+</div>

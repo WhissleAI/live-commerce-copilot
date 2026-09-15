@@ -1,0 +1,84 @@
+    :root{
+      --canvas:oklch(0.9800 0.0028 264.5);
+      --panel:oklch(1 0 0);
+      --elev:oklch(0.9690 0.0035 264.5);
+      --line:oklch(0.9154 0.0055 264.5);
+      --line2:oklch(0.8558 0.0082 264.5);
+      --ink:oklch(0.2359 0.0118 264.5);
+      --ink2:oklch(0.4518 0.0151 262.7);
+      --ink3:oklch(0.5180 0.0165 261.3);
+      --accent:oklch(0.5487 0.1908 262.3);
+      --ok:oklch(0.5421 0.1489 147.8);
+      --warn:oklch(0.5812 0.1264 71.5);
+      --bad:oklch(0.5468 0.2093 27.4);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--canvas);color:var(--ink);
+      font-family:"Inter",ui-sans-serif,system-ui,-apple-system,sans-serif;
+      font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased}
+    a{color:var(--accent);text-decoration:none}
+    a:hover{color:oklch(0.46 0.19 262.3)}
+    p{margin:0}
+    ul{margin:0;padding:0;list-style:none}
+    svg{display:block;flex:none}
+    .num{font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+      font-variant-numeric:tabular-nums;letter-spacing:-0.01em}
+    .sh{font-size:11px;line-height:1.2;text-transform:uppercase;letter-spacing:.08em;
+      color:var(--ink3);font-weight:600}
+    .r{display:flex;align-items:center}
+    .i{stroke:currentColor;stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+
+    /* ── v2 · denser, quieter, with a real depth model ─────────────────── */
+    :root{
+      --accent-soft:oklch(0.5487 0.1908 262.3/.08);
+      --accent-line:oklch(0.5487 0.1908 262.3/.32);
+      --ink4:oklch(0.6300 0.0150 261.3);
+      --e1:var(--z1);
+      --e2:var(--z3);
+      --e3:var(--z3);
+      --r-xs:3px; --r-sm:5px; --r-md:7px; --r-lg:10px;
+      --h-xs:22px; --h-sm:26px; --h-md:30px; --h-lg:36px;
+      --bar:40px; --subbar:34px;
+      --fast:120ms cubic-bezier(.2,.7,.3,1); --slow:180ms cubic-bezier(.2,.7,.3,1);
+    }
+
+    /* ── v2 · the shell, shared by every page ─────────────────────────── */
+    .navbar{height:var(--bar);display:flex;align-items:center;gap:12px;padding:0 14px;
+      background:var(--canvas);border-bottom:1px solid var(--line)}
+    .navwm{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:600;
+      letter-spacing:.14em;text-transform:uppercase;color:var(--ink)}
+    .navtabs{display:flex;align-items:center;gap:2px}
+    .navtab{display:inline-flex;align-items:center;gap:6px;height:var(--h-sm);padding:0 10px;
+      border-radius:var(--r-sm);font-size:12px;color:var(--ink2)}
+    .navtab.on{background:var(--elev);color:var(--ink);font-weight:500}
+    .navsub{height:var(--subbar);display:flex;align-items:center;gap:16px;padding:0 16px;
+      background:var(--panel);border-bottom:1px solid var(--line)}
+    .navlink{font-size:11.5px;color:var(--ink3);height:var(--subbar);display:flex;align-items:center;gap:5px}
+    .navlink.on{color:var(--ink);font-weight:500;box-shadow:inset 0 -2px 0 var(--accent)}
+    .navghost{display:inline-flex;align-items:center;gap:6px;height:var(--h-sm);padding:0 9px;
+      border-radius:var(--r-sm);border:1px solid var(--line);background:var(--canvas);
+      font-size:11.5px;color:var(--ink2);white-space:nowrap}
+    .navkbd{font-size:11px;display:inline-flex;align-items:center;justify-content:center;height:17px;min-width:17px;
+      padding:0 5px;border-radius:var(--r-xs);border:1px solid var(--line2);background:var(--panel);
+      font-family:"JetBrains Mono",monospace;font-size:9.5px;color:var(--ink3)}
+    .titlerow{display:flex;align-items:center;gap:12px;padding:14px 0 0}
+
+    /* ── v3 · one ring, four layers ───────────────────────────────────── */
+    :root{
+      --ring:0 0 0 1px oklch(0.9060 0.0055 264.5);
+      --z1:var(--ring);
+      --z2:var(--ring), 0 1px 2px oklch(0.2359 0.0118 264.5/.04);
+      --z3:0 0 0 1px oklch(0.8900 0.0060 264.5), 0 6px 20px oklch(0.2359 0.0118 264.5/.10);
+      --z4:0 0 0 1px oklch(0.8900 0.0060 264.5), 0 16px 40px oklch(0.2359 0.0118 264.5/.14);
+      --rail:52px;
+    }
+
+    /* liveness, focus, and the two motions the product actually uses */
+    @keyframes ss-pulse{0%,100%{opacity:1}50%{opacity:.30}}
+    @keyframes ss-spin{to{transform:rotate(360deg)}}
+    .anim{animation:ss-pulse 1.8s ease-in-out infinite}
+    .spin{animation:ss-spin .9s linear infinite}
+    :focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+    @media (prefers-reduced-motion: reduce){
+      .anim,.spin{animation:none}
+    }

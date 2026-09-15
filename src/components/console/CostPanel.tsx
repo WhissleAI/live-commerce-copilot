@@ -27,11 +27,12 @@ const DOOR_LABEL: Record<GatewayDoor, string> = {
   utility_turn: "Show context",
   voice_start: "Host audio",
   kb_upload: "Catalog sync",
+  // Metered since visual perception shipped, rendered nowhere until now.
+  visual_read: "Camera reads",
   billing: "This panel",
 };
 
-const usd = (n: number | null | undefined) =>
-  n == null ? "—" : `$${n.toFixed(n < 1 ? 4 : 2)}`;
+const usd = (n: number | null | undefined) => (n == null ? "—" : `$${n.toFixed(n < 1 ? 4 : 2)}`);
 
 function compact(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -39,7 +40,15 @@ function compact(n: number): string {
   return String(Math.round(n));
 }
 
-function Row({ label, value, tone }: { label: string; value: string; tone?: "warn" | "bad" | undefined }) {
+function Row({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone?: "warn" | "bad" | undefined;
+}) {
   return (
     <div className="flex items-baseline justify-between gap-3 py-1">
       <span className="text-[11px] text-text-muted">{label}</span>
@@ -58,7 +67,13 @@ function Row({ label, value, tone }: { label: string; value: string; tone?: "war
 /** A read that failed says WHY. An empty panel and a missing scope must not
  *  look the same — that distinction is the difference between "you have spent
  *  nothing" and "your key cannot see the bill". */
-function ReadFailure({ what, error }: { what: string; error: { status: number; message: string } }) {
+function ReadFailure({
+  what,
+  error,
+}: {
+  what: string;
+  error: { status: number; message: string };
+}) {
   return (
     <div className="flex items-start gap-2 rounded-[4px] border border-warn/40 bg-warn/5 px-2 py-1.5">
       <AlertTriangle className="mt-[2px] size-3 shrink-0 text-warn" aria-hidden />
@@ -164,10 +179,13 @@ export function CostPanel({ showId, onClose }: { showId: string | null; onClose:
                 {/* The caveat travels with the number, never only in the docs. */}
                 <p className="mt-1 text-[10px] leading-relaxed text-text-muted">
                   Measured from the wallet since this session started at{" "}
-                  {new Date(showSpend.openedAt).toLocaleTimeString()}. An upper bound:
-                  the wallet is account-wide, so anything else running under this
-                  account is inside it. Account totals are on{" "}
-                  <a href="/analytics" className="text-accent hover:underline">Analytics</a>.
+                  {new Date(showSpend.openedAt).toLocaleTimeString()}. An upper bound: the wallet is
+                  account-wide, so anything else running under this account is inside it. Account
+                  totals are on{" "}
+                  <a href="/analytics" className="text-accent hover:underline">
+                    Analytics
+                  </a>
+                  .
                 </p>
               </>
             )}

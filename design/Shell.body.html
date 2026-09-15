@@ -1,0 +1,207 @@
+<div class="page">
+
+  <div class="hd">
+    <div class="in">
+      <span class="eyebrow">Navigation · v2</span>
+      <h1 class="disp" style="margin-top:12px;font-size:36px;max-width:900px">A rail, a bar, and a strip that never lets you forget you are live.</h1>
+      <p class="p" style="margin-top:12px;max-width:800px;font-size:14px">Until now each surface invented its own header and the only navigation was an account dropdown. The frame: a 52px icon rail that costs nothing vertically, a 44px content bar, a 34px contextual row, and — while a show is on air — a 28px live strip on every screen that is not the console. Vertical is the scarce axis in a console, so navigation spends width instead.</p>
+    </div>
+  </div>
+
+  <!-- anatomy -->
+  <div class="sec">
+    <div class="in">
+      <h2 class="h2">Anatomy</h2>
+      <div style="margin-top:16px;border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--z3);display:flex;background:var(--canvas)">
+        <div class="rail">
+          <span class="rr" style="margin-bottom:6px;color:var(--bad)"><svg viewBox="0 0 16 16" width="18" height="18" class="i"><circle cx="8" cy="8" r="2"/><path d="M4.5 11.5a5 5 0 0 1 0-7M11.5 4.5a5 5 0 0 1 0 7"/></svg></span>
+          <span class="rr" title="Shows"><svg viewBox="0 0 16 16" width="16" height="16" class="i"><path d="M2.5 4.5h11v8h-11z"/><path d="M6.5 7.5 10 9l-3.5 1.5z"/></svg></span>
+          <span class="rr on" title="Console"><svg viewBox="0 0 16 16" width="16" height="16" class="i"><path d="M2.5 3.5h11v9h-11z"/><path d="M5 6.5 7 8l-2 1.5M8.5 10h3"/></svg><span class="live"></span></span>
+    <span class="rr" title="Catalog"><svg viewBox="0 0 16 16" width="16" height="16" class="i"><path d="M2.5 5.2 8 2.5l5.5 2.7v5.6L8 13.5 2.5 10.8z"/><path d="M2.5 5.2 8 8l5.5-2.8M8 8v5.5"/></svg></span>
+          <span class="rr" title="Reports"><svg viewBox="0 0 16 16" width="16" height="16" class="i"><path d="M4 2.5h5l3 3v8H4z"/><path d="M9 2.5v3h3M6 8.5h4M6 10.5h3"/></svg></span>
+          <span class="rr" title="Analytics"><svg viewBox="0 0 16 16" width="16" height="16" class="i"><path d="M3 12.5V9M8 12.5V5M13 12.5V7.5"/></svg></span>
+          <span class="rr" title="Cost"><svg viewBox="0 0 16 16" width="16" height="16" class="i"><rect x="2.5" y="4" width="11" height="8.5" rx="1.5"/><path d="M10.5 8.2h3"/></svg></span>
+          <span class="rr" title="Settings"><svg viewBox="0 0 16 16" width="16" height="16" class="i"><circle cx="8" cy="8" r="2.2"/><path d="M8 2.5v1.6M8 11.9v1.6M13.5 8h-1.6M4.1 8H2.5"/></svg></span>
+          <span style="margin-top:auto"></span>
+          <span class="rr" title="Account"><svg viewBox="0 0 16 16" width="16" height="16" class="i"><circle cx="8" cy="5.6" r="2.6"/><path d="M2.8 13.5c0-2.7 2.3-4.2 5.2-4.2s5.2 1.5 5.2 4.2"/></svg></span>
+        </div>
+
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+          <div class="strip">
+            <span style="display:inline-flex;align-items:center;gap:5px"><span class="anim" style="width:6px;height:6px;border-radius:50%;background:var(--bad)"></span><span style="font-weight:600;color:var(--bad);font-size:11px;letter-spacing:.04em">LIVE</span></span>
+            <span class="num" style="font-size:12px">01:12:36</span>
+            <span style="color:var(--ink2)">Denim Vault — Friday Night Drop</span>
+            <span style="color:var(--ink3)">2 awaiting · 1 blocked</span>
+            <span style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;color:var(--ink2)">Return to console <span class="navkbd">&#8984;2</span></span>
+          </div>
+          <div class="cbar">
+            <div style="min-width:0;flex:1">
+              <div class="ctitle">Cost</div>
+              <div style="font-size:11.5px;color:var(--ink3);margin-top:1px">Whissle workspace · last 30 days</div>
+            </div>
+            <span style="display:flex;align-items:center;gap:8px">
+              <span class="navghost" style="height:26px;padding:0 9px;border-radius:var(--r-sm);display:inline-flex;align-items:center;gap:6px;color:var(--ink3);width:200px">
+                <svg viewBox="0 0 16 16" width="12" height="12" class="i"><circle cx="7.2" cy="7.2" r="4"/><path d="M10.2 10.2 13.5 13.5"/></svg>Search or run a command
+                <span class="navkbd" style="margin-left:auto">&#8984;K</span>
+              </span>
+              <span class="navghost" style="height:26px;padding:0 9px;border-radius:var(--r-sm);display:inline-flex;align-items:center">Top up</span>
+            </span>
+          </div>
+          <div class="navsub">
+            <span class="navlink">Last 7 days</span><span class="navlink on">Last 30 days</span>
+            <span class="navlink">Last 90 days</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 320px;height:196px">
+            <div style="display:grid;place-items:center;color:var(--ink3);font-size:12px;background:var(--canvas)">the work — one content width, one gutter</div>
+            <div style="background:var(--panel);box-shadow:-1px 0 0 var(--line);padding:12px">
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <span style="font-size:12.5px;font-weight:600">Inspector</span>
+                <span style="display:flex;gap:6px;align-items:center;color:var(--ink3)"><span class="navkbd">I</span><svg viewBox="0 0 16 16" width="12" height="12" class="i"><path d="M4 4l8 8M12 4l-8 8"/></svg></span>
+              </div>
+              <p class="m" style="margin-top:8px">One panel for every “tell me more” — a reply with its evidence, every verdict and where the time went, or an audit entry and its place in the chain. 380px on a wide screen, Esc to dismiss, never a modal.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:18px;display:grid;grid-template-columns:repeat(4,1fr);gap:20px">
+        <div class="note"><span class="n">1</span><p class="p" style="font-size:11.5px"><strong style="color:var(--ink)">52px rail, always identical.</strong> Seven destinations plus identity, on every screen including the console. It costs 3.6% of the width and none of the height, which is the axis a console cannot spare.</p></div>
+        <div class="note"><span class="n">2</span><p class="p" style="font-size:11.5px"><strong style="color:var(--ink)">44px content bar, 34px sub-nav.</strong> The bar names where you are and carries the page\u2019s two actions; the row below switches between the four or five views of that destination.</p></div>
+        <div class="note"><span class="n">3</span><p class="p" style="font-size:11.5px"><strong style="color:var(--ink)">A live strip, everywhere but the console.</strong> Open Cost mid-show and you keep the clock, the queue depth and a keystroke back. Losing that awareness was the most dangerous thing about the old design.</p></div>
+        <div class="note"><span class="n">4</span><p class="p" style="font-size:11.5px"><strong style="color:var(--ink)">⌘K navigates and acts; ⌘J asks.</strong> The command palette is for going and doing — jump to a show, set autonomy, end a session. Product research keeps its own key, because it is a question, not a command.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- sub navigation map -->
+  <div class="sec">
+    <div class="in">
+      <h2 class="h2">Where everything lives</h2>
+      <p class="p" style="margin-top:8px;max-width:800px">Seven destinations, each with its own contextual row. Nothing is more than two clicks from the rail, and the same thing is never in two places — an action lives in the 44px bar, a view switcher in the 34px row, never both.</p>
+      <div style="margin-top:16px;display:grid;grid-template-columns:repeat(7,1fr);gap:12px">
+        <div class="card" style="padding:14px">
+          <div style="font-size:12.5px;font-weight:600">Console</div>
+          <div class="m" style="margin-top:4px">the live show</div>
+          <p class="m" style="margin-top:10px"><strong style="color:var(--ink)">No sub-navigation.</strong> The console is one surface, so its 34px row is the show strip itself — LIVE and elapsed, viewers, p95, the rung, spend, ingest health, and the running counts.</p>
+          <p class="m" style="margin-top:8px">Columns collapse into the inspector below 1280px.</p>
+        </div>
+        <div class="card" style="padding:14px">
+          <div style="font-size:12.5px;font-weight:600">Shows</div>
+          <div class="m" style="margin-top:4px">everything that is or was on air</div>
+          <div style="margin-top:10px;display:flex;flex-direction:column;gap:6px">
+            <span class="p" style="font-size:11.5px">Live</span>
+            <span class="p" style="font-size:11.5px">Past · reports</span>
+            <span class="p" style="font-size:11.5px">Following</span>
+            <span class="p" style="font-size:11.5px">Discover <span style="color:var(--ink3)">· live on eBay, prepare ahead</span></span>
+          </div>
+          <p class="m" style="margin-top:10px">Attaching lands on Setup — readiness, catalog fit and what last show left unanswered — and Setup opens the console.</p>
+        </div>
+        <div class="card" style="padding:14px">
+          <div style="font-size:12.5px;font-weight:600">Catalog</div>
+          <div class="m" style="margin-top:4px">what you sell, priced against the market</div>
+          <div style="margin-top:10px;display:flex;flex-direction:column;gap:6px">
+            <span class="p" style="font-size:11.5px">Lots · market beside each</span>
+            <span class="p" style="font-size:11.5px">Search eBay · sold vs asking</span>
+          </div>
+          <p class="m" style="margin-top:10px">One catalog per show or import; gaps from reports are answered into it.</p>
+        </div>
+        <div class="card" style="padding:14px">
+          <div style="font-size:12.5px;font-weight:600">Reports</div>
+          <div class="m" style="margin-top:4px">one finished show</div>
+          <div style="margin-top:10px;display:flex;flex-direction:column;gap:6px">
+            <span class="p" style="font-size:11.5px">Summary</span>
+            <span class="p" style="font-size:11.5px">Replies</span>
+            <span class="p" style="font-size:11.5px">Blocked</span>
+            <span class="p" style="font-size:11.5px">Actions</span>
+            <span class="p" style="font-size:11.5px">Gaps</span>
+            <span class="p" style="font-size:11.5px">Audit</span>
+            <span class="p" style="font-size:11.5px">Timeline <span style="color:var(--ink3)">· the show, played back</span></span>
+          </div>
+        </div>
+        <div class="card" style="padding:14px">
+          <div style="font-size:12.5px;font-weight:600">Analytics</div>
+          <div class="m" style="margin-top:4px">across shows</div>
+          <div style="margin-top:10px;display:flex;flex-direction:column;gap:6px">
+            <span class="p" style="font-size:11.5px">Overview</span>
+            <span class="p" style="font-size:11.5px">Topics</span>
+            <span class="p" style="font-size:11.5px">Autonomy</span>
+            <span class="p" style="font-size:11.5px">Live show <span style="color:var(--ink3)">· only while one is on air</span></span>
+          </div>
+        </div>
+        <div class="card" style="padding:14px">
+          <div style="font-size:12.5px;font-weight:600">Cost</div>
+          <div class="m" style="margin-top:4px">the money</div>
+          <div style="margin-top:10px;display:flex;flex-direction:column;gap:6px">
+            <span class="p" style="font-size:11.5px">Overview</span>
+            <span class="p" style="font-size:11.5px">By show</span>
+            <span class="p" style="font-size:11.5px">By purpose</span>
+            <span class="p" style="font-size:11.5px">Limits</span>
+          </div>
+        </div>
+        <div class="card" style="padding:14px">
+          <div style="font-size:12.5px;font-weight:600">Settings</div>
+          <div class="m" style="margin-top:4px">how it behaves</div>
+          <div style="margin-top:10px;display:flex;flex-direction:column;gap:6px">
+            <span class="p" style="font-size:11.5px">Agent &amp; ingestion</span>
+            <span class="p" style="font-size:11.5px">Guardrails</span>
+            <span class="p" style="font-size:11.5px">Automation</span>
+            <span class="p" style="font-size:11.5px">eBay</span>
+            <span class="p" style="font-size:11.5px">Account &amp; data</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- keyboard -->
+  <div class="sec" style="border-bottom:0">
+    <div class="in" style="display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:start">
+      <div>
+        <h2 class="h2">Navigation is typed, not clicked</h2>
+        <p class="p" style="margin-top:8px">The operator's hands are on the keyboard for the whole show. ⌘ plus the rail's position for destinations, single keys for the queue, ⌘K for anything with a name.</p>
+        <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:8px 24px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span class="p" style="font-size:11.5px">go to reports</span><span><span class="kbd">⌘</span> <span class="kbd">4</span></span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span class="p" style="font-size:11.5px">go to settings</span><span><span class="kbd">⌘</span> <span class="kbd">7</span></span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span class="p" style="font-size:11.5px">ask · research</span><span><span class="kbd">⌘</span> <span class="kbd">J</span></span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span class="p" style="font-size:11.5px">queue keys</span><span class="m">J K ⏎ E X R A U</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span class="p" style="font-size:11.5px">go to console</span><span><span class="kbd">⌘</span> <span class="kbd">2</span></span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span class="p" style="font-size:11.5px">go to shows</span><span><span class="kbd">⌘</span> <span class="kbd">1</span></span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span class="p" style="font-size:11.5px">go to analytics</span><span><span class="kbd">⌘</span> <span class="kbd">5</span></span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span class="p" style="font-size:11.5px">go to cost</span><span><span class="kbd">⌘</span> <span class="kbd">6</span></span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span class="p" style="font-size:11.5px">switch show</span><span><span class="kbd">⌘</span> <span class="kbd">O</span></span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span class="p" style="font-size:11.5px">command palette</span><span><span class="kbd">⌘</span> <span class="kbd">K</span></span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span class="p" style="font-size:11.5px">go to catalog</span><span><span class="kbd">⌘</span> <span class="kbd">3</span></span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span class="p" style="font-size:11.5px">toggle inspector</span><span><span class="kbd">I</span></span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span class="p" style="font-size:11.5px">this map</span><span><span class="kbd">?</span></span></div>
+        </div>
+      </div>
+
+      <div>
+        <h2 class="h2">At narrow widths</h2>
+        <p class="p" style="margin-top:8px">Nothing is hidden behind a hamburger. The bar keeps the show and the command; the tabs collapse into the switcher's menu; the console's three columns become one with the chat and the rail reachable as sheets.</p>
+        <div style="margin-top:16px;display:flex;gap:14px;align-items:flex-start">
+          <div style="width:190px;border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;box-shadow:var(--z1)">
+            <div style="height:34px;display:flex;align-items:center;gap:8px;padding:0 8px;border-bottom:1px solid var(--line)">
+              <svg viewBox="0 0 16 16" width="13" height="13" class="i" style="color:var(--bad)"><circle cx="8" cy="8" r="2"/><path d="M4.5 11.5a5 5 0 0 1 0-7M11.5 4.5a5 5 0 0 1 0 7"/></svg>
+              <span style="flex:1;min-width:0;font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Denim Vault…</span>
+              <span class="kbd" style="height:16px">⌘K</span>
+            </div>
+            <div style="height:26px;display:flex;align-items:center;gap:8px;padding:0 8px;border-bottom:1px solid var(--line);background:var(--panel)">
+              <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:4px;height:4px;border-radius:50%;background:var(--bad)"></span><span style="font-size:11px;font-weight:600;color:var(--bad)">LIVE</span></span>
+              <span class="num" style="font-size:11px">01:12</span>
+              <span class="num" style="font-size:11px;color:var(--ink3)">412</span>
+              <span class="num" style="margin-left:auto;font-size:11px;color:var(--warn)">1840ms</span>
+            </div>
+            <div style="height:120px;display:grid;place-items:center;font-size:11.5px;color:var(--ink3)">the queue, full width</div>
+            <div style="height:30px;display:flex;border-top:1px solid var(--line)">
+              <span style="flex:1;display:grid;place-items:center;font-size:11.5px;color:var(--ink2);border-right:1px solid var(--line)">Chat</span>
+              <span style="flex:1;display:grid;place-items:center;font-size:11.5px;color:var(--ink2);border-right:1px solid var(--line)">Lot</span>
+              <span style="flex:1;display:grid;place-items:center;font-size:11.5px;color:var(--ink2)">Audit</span>
+            </div>
+          </div>
+          <p class="m" style="flex:1">A sheet is not a second navigation model — each of those three opens the same content the wide layout shows in a column, and closes with <span class="kbd" style="height:16px">esc</span>.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

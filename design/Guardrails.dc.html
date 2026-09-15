@@ -1,0 +1,320 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+  <style>
+    :root{
+      --canvas:oklch(0.9800 0.0028 264.5);
+      --panel:oklch(1 0 0);
+      --elev:oklch(0.9690 0.0035 264.5);
+      --line:oklch(0.9154 0.0055 264.5);
+      --line2:oklch(0.8558 0.0082 264.5);
+      --ink:oklch(0.2359 0.0118 264.5);
+      --ink2:oklch(0.4518 0.0151 262.7);
+      --ink3:oklch(0.5180 0.0165 261.3);
+      --accent:oklch(0.5487 0.1908 262.3);
+      --ok:oklch(0.5421 0.1489 147.8);
+      --warn:oklch(0.5812 0.1264 71.5);
+      --bad:oklch(0.5468 0.2093 27.4);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--canvas);color:var(--ink);
+      font-family:"Inter",ui-sans-serif,system-ui,-apple-system,sans-serif;
+      font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased}
+    a{color:var(--accent);text-decoration:none}
+    a:hover{color:oklch(0.46 0.19 262.3)}
+    p{margin:0}
+    ul{margin:0;padding:0;list-style:none}
+    svg{display:block;flex:none}
+    .num{font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+      font-variant-numeric:tabular-nums;letter-spacing:-0.01em}
+    .sh{font-size:11px;line-height:1.2;text-transform:uppercase;letter-spacing:.08em;
+      color:var(--ink3);font-weight:600}
+    .r{display:flex;align-items:center}
+    .i{stroke:currentColor;stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+
+    /* ── v2 · denser, quieter, with a real depth model ─────────────────── */
+    :root{
+      --accent-soft:oklch(0.5487 0.1908 262.3/.08);
+      --accent-line:oklch(0.5487 0.1908 262.3/.32);
+      --ink4:oklch(0.6300 0.0150 261.3);
+      --e1:var(--z1);
+      --e2:var(--z3);
+      --e3:var(--z3);
+      --r-xs:3px; --r-sm:5px; --r-md:7px; --r-lg:10px;
+      --h-xs:22px; --h-sm:26px; --h-md:30px; --h-lg:36px;
+      --bar:40px; --subbar:34px;
+      --fast:120ms cubic-bezier(.2,.7,.3,1); --slow:180ms cubic-bezier(.2,.7,.3,1);
+    }
+
+    /* ── v2 · the shell, shared by every page ─────────────────────────── */
+    .navbar{height:var(--bar);display:flex;align-items:center;gap:12px;padding:0 14px;
+      background:var(--canvas);border-bottom:1px solid var(--line)}
+    .navwm{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:600;
+      letter-spacing:.14em;text-transform:uppercase;color:var(--ink)}
+    .navtabs{display:flex;align-items:center;gap:2px}
+    .navtab{display:inline-flex;align-items:center;gap:6px;height:var(--h-sm);padding:0 10px;
+      border-radius:var(--r-sm);font-size:12px;color:var(--ink2)}
+    .navtab.on{background:var(--elev);color:var(--ink);font-weight:500}
+    .navsub{height:var(--subbar);display:flex;align-items:center;gap:16px;padding:0 16px;
+      background:var(--panel);border-bottom:1px solid var(--line)}
+    .navlink{font-size:11.5px;color:var(--ink3);height:var(--subbar);display:flex;align-items:center;gap:5px}
+    .navlink.on{color:var(--ink);font-weight:500;box-shadow:inset 0 -2px 0 var(--accent)}
+    .navghost{display:inline-flex;align-items:center;gap:6px;height:var(--h-sm);padding:0 9px;
+      border-radius:var(--r-sm);border:1px solid var(--line);background:var(--canvas);
+      font-size:11.5px;color:var(--ink2);white-space:nowrap}
+    .navkbd{font-size:11px;display:inline-flex;align-items:center;justify-content:center;height:17px;min-width:17px;
+      padding:0 5px;border-radius:var(--r-xs);border:1px solid var(--line2);background:var(--panel);
+      font-family:"JetBrains Mono",monospace;font-size:9.5px;color:var(--ink3)}
+    .titlerow{display:flex;align-items:center;gap:12px;padding:14px 0 0}
+
+    /* ── v3 · one ring, four layers ───────────────────────────────────── */
+    :root{
+      --ring:0 0 0 1px oklch(0.9060 0.0055 264.5);
+      --z1:var(--ring);
+      --z2:var(--ring), 0 1px 2px oklch(0.2359 0.0118 264.5/.04);
+      --z3:0 0 0 1px oklch(0.8900 0.0060 264.5), 0 6px 20px oklch(0.2359 0.0118 264.5/.10);
+      --z4:0 0 0 1px oklch(0.8900 0.0060 264.5), 0 16px 40px oklch(0.2359 0.0118 264.5/.14);
+      --rail:52px;
+    }
+
+    /* liveness, focus, and the two motions the product actually uses */
+    @keyframes ss-pulse{0%,100%{opacity:1}50%{opacity:.30}}
+    @keyframes ss-spin{to{transform:rotate(360deg)}}
+    .anim{animation:ss-pulse 1.8s ease-in-out infinite}
+    .spin{animation:ss-spin .9s linear infinite}
+    :focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+    @media (prefers-reduced-motion: reduce){
+      .anim,.spin{animation:none}
+    }
+    .page{display:flex;flex-direction:row;width:1440px;height:1120px;background:var(--canvas);overflow:hidden}
+    .wrap{flex:1;min-height:0;overflow:hidden;margin:0 auto;width:1100px;padding:28px 24px 0;}
+    .nav span.item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:5px;font-size:12px;color:var(--ink2)}
+    .nav span.on{background:var(--elev);color:var(--ink);font-weight:500;box-shadow:inset 2px 0 0 var(--accent)}
+    .i{stroke:currentColor;stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+    .h2{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--ink2)}
+    .hint{margin-top:5px;max-width:720px;font-size:11px;line-height:1.6;color:var(--ink3)}
+    .card{border:1px solid var(--line);border-radius:var(--r-md);background:var(--panel)}
+    .chip{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;border:1px solid var(--line2);border-radius:var(--r-sm);padding:2px 7px;font-size:11px;color:var(--ink2)}
+    .rule{display:grid;grid-template-columns:1fr 1fr auto;align-items:center;gap:8px;
+      border:0;border-radius:var(--r-sm);background:var(--panel);box-shadow:var(--z1);padding:8px 10px}
+    .pat{font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--ink);padding:4px 6px}
+    .why{font-size:11px;color:var(--ink2);padding:4px 6px}
+    .sec{margin-top:30px}
+    .btn{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 8px;border-radius:var(--r-sm);border:1px solid transparent;font-size:12px;font-weight:500}
+    .btn-p{background:var(--accent);border-color:var(--accent);color:oklch(0.99 0 0)}
+    .btn-s{background:var(--elev);border-color:var(--line2);color:var(--ink)}
+    .sw{position:relative;width:28px;height:16px;flex:none;border-radius:8px}
+    .kn{position:absolute;top:2px;width:12px;height:12px;border-radius:50%;background:var(--canvas)}
+    /* ── v3 · normalised primitives. Loaded after each artboard's own CSS. */
+
+    /* one badge, three variants — no border, tinted fill, 20px tall */
+    .chip{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;border:1px solid transparent;
+      background:var(--elev);color:var(--ink2);border-radius:var(--r-sm);
+      padding:3px 8px;font-size:12px;line-height:14px;font-weight:500}
+    .g{display:inline-flex;align-items:center;gap:5px;border:1px solid transparent;border-radius:var(--r-sm);
+      padding:3px 8px;font-size:12px;line-height:14px;font-weight:500}
+    .g-ok{color:oklch(0.4600 0.1300 147.8);background:oklch(0.5421 0.1489 147.8/.13)}
+    .g-warn{color:oklch(0.4900 0.1150 71.5);background:oklch(0.5812 0.1264 71.5/.15)}
+    .g-bad{color:oklch(0.4800 0.1900 27.4);background:oklch(0.5468 0.2093 27.4/.13)}
+    .g-na{color:var(--ink3);background:var(--elev)}
+    .ev{display:inline-flex;align-items:center;gap:5px;border:1px solid transparent;background:var(--elev);
+      color:var(--ink2);border-radius:var(--r-sm);padding:3px 8px;font-size:12px;line-height:14px}
+    .kbd,.navkbd{display:inline-flex;align-items:center;justify-content:center;height:17px;min-width:17px;
+      padding:0 5px;border:1px solid transparent;background:var(--elev);color:var(--ink3);border-radius:var(--r-xs);
+      font-family:"JetBrains Mono",monospace;font-size:11px;line-height:1}
+
+    /* one label, one heading — sentence case, no tracking */
+    .sh,.lbl,.eyebrow{font-size:12px;line-height:1.3;text-transform:none;letter-spacing:0;
+      font-weight:500;color:var(--ink3)}
+    .h2{font-size:15px;line-height:1.25;text-transform:none;letter-spacing:-0.008em;
+      font-weight:600;color:var(--ink)}
+    .hint{font-size:12.5px;line-height:1.6;color:var(--ink3)}
+    .m{font-size:11.5px;line-height:1.55;color:var(--ink3)}
+    .p{font-size:12.5px;line-height:1.6;color:var(--ink2)}
+
+    /* panes and cards sit on their own surface, so they lose their outline */
+    .card{border:1px solid transparent;background:var(--panel);border-radius:var(--r-md);box-shadow:var(--z1)}
+    .tile{border:1px solid transparent;background:var(--panel);border-radius:var(--r-md);box-shadow:var(--z1)}
+    .panehdr{height:26px;display:flex;align-items:center;justify-content:space-between;gap:8px;
+      flex:none;border-bottom:0;padding:0 12px;font-size:12px;font-weight:500;color:var(--ink3)}
+
+    /* tables: one rule under the head, hover as the separator */
+    th{border-bottom:1px solid var(--line);font-size:11.5px;font-weight:500;
+      text-transform:none;letter-spacing:0;color:var(--ink3);padding:8px 12px}
+    td{border-bottom:0;font-size:12.5px;padding:9px 12px;color:var(--ink2)}
+    tbody tr:nth-child(even) td{background:oklch(0.9800 0.0028 264.5/.6)}
+
+    /* nothing below 11px, and 11px only on figures */
+    .num{font-variant-numeric:tabular-nums}
+
+    /* ── v3 · the shell: a 52px rail, a 44px content bar, a live strip ── */
+    .rail{width:var(--rail);flex:none;display:flex;flex-direction:column;align-items:center;gap:4px;
+      padding:10px 0;background:var(--panel);box-shadow:1px 0 0 var(--line)}
+    .rr{width:36px;height:32px;display:grid;place-items:center;border-radius:var(--r-sm);color:var(--ink3);position:relative}
+    .rr.on{background:var(--elev);color:var(--ink)}
+    .rr .live{position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:var(--bad)}
+    .rl2{font-size:10.5px;color:var(--ink4);margin-top:-2px}
+    .colmain{flex:1;min-width:0;display:flex;flex-direction:column}
+    .cbar{height:44px;flex:none;display:flex;align-items:center;gap:10px;padding:0 16px;
+      background:var(--panel);box-shadow:0 1px 0 var(--line)}
+    .ctitle{font-size:15px;font-weight:600;letter-spacing:-0.008em}
+    .strip{height:28px;flex:none;display:flex;align-items:center;gap:10px;padding:0 16px;
+      background:oklch(0.5468 0.2093 27.4/.06);box-shadow:0 1px 0 oklch(0.5468 0.2093 27.4/.18);font-size:12px}
+    .navsub{height:34px;background:var(--panel);border-bottom:0;box-shadow:0 1px 0 var(--line);gap:18px}
+    .navlink{font-size:12.5px}
+    .navghost{border:0;background:var(--elev);color:var(--ink2);font-size:12px}
+
+    /* stat tiles follow the same label rule */
+    .stat{border:1px solid transparent;background:var(--panel);border-radius:var(--r-md);box-shadow:var(--z1);padding:14px 16px}
+    .stat .l{font-size:12px;text-transform:none;letter-spacing:0;font-weight:500;color:var(--ink3)}
+    .stat .v{font-size:20px;line-height:1.1;margin-top:6px}
+    .stat .h{font-size:11.5px;line-height:1.5;color:var(--ink3);margin-top:6px}
+    .tgt{font-size:11px;padding:2px 6px;border-radius:var(--r-xs)}
+    .sec{margin-top:28px}
+    .wrap{padding-top:20px}
+
+    /* the focused card keeps its ring — .card.card-f outranks .card */
+    .card.card-f{box-shadow:0 0 0 1.5px var(--accent), var(--z2);background:var(--panel)}
+    /* an action is never a 20px chip */
+    .chip-btn{height:26px;padding:0 10px;border-radius:var(--r-sm)}
+    /* tables align with their card header */
+    th{padding:8px 14px}
+    td{padding:9px 14px}
+    /* .rl2 was never used and never passed contrast */
+    .rl2{font-size:11.5px;color:var(--ink3)}
+  </style>
+</helmet>
+<div class="page">
+  <div class="rail">
+    <span class="rr" style="margin-bottom:6px;color:var(--bad)"><svg viewBox="0 0 16 16" width="18" height="18" class="i"><circle cx="8" cy="8" r="2"/><path d="M4.5 11.5a5 5 0 0 1 0-7M11.5 4.5a5 5 0 0 1 0 7"/></svg></span>
+    <span class="rr" title="Shows"><svg viewBox="0 0 16 16" width="16" height="16" class="i"><path d="M2.5 4.5h11v8h-11z"/><path d="M6.5 7.5 10 9l-3.5 1.5z"/></svg></span>
+    <span class="rr" title="Console"><svg viewBox="0 0 16 16" width="16" height="16" class="i"><path d="M2.5 3.5h11v9h-11z"/><path d="M5 6.5 7 8l-2 1.5M8.5 10h3"/></svg><span class="live"></span></span>
+    <span class="rr" title="Catalog"><svg viewBox="0 0 16 16" width="16" height="16" class="i"><path d="M2.5 5.2 8 2.5l5.5 2.7v5.6L8 13.5 2.5 10.8z"/><path d="M2.5 5.2 8 8l5.5-2.8M8 8v5.5"/></svg></span>
+    <span class="rr" title="Reports"><svg viewBox="0 0 16 16" width="16" height="16" class="i"><path d="M4 2.5h5l3 3v8H4z"/><path d="M9 2.5v3h3M6 8.5h4M6 10.5h3"/></svg></span>
+    <span class="rr" title="Analytics"><svg viewBox="0 0 16 16" width="16" height="16" class="i"><path d="M3 12.5V9M8 12.5V5M13 12.5V7.5"/></svg></span>
+    <span class="rr" title="Cost"><svg viewBox="0 0 16 16" width="16" height="16" class="i"><rect x="2.5" y="4" width="11" height="8.5" rx="1.5"/><path d="M10.5 8.2h3"/></svg></span>
+    <span class="rr on" title="Settings"><svg viewBox="0 0 16 16" width="16" height="16" class="i"><circle cx="8" cy="8" r="2.2"/><path d="M8 2.5v1.6M8 11.9v1.6M13.5 8h-1.6M4.1 8H2.5M11.9 4.1l-1.1 1.1M5.2 10.8l-1.1 1.1M11.9 11.9l-1.1-1.1M5.2 5.2 4.1 4.1"/></svg></span>
+    <span style="margin-top:auto"></span>
+    <span class="rr" title="Account"><svg viewBox="0 0 16 16" width="16" height="16" class="i"><circle cx="8" cy="5.6" r="2.6"/><path d="M2.8 13.5c0-2.7 2.3-4.2 5.2-4.2s5.2 1.5 5.2 4.2"/></svg></span>
+  </div>
+  <div class="colmain">
+    <div class="strip">
+      <span style="display:inline-flex;align-items:center;gap:5px"><span class="anim" style="width:6px;height:6px;border-radius:50%;background:var(--bad)"></span><span style="font-weight:600;color:var(--bad);font-size:11px;letter-spacing:.04em">LIVE</span></span>
+      <span class="num" style="font-size:12px">01:12:36</span>
+      <span style="color:var(--ink2)">Denim Vault — Friday Night Drop</span>
+      <span style="color:var(--ink3)">2 awaiting · 1 blocked</span>
+      <span style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;color:var(--ink2)">Return to console <span class="navkbd">&#8984;2</span></span>
+    </div>
+    <div class="cbar">
+      <div style="min-width:0;flex:1">
+        <div class="ctitle">Settings</div>
+        <div style="font-size:11.5px;color:var(--ink3);margin-top:1px">guardrails · saved 11 Sep, 20:12 · re-pushed and read back</div>
+      </div>
+      <span style="display:flex;align-items:center;gap:8px"><span class="navghost" style="height:26px;padding:0 9px;border-radius:var(--r-sm);display:inline-flex;align-items:center">Reset</span><span style="display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:var(--r-sm);background:var(--accent);color:oklch(0.99 0 0);font-size:12px;font-weight:500">Save</span></span>
+    </div>
+    <div class="navsub"><span class="navlink">Agent &amp; ingestion</span><span class="navlink on">Guardrails</span><span class="navlink">Automation</span><span class="navlink">Finding shows</span><span class="navlink">Account &amp; data</span></div>
+
+  <div class="wrap">
+
+        <!-- armed banner -->
+    <div style="border:1px solid oklch(0.5421 0.1489 147.8/.4);background:oklch(0.5421 0.1489 147.8/.05);border-radius:var(--r-md);padding:10px 12px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <svg viewBox="0 0 16 16" width="14" height="14" class="i" style="color:var(--ok)"><path d="M8 2.2 13 4v4c0 3-2.2 5.2-5 6-2.8-.8-5-3-5-6V4l5-1.8z"/><path d="M6 8.2 7.5 9.7 10.4 6.6"/></svg>
+        <span style="font-size:12px;font-weight:500">Armed on the Whissle agent</span>
+        <span class="num" style="font-size:11.5px;color:var(--ink3)">agent_5f1c…b307</span>
+      </div>
+      <dl style="margin:8px 0 0;display:grid;grid-template-columns:1fr 1fr;gap:2px 24px">
+        <div style="display:flex;align-items:baseline;gap:8px;font-size:11px"><dt style="flex:none;color:var(--ink3)">never_say</dt><dd class="num" style="margin:0;color:var(--ink2)">15 rules</dd></div>
+        <div style="display:flex;align-items:baseline;gap:8px;font-size:11px"><dt style="flex:none;color:var(--ink3)">redact_pii</dt><dd class="num" style="margin:0;color:var(--ink2)">true</dd></div>
+        <div style="display:flex;align-items:baseline;gap:8px;font-size:11px"><dt style="flex:none;color:var(--ink3)">on_violation</dt><dd class="num" style="margin:0;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">"Let me get the host to answer that one directly."</dd></div>
+        <div style="display:flex;align-items:baseline;gap:8px;font-size:11px"><dt style="flex:none;color:var(--ink3)">action_policy</dt><dd class="num" style="margin:0;color:var(--ink2)">{send_email: "approve", send_sms: "approve"}</dd></div>
+      </dl>
+      <p style="margin-top:8px;font-size:11.5px;line-height:1.55;color:var(--ink3)">Read back from the gateway after the push, not assumed from it. This is what fires on voice and on the embed widget, where this app is not in the loop.</p>
+    </div>
+
+    <!-- never say -->
+    <div class="sec">
+      <div class="h2">Never say</div>
+      <p class="hint">Blocked outright, in both layers. 15 of 17 are pushed to the agent — the two marked <span class="chip">app-only</span> stay here, because the gateway matcher has no catalog access and would block the phrase even on a listing that genuinely carries a certificate.</p>
+      <ul style="margin-top:12px;display:flex;flex-direction:column;gap:6px">
+        <li class="rule"><span class="pat">investment</span><span class="why">Resale value is not a return; this is not a security.</span><span style="display:flex;align-items:center;gap:4px"><span class="chip">regex</span><span style="color:var(--ink3);padding:4px"><svg viewBox="0 0 16 16" width="12" height="12" class="i"><path d="M3.5 4.5h9M6.5 4.5V3h3v1.5M5 4.5l.6 8.5h4.8l.6-8.5"/></svg></span></span></li>
+        <li class="rule"><span class="pat">/will (definitely )?arrive (by|on|before)/</span><span class="why">A delivery date the seller does not control.</span><span style="display:flex;align-items:center;gap:4px"><span class="chip" style="border-color:var(--accent);background:oklch(0.5487 0.1908 262.3/.1);color:var(--accent)">regex</span><span style="color:var(--ink3);padding:4px"><svg viewBox="0 0 16 16" width="12" height="12" class="i"><path d="M3.5 4.5h9M6.5 4.5V3h3v1.5M5 4.5l.6 8.5h4.8l.6-8.5"/></svg></span></span></li>
+        <li class="rule"><span class="pat">venmo</span><span class="why">Off-platform payment — no buyer protection, and it breaks the marketplace's terms.</span><span style="display:flex;align-items:center;gap:4px"><span class="chip">regex</span><span style="color:var(--ink3);padding:4px"><svg viewBox="0 0 16 16" width="12" height="12" class="i"><path d="M3.5 4.5h9M6.5 4.5V3h3v1.5M5 4.5l.6 8.5h4.8l.6-8.5"/></svg></span></span></li>
+        <li class="rule"><span class="pat">cash app</span><span class="why">Same as above.</span><span style="display:flex;align-items:center;gap:4px"><span class="chip">regex</span><span style="color:var(--ink3);padding:4px"><svg viewBox="0 0 16 16" width="12" height="12" class="i"><path d="M3.5 4.5h9M6.5 4.5V3h3v1.5M5 4.5l.6 8.5h4.8l.6-8.5"/></svg></span></span></li>
+        <li class="rule" style="border-color:var(--line2);background:var(--elev)"><span class="pat">guaranteed authentic</span><span class="why">Only true when the lot carries a certificate — checked against the listing, not the phrase.</span><span style="display:flex;align-items:center;gap:4px"><span class="chip">regex</span><span class="chip" title="Not pushed to the agent">app-only</span><span style="color:var(--ink3);padding:4px"><svg viewBox="0 0 16 16" width="12" height="12" class="i"><path d="M3.5 4.5h9M6.5 4.5V3h3v1.5M5 4.5l.6 8.5h4.8l.6-8.5"/></svg></span></span></li>
+        <li class="rule" style="border-color:var(--line2);background:var(--elev)"><span class="pat">100% authentic</span><span class="why">Same rule, second phrasing.</span><span style="display:flex;align-items:center;gap:4px"><span class="chip">regex</span><span class="chip">app-only</span><span style="color:var(--ink3);padding:4px"><svg viewBox="0 0 16 16" width="12" height="12" class="i"><path d="M3.5 4.5h9M6.5 4.5V3h3v1.5M5 4.5l.6 8.5h4.8l.6-8.5"/></svg></span></span></li>
+        <li class="rule"><span class="pat">/cure[sd]?|heals?|treats?/</span><span class="why">A health claim about merchandise.</span><span style="display:flex;align-items:center;gap:4px"><span class="chip" style="border-color:var(--accent);background:oklch(0.5487 0.1908 262.3/.1);color:var(--accent)">regex</span><span style="color:var(--ink3);padding:4px"><svg viewBox="0 0 16 16" width="12" height="12" class="i"><path d="M3.5 4.5h9M6.5 4.5V3h3v1.5M5 4.5l.6 8.5h4.8l.6-8.5"/></svg></span></span></li>
+        <li class="rule"><span class="pat">/guaranteed to (appreciate|go up)/</span><span class="why">A financial promise about a collectible.</span><span style="display:flex;align-items:center;gap:4px"><span class="chip" style="border-color:var(--accent);background:oklch(0.5487 0.1908 262.3/.1);color:var(--accent)">regex</span><span style="color:var(--ink3);padding:4px"><svg viewBox="0 0 16 16" width="12" height="12" class="i"><path d="M3.5 4.5h9M6.5 4.5V3h3v1.5M5 4.5l.6 8.5h4.8l.6-8.5"/></svg></span></span></li>
+      </ul>
+      <div style="margin-top:10px;display:flex;align-items:center;gap:10px">
+        <span class="chip"><svg viewBox="0 0 16 16" width="11" height="11" class="i"><path d="M8 3.5v9M3.5 8h9"/></svg>add a rule</span>
+        <span style="font-size:11px;color:var(--ink3)">9 more rules · a pattern that does not compile is refused on save, because a guard that throws returns <span class="num" style="color:var(--bad)">block</span></span>
+      </div>
+    </div>
+
+    <div class="sec" style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+      <div>
+        <div class="h2">Limits</div>
+        <p class="hint">Checked against live catalog state, so these cannot be expressed as a phrase and are never pushed to the agent.</p>
+        <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="card" style="padding:10px 12px">
+            <div style="font-size:11px">Max discount on air</div>
+            <div style="margin-top:6px;display:flex;align-items:center;gap:6px">
+              <span class="num" style="width:56px;border:1px solid var(--line2);border-radius:3px;background:var(--canvas);padding:4px 8px;font-size:12px">15</span>
+              <span style="font-size:11px;color:var(--ink3)">%</span>
+            </div>
+            <p style="margin-top:6px;font-size:11.5px;line-height:1.45;color:var(--ink3)">A markdown beyond this fails preflight and can never be committed. Clamped to 50 — a cap of 100% is not a setting.</p>
+          </div>
+          <div class="card" style="padding:10px 12px">
+            <div style="font-size:11px">Max reply length</div>
+            <div style="margin-top:6px;display:flex;align-items:center;gap:6px">
+              <span class="num" style="width:66px;border:1px solid var(--line2);border-radius:3px;background:var(--canvas);padding:4px 8px;font-size:12px">400</span>
+              <span style="font-size:11px;color:var(--ink3)">chars</span>
+            </div>
+            <p style="margin-top:6px;font-size:11.5px;line-height:1.45;color:var(--ink3)">Live chat replies stay short.</p>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="h2">Voice</div>
+        <p class="hint">Pushed to the agent, so they hold on every channel it answers — chat, the embed widget, a phone call.</p>
+        <div style="margin-top:12px;display:flex;flex-direction:column;gap:6px">
+          <div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 12px">
+            <span><span style="display:block;font-size:11px">Redact PII in the live reply</span><span style="display:block;font-size:11.5px;color:var(--ink3)">Masks e-mail, phone, card-like runs before anything reaches public chat.</span></span>
+            <span class="sw" style="background:var(--accent)"><span class="kn" style="left:14px"></span></span>
+          </div>
+          <div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 12px">
+            <span><span style="display:block;font-size:11px">Allow markdown</span><span style="display:block;font-size:11.5px;color:var(--ink3)">Marketplace chat renders it literally.</span></span>
+            <span class="sw" style="background:var(--line2)"><span class="kn" style="left:2px"></span></span>
+          </div>
+          <div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 12px">
+            <span><span style="display:block;font-size:11px">Allow emoji</span></span>
+            <span class="sw" style="background:var(--line2)"><span class="kn" style="left:2px"></span></span>
+          </div>
+        </div>
+        <div style="margin-top:12px">
+          <span style="font-size:11px;color:var(--ink2)">What the agent says instead when a rule fires</span>
+          <div style="margin-top:4px;border:1px solid var(--line2);border-radius:3px;background:var(--canvas);padding:6px 8px;font-size:12px">Let me get the host to answer that one directly.</div>
+        </div>
+      </div>
+    </div>
+
+    <p style="margin-top:20px;display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ok)">
+      <svg viewBox="0 0 16 16" width="11" height="11" class="i"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg>
+      Saved, re-pushed, and read back. The next reply drafted is checked against this.
+    </p>
+    </div>
+  
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

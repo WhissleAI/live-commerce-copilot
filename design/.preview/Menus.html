@@ -1,0 +1,422 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+</head>
+<body>
+
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+  <style>
+    :root{
+      --canvas:oklch(0.9800 0.0028 264.5);
+      --panel:oklch(1 0 0);
+      --elev:oklch(0.9690 0.0035 264.5);
+      --line:oklch(0.9154 0.0055 264.5);
+      --line2:oklch(0.8558 0.0082 264.5);
+      --ink:oklch(0.2359 0.0118 264.5);
+      --ink2:oklch(0.4518 0.0151 262.7);
+      --ink3:oklch(0.5180 0.0165 261.3);
+      --accent:oklch(0.5487 0.1908 262.3);
+      --ok:oklch(0.5421 0.1489 147.8);
+      --warn:oklch(0.5812 0.1264 71.5);
+      --bad:oklch(0.5468 0.2093 27.4);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--canvas);color:var(--ink);
+      font-family:"Inter",ui-sans-serif,system-ui,-apple-system,sans-serif;
+      font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased}
+    a{color:var(--accent);text-decoration:none}
+    a:hover{color:oklch(0.46 0.19 262.3)}
+    p{margin:0}
+    ul{margin:0;padding:0;list-style:none}
+    svg{display:block;flex:none}
+    .num{font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+      font-variant-numeric:tabular-nums;letter-spacing:-0.01em}
+    .sh{font-size:11px;line-height:1.2;text-transform:uppercase;letter-spacing:.08em;
+      color:var(--ink3);font-weight:600}
+    .r{display:flex;align-items:center}
+    .i{stroke:currentColor;stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+
+    /* ── v2 · denser, quieter, with a real depth model ─────────────────── */
+    :root{
+      --accent-soft:oklch(0.5487 0.1908 262.3/.08);
+      --accent-line:oklch(0.5487 0.1908 262.3/.32);
+      --ink4:oklch(0.6300 0.0150 261.3);
+      --e1:var(--z1);
+      --e2:var(--z3);
+      --e3:var(--z3);
+      --r-xs:3px; --r-sm:5px; --r-md:7px; --r-lg:10px;
+      --h-xs:22px; --h-sm:26px; --h-md:30px; --h-lg:36px;
+      --bar:40px; --subbar:34px;
+      --fast:120ms cubic-bezier(.2,.7,.3,1); --slow:180ms cubic-bezier(.2,.7,.3,1);
+    }
+
+    /* ── v2 · the shell, shared by every page ─────────────────────────── */
+    .navbar{height:var(--bar);display:flex;align-items:center;gap:12px;padding:0 14px;
+      background:var(--canvas);border-bottom:1px solid var(--line)}
+    .navwm{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:600;
+      letter-spacing:.14em;text-transform:uppercase;color:var(--ink)}
+    .navtabs{display:flex;align-items:center;gap:2px}
+    .navtab{display:inline-flex;align-items:center;gap:6px;height:var(--h-sm);padding:0 10px;
+      border-radius:var(--r-sm);font-size:12px;color:var(--ink2)}
+    .navtab.on{background:var(--elev);color:var(--ink);font-weight:500}
+    .navsub{height:var(--subbar);display:flex;align-items:center;gap:16px;padding:0 16px;
+      background:var(--panel);border-bottom:1px solid var(--line)}
+    .navlink{font-size:11.5px;color:var(--ink3);height:var(--subbar);display:flex;align-items:center;gap:5px}
+    .navlink.on{color:var(--ink);font-weight:500;box-shadow:inset 0 -2px 0 var(--accent)}
+    .navghost{display:inline-flex;align-items:center;gap:6px;height:var(--h-sm);padding:0 9px;
+      border-radius:var(--r-sm);border:1px solid var(--line);background:var(--canvas);
+      font-size:11.5px;color:var(--ink2);white-space:nowrap}
+    .navkbd{font-size:11px;display:inline-flex;align-items:center;justify-content:center;height:17px;min-width:17px;
+      padding:0 5px;border-radius:var(--r-xs);border:1px solid var(--line2);background:var(--panel);
+      font-family:"JetBrains Mono",monospace;font-size:9.5px;color:var(--ink3)}
+    .titlerow{display:flex;align-items:center;gap:12px;padding:14px 0 0}
+
+    /* ── v3 · one ring, four layers ───────────────────────────────────── */
+    :root{
+      --ring:0 0 0 1px oklch(0.9060 0.0055 264.5);
+      --z1:var(--ring);
+      --z2:var(--ring), 0 1px 2px oklch(0.2359 0.0118 264.5/.04);
+      --z3:0 0 0 1px oklch(0.8900 0.0060 264.5), 0 6px 20px oklch(0.2359 0.0118 264.5/.10);
+      --z4:0 0 0 1px oklch(0.8900 0.0060 264.5), 0 16px 40px oklch(0.2359 0.0118 264.5/.14);
+      --rail:52px;
+    }
+
+    /* liveness, focus, and the two motions the product actually uses */
+    @keyframes ss-pulse{0%,100%{opacity:1}50%{opacity:.30}}
+    @keyframes ss-spin{to{transform:rotate(360deg)}}
+    .anim{animation:ss-pulse 1.8s ease-in-out infinite}
+    .spin{animation:ss-spin .9s linear infinite}
+    :focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+    @media (prefers-reduced-motion: reduce){
+      .anim,.spin{animation:none}
+    }
+    .page{width:1440px;height:1760px;background:var(--canvas);padding:26px 30px;overflow:hidden}
+    .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin-bottom:7px}
+    .m{font-size:10px;line-height:1.5;color:var(--ink3)}
+    .p{font-size:11.5px;line-height:1.6;color:var(--ink2)}
+    .i{stroke:currentColor;stroke-width:1.5;fill:none;stroke-linecap:round;stroke-linejoin:round}
+    .menu{width:100%;border:0;border-radius:var(--r-md);background:var(--panel);
+      box-shadow:var(--z3);overflow:hidden}
+    .mh{padding:8px 10px;box-shadow:0 1px 0 var(--line);display:flex;align-items:center;gap:8px}
+    .mg{padding:8px 10px 4px;font-size:11.5px;font-weight:500;color:var(--ink3)}
+    .mi{display:flex;align-items:center;gap:9px;padding:6px 10px;font-size:12px;color:var(--ink)}
+    .mi.on{background:var(--accent-soft)}
+    .mi .sub{display:block;font-size:11.5px;line-height:1.4;color:var(--ink3);margin-top:2px}
+    .mi .k{margin-left:auto;font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--ink3)}
+    .mf{padding:7px 10px;box-shadow:0 -1px 0 var(--line);display:flex;align-items:center;gap:8px;
+      font-size:11.5px;color:var(--ink3);background:var(--elev)}
+    .kbd{display:inline-flex;align-items:center;justify-content:center;height:17px;min-width:17px;padding:0 5px;
+      border-radius:var(--r-xs);border:1px solid var(--line2);background:var(--panel);
+      font-family:"JetBrains Mono",monospace;font-size:9.5px;color:var(--ink3)}
+    .chip{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;border:1px solid var(--line);
+      border-radius:var(--r-xs);padding:1px 6px;font-size:10px;color:var(--ink2);background:var(--panel)}
+    .g{display:inline-flex;align-items:center;gap:4px;border-radius:var(--r-xs);border:1px solid;padding:1px 6px;font-size:10px}
+    .g-ok{color:var(--ok);border-color:oklch(0.5421 0.1489 147.8/.45);background:oklch(0.5421 0.1489 147.8/.12)}
+    .g-na{color:var(--ink3);border-color:var(--line2);background:var(--canvas)}
+    .dot{width:6px;height:6px;border-radius:50%;flex:none}
+    /* ── v3 · normalised primitives. Loaded after each artboard's own CSS. */
+
+    /* one badge, three variants — no border, tinted fill, 20px tall */
+    .chip{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;border:1px solid transparent;
+      background:var(--elev);color:var(--ink2);border-radius:var(--r-sm);
+      padding:3px 8px;font-size:12px;line-height:14px;font-weight:500}
+    .g{display:inline-flex;align-items:center;gap:5px;border:1px solid transparent;border-radius:var(--r-sm);
+      padding:3px 8px;font-size:12px;line-height:14px;font-weight:500}
+    .g-ok{color:oklch(0.4600 0.1300 147.8);background:oklch(0.5421 0.1489 147.8/.13)}
+    .g-warn{color:oklch(0.4900 0.1150 71.5);background:oklch(0.5812 0.1264 71.5/.15)}
+    .g-bad{color:oklch(0.4800 0.1900 27.4);background:oklch(0.5468 0.2093 27.4/.13)}
+    .g-na{color:var(--ink3);background:var(--elev)}
+    .ev{display:inline-flex;align-items:center;gap:5px;border:1px solid transparent;background:var(--elev);
+      color:var(--ink2);border-radius:var(--r-sm);padding:3px 8px;font-size:12px;line-height:14px}
+    .kbd,.navkbd{display:inline-flex;align-items:center;justify-content:center;height:17px;min-width:17px;
+      padding:0 5px;border:1px solid transparent;background:var(--elev);color:var(--ink3);border-radius:var(--r-xs);
+      font-family:"JetBrains Mono",monospace;font-size:11px;line-height:1}
+
+    /* one label, one heading — sentence case, no tracking */
+    .sh,.lbl,.eyebrow{font-size:12px;line-height:1.3;text-transform:none;letter-spacing:0;
+      font-weight:500;color:var(--ink3)}
+    .h2{font-size:15px;line-height:1.25;text-transform:none;letter-spacing:-0.008em;
+      font-weight:600;color:var(--ink)}
+    .hint{font-size:12.5px;line-height:1.6;color:var(--ink3)}
+    .m{font-size:11.5px;line-height:1.55;color:var(--ink3)}
+    .p{font-size:12.5px;line-height:1.6;color:var(--ink2)}
+
+    /* panes and cards sit on their own surface, so they lose their outline */
+    .card{border:1px solid transparent;background:var(--panel);border-radius:var(--r-md);box-shadow:var(--z1)}
+    .tile{border:1px solid transparent;background:var(--panel);border-radius:var(--r-md);box-shadow:var(--z1)}
+    .panehdr{height:26px;display:flex;align-items:center;justify-content:space-between;gap:8px;
+      flex:none;border-bottom:0;padding:0 12px;font-size:12px;font-weight:500;color:var(--ink3)}
+
+    /* tables: one rule under the head, hover as the separator */
+    th{border-bottom:1px solid var(--line);font-size:11.5px;font-weight:500;
+      text-transform:none;letter-spacing:0;color:var(--ink3);padding:8px 12px}
+    td{border-bottom:0;font-size:12.5px;padding:9px 12px;color:var(--ink2)}
+    tbody tr:nth-child(even) td{background:oklch(0.9800 0.0028 264.5/.6)}
+
+    /* nothing below 11px, and 11px only on figures */
+    .num{font-variant-numeric:tabular-nums}
+
+    /* ── v3 · the shell: a 52px rail, a 44px content bar, a live strip ── */
+    .rail{width:var(--rail);flex:none;display:flex;flex-direction:column;align-items:center;gap:4px;
+      padding:10px 0;background:var(--panel);box-shadow:1px 0 0 var(--line)}
+    .rr{width:36px;height:32px;display:grid;place-items:center;border-radius:var(--r-sm);color:var(--ink3);position:relative}
+    .rr.on{background:var(--elev);color:var(--ink)}
+    .rr .live{position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:var(--bad)}
+    .rl2{font-size:10.5px;color:var(--ink4);margin-top:-2px}
+    .colmain{flex:1;min-width:0;display:flex;flex-direction:column}
+    .cbar{height:44px;flex:none;display:flex;align-items:center;gap:10px;padding:0 16px;
+      background:var(--panel);box-shadow:0 1px 0 var(--line)}
+    .ctitle{font-size:15px;font-weight:600;letter-spacing:-0.008em}
+    .strip{height:28px;flex:none;display:flex;align-items:center;gap:10px;padding:0 16px;
+      background:oklch(0.5468 0.2093 27.4/.06);box-shadow:0 1px 0 oklch(0.5468 0.2093 27.4/.18);font-size:12px}
+    .navsub{height:34px;background:var(--panel);border-bottom:0;box-shadow:0 1px 0 var(--line);gap:18px}
+    .navlink{font-size:12.5px}
+    .navghost{border:0;background:var(--elev);color:var(--ink2);font-size:12px}
+
+    /* stat tiles follow the same label rule */
+    .stat{border:1px solid transparent;background:var(--panel);border-radius:var(--r-md);box-shadow:var(--z1);padding:14px 16px}
+    .stat .l{font-size:12px;text-transform:none;letter-spacing:0;font-weight:500;color:var(--ink3)}
+    .stat .v{font-size:20px;line-height:1.1;margin-top:6px}
+    .stat .h{font-size:11.5px;line-height:1.5;color:var(--ink3);margin-top:6px}
+    .tgt{font-size:11px;padding:2px 6px;border-radius:var(--r-xs)}
+    .sec{margin-top:28px}
+    .wrap{padding-top:20px}
+
+    /* the focused card keeps its ring — .card.card-f outranks .card */
+    .card.card-f{box-shadow:0 0 0 1.5px var(--accent), var(--z2);background:var(--panel)}
+    /* an action is never a 20px chip */
+    .chip-btn{height:26px;padding:0 10px;border-radius:var(--r-sm)}
+    /* tables align with their card header */
+    th{padding:8px 14px}
+    td{padding:9px 14px}
+    /* .rl2 was never used and never passed contrast */
+    .rl2{font-size:11.5px;color:var(--ink3)}
+  </style>
+
+<div class="page">
+  <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:18px">
+    <h1 style="margin:0;font-family:'Archivo',Inter,sans-serif;font-size:22px;font-weight:700;font-stretch:110%;letter-spacing:-0.02em">Menus, panels and overlays</h1>
+    <span style="font-size:11.5px;color:var(--ink3)">one grammar — 7px radius, hairline border, a single shadow, 26px rows, shortcut on the right</span>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px 22px;align-items:start">
+
+    <!-- show switcher -->
+    <div>
+      <div class="lbl">Show switcher · ⌘O</div>
+      <div class="menu">
+        <div class="mh">
+          <svg viewBox="0 0 16 16" width="12" height="12" class="i" style="color:var(--ink3)"><circle cx="7.2" cy="7.2" r="4"/><path d="M10.2 10.2 13.5 13.5"/></svg>
+          <span style="flex:1;font-size:11.5px;color:var(--ink3)">Find a show or paste a link…</span>
+        </div>
+        <div class="mg">Live now</div>
+        <div class="mi on"><span class="dot" style="background:var(--bad)"></span><span>Denim Vault — Friday Night Drop<span class="sub">@northsidethrift · 412 watching · 01:12</span></span></div>
+        <div class="mi"><span class="dot" style="background:var(--bad)"></span><span>Raw Denim &amp; Workwear<span class="sub">@pacificrawgoods · followed · 42m in</span></span></div>
+        <div class="mg">Recent</div>
+        <div class="mi"><span class="dot" style="background:var(--line2)"></span><span>Card Break Sunday<span class="sub">Sun · report ready</span></span></div>
+        <div class="mi"><span class="dot" style="background:var(--line2)"></span><span>Sneaker Vault Wednesday<span class="sub">Wed · report ready</span></span></div>
+        <div class="mf"><svg viewBox="0 0 16 16" width="11" height="11" class="i"><path d="M8 3.5v9M3.5 8h9"/></svg>Monitor a new show<span class="kbd" style="margin-left:auto">⏎</span></div>
+      </div>
+    </div>
+
+    <!-- command palette -->
+    <div>
+      <div class="lbl">Command palette · ⌘K — go, do, find</div>
+      <div class="menu">
+        <div class="mh"><span style="flex:1;font-size:12px">flag</span><span class="kbd">esc</span></div>
+        <div class="mg">Actions</div>
+        <div class="mi on"><svg viewBox="0 0 16 16" width="13" height="13" class="i" style="color:var(--ink3)"><path d="M4 14V3.2M4 3.2h7.2l-.9 2.4.9 2.4H4"/></svg><span>Flag the last sent reply as wrong<span class="sub">adds it to the review queue and the eval set</span></span></div>
+        <div class="mi"><svg viewBox="0 0 16 16" width="13" height="13" class="i" style="color:var(--ink3)"><path d="M3 12.5V9M8 12.5V6M13 12.5V3.5"/></svg><span>Change autonomy…<span class="sub">L1 Suggest → L2 One-tap</span></span></div>
+        <div class="mg">Jump to</div>
+        <div class="mi"><svg viewBox="0 0 16 16" width="13" height="13" class="i" style="color:var(--ink3)"><path d="M4 2.5h5l3 3v8H4z"/></svg><span>Report · Card Break Sunday</span><span class="k">G R</span></div>
+        <div class="mi"><svg viewBox="0 0 16 16" width="13" height="13" class="i" style="color:var(--ink3)"><rect x="2.5" y="4" width="11" height="8.5" rx="1.5"/></svg><span>Cost</span><span class="k">G $</span></div>
+        <div class="mf">↑↓ move · ⏎ run · ⌘⏎ open in inspector · ⌘J asks instead</div>
+      </div>
+    </div>
+
+    <!-- autonomy -->
+    <div>
+      <div class="lbl">Autonomy · on the show strip</div>
+      <div class="menu">
+        <div class="mi"><span class="num" style="width:18px;font-size:11.5px;color:var(--ink3)">L0</span><span>Observe<span class="sub">Classifies chat, suggests nothing</span></span></div>
+        <div class="mi on"><span class="num" style="width:18px;font-size:11.5px;color:var(--accent)">L1</span><span style="color:var(--accent)">Suggest<span class="sub" style="color:var(--ink3)">Drafts every reply; you send them</span></span><svg viewBox="0 0 16 16" width="12" height="12" class="i" style="margin-left:auto;color:var(--accent)"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg></div>
+        <div class="mi"><span class="num" style="width:18px;font-size:11.5px;color:var(--ink3)">L2</span><span>One-tap<span class="sub">1 more clean show to unlock</span></span><span class="k">2/3</span></div>
+        <div class="mi" style="opacity:.55"><span class="num" style="width:18px;font-size:11.5px;color:var(--ink3)">L3</span><span>Auto-reply<span class="sub">Allow-listed topics, never price</span></span><svg viewBox="0 0 16 16" width="11" height="11" class="i" style="margin-left:auto;color:var(--ink3)"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg></div>
+        <div class="mi" style="opacity:.55"><span class="num" style="width:18px;font-size:11.5px;color:var(--ink3)">L4</span><span>Auto-act<span class="sub" style="color:var(--warn)">Locked — no live marketplace adapter</span></span><svg viewBox="0 0 16 16" width="11" height="11" class="i" style="margin-left:auto;color:var(--ink3)"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg></div>
+        <div class="mf">A guardrail block never auto-sends, at any rung.</div>
+      </div>
+    </div>
+
+    <!-- account -->
+    <div>
+      <div class="lbl">Account</div>
+      <div class="menu">
+        <div style="padding:10px;border-bottom:1px solid var(--line)">
+          <div style="font-size:12px;font-weight:500">Guest session</div>
+          <div class="m" style="margin-top:2px">Can watch and read every proposal. Cannot send a reply or approve an action.</div>
+          <span style="margin-top:8px;display:flex;align-items:center;justify-content:center;gap:6px;height:26px;border-radius:var(--r-sm);background:var(--accent);color:oklch(0.99 0 0);font-size:11px;font-weight:500">Take control</span>
+        </div>
+        <div class="mi"><svg viewBox="0 0 16 16" width="13" height="13" class="i" style="color:var(--ink3)"><circle cx="8" cy="8" r="2.2"/><path d="M8 2.5v1.6M8 11.9v1.6M13.5 8h-1.6M4.1 8H2.5M11.9 4.1l-1.1 1.1M5.2 10.8l-1.1 1.1M11.9 11.9l-1.1-1.1M5.2 5.2 4.1 4.1"/></svg><span>Settings</span><span class="k">G ,</span></div>
+        <div class="mi"><svg viewBox="0 0 16 16" width="13" height="13" class="i" style="color:var(--ink3)"><path d="M4 2.5h5l3 3v8H4z"/><path d="M9 2.5v3h3"/></svg><span>Export my data</span><svg viewBox="0 0 16 16" width="11" height="11" class="i" style="margin-left:auto;color:var(--ink3)"><path d="M6.5 4.5 10 8l-3.5 3.5"/></svg></div>
+        <div class="mi"><svg viewBox="0 0 16 16" width="13" height="13" class="i" style="color:var(--ink3)"><path d="M8 2.2 13 4v4c0 3-2.2 5.2-5 6-2.8-.8-5-3-5-6V4l5-1.8z"/></svg><span>Guardrail policy<span class="sub">17 rules · 15 armed on the agent</span></span></div>
+        <div class="mf">Signed replies and approvals are recorded against this account.</div>
+      </div>
+    </div>
+
+    <!-- proposal overflow with submenu -->
+    <div>
+      <div class="lbl">Proposal overflow · with a sub-menu</div>
+      <div style="position:relative">
+        <div class="menu" style="width:210px">
+          <div class="mi"><svg viewBox="0 0 16 16" width="13" height="13" class="i" style="color:var(--ink3)"><rect x="5" y="5" width="8" height="8" rx="1.5"/><path d="M3 11V3.5h7.5"/></svg><span>Copy reply</span><span class="k">⌘C</span></div>
+          <div class="mi"><svg viewBox="0 0 16 16" width="13" height="13" class="i" style="color:var(--ink3)"><path d="M3.5 3.5h7L12.5 6v6.5h-9z"/></svg><span>Save this wording</span></div>
+          <div class="mi on"><svg viewBox="0 0 16 16" width="13" height="13" class="i" style="color:var(--ink3)"><circle cx="8" cy="8" r="6"/><path d="M8 7.2v4M8 4.9v.2"/></svg><span>Why this answer?</span><svg viewBox="0 0 16 16" width="11" height="11" class="i" style="margin-left:auto"><path d="M6.5 4.5 10 8l-3.5 3.5"/></svg></div>
+          <div class="mi"><svg viewBox="0 0 16 16" width="13" height="13" class="i" style="color:var(--ink3)"><path d="M4 14V3.2M4 3.2h7.2l-.9 2.4.9 2.4H4"/></svg><span>Flag as wrong</span></div>
+          <div class="mi" style="color:var(--bad)"><svg viewBox="0 0 16 16" width="13" height="13" class="i"><path d="M4 4l8 8M12 4l-8 8"/></svg><span>Dismiss</span><span class="k">X</span></div>
+        </div>
+        <div class="menu" style="position:absolute;left:198px;top:52px;width:236px">
+          <div class="mg">3 facts, at the version read</div>
+          <div class="mi" style="align-items:flex-start"><svg viewBox="0 0 16 16" width="12" height="12" class="i" style="margin-top:2px;color:var(--ink3)"><path d="M3 3.5h10v9H3z"/><path d="M8 3.5v9"/></svg><span style="font-size:11px">Shipping policy · intl rate<span class="sub">“Canada — flat $18.50, 1 business day handling.”</span></span></div>
+          <div class="mi" style="align-items:flex-start"><svg viewBox="0 0 16 16" width="12" height="12" class="i" style="margin-top:2px;color:var(--ink3)"><path d="M2.8 8.3 8 3h5v5l-5.3 5.2a1 1 0 0 1-1.4 0L2.8 9.7a1 1 0 0 1 0-1.4z"/></svg><span style="font-size:11px">Lot #007 · v13<span class="sub">score 0.91 · read 1.4s before the draft</span></span></div>
+          <div class="mf">Open in the inspector <span class="kbd" style="margin-left:auto">I</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- chat context menu -->
+    <div style="margin-top:0">
+      <div class="lbl">Chat row · right click</div>
+      <div class="menu" style="width:100%">
+        <div class="mi"><svg viewBox="0 0 16 16" width="13" height="13" class="i" style="color:var(--ink3)"><path d="M3 3.5h10v7H8.5L6 13v-2.5H3z"/></svg><span>Answer this<span class="sub">drafts even though the gate dropped it</span></span></div>
+        <div class="mi"><svg viewBox="0 0 16 16" width="13" height="13" class="i" style="color:var(--ink3)"><circle cx="8" cy="8" r="6"/><path d="M8 7.2v4M8 4.9v.2"/></svg><span>Why was this dropped?<span class="sub">reaction · no question detected</span></span></div>
+        <div class="mi"><svg viewBox="0 0 16 16" width="13" height="13" class="i" style="color:var(--ink3)"><path d="M3.5 6.5h3l3-2.5v8l-3-2.5h-3zM11 6a3 3 0 0 1 0 4"/></svg><span>Mute this buyer for the show</span></div>
+        <div class="mf">Muting is local to this show and logged in the audit.</div>
+      </div>
+    </div>
+
+    <!-- filter -->
+    <div>
+      <div class="lbl">Queue filter · multi-select</div>
+      <div class="menu">
+        <div class="mg">Status</div>
+        <div class="mi"><span style="width:13px;height:13px;border-radius:3px;background:var(--accent);display:grid;place-items:center;color:oklch(0.99 0 0)"><svg viewBox="0 0 16 16" width="9" height="9" class="i" style="stroke-width:2.4"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg></span><span>Awaiting</span><span class="k">2</span></div>
+        <div class="mi"><span style="width:13px;height:13px;border-radius:3px;border:1px solid var(--line2)"></span><span>Blocked</span><span class="k">1</span></div>
+        <div class="mi"><span style="width:13px;height:13px;border-radius:3px;border:1px solid var(--line2)"></span><span>Unanswerable</span><span class="k">3</span></div>
+        <div class="mg">Topic</div>
+        <div class="mi"><span style="width:13px;height:13px;border-radius:3px;border:1px solid var(--line2)"></span><span>Price &amp; discount</span><span class="k">14</span></div>
+        <div class="mi"><span style="width:13px;height:13px;border-radius:3px;border:1px solid var(--line2)"></span><span>Sizing</span><span class="k">9</span></div>
+        <div class="mf">Reset<span class="kbd" style="margin-left:auto">⌥R</span></div>
+      </div>
+    </div>
+
+    <!-- range + export -->
+    <div>
+      <div class="lbl">Range, and export</div>
+      <div class="menu" style="margin-bottom:12px">
+        <div class="mi"><span>Last 7 days</span></div>
+        <div class="mi on"><span>Last 30 days</span><svg viewBox="0 0 16 16" width="12" height="12" class="i" style="margin-left:auto;color:var(--accent)"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg></div>
+        <div class="mi"><span>This season<span class="sub">1 Jun — today · 12 shows</span></span></div>
+        <div class="mi"><span>Custom…</span><svg viewBox="0 0 16 16" width="11" height="11" class="i" style="margin-left:auto;color:var(--ink3)"><path d="M6.5 4.5 10 8l-3.5 3.5"/></svg></div>
+      </div>
+      <div class="menu">
+        <div class="mi"><span>Export report as PDF<span class="sub">what a seller forwards to a partner</span></span></div>
+        <div class="mi"><span>Export rows as CSV<span class="sub">proposals, guards and timings</span></span></div>
+        <div class="mi"><span>Export the show as JSON<span class="sub">everything, including the audit chain</span></span></div>
+      </div>
+    </div>
+
+    <!-- inspector -->
+    <div>
+      <div class="lbl">Inspector · 320px, opens beside the work</div>
+      <div style="border:1px solid var(--line);border-radius:var(--r-md);background:var(--panel);overflow:hidden">
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line)">
+          <span style="font-size:11.5px;font-weight:600;flex:1">Proposal · carl_w</span>
+          <span class="kbd">I</span>
+          <svg viewBox="0 0 16 16" width="12" height="12" class="i" style="color:var(--ink3)"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+        </div>
+        <div style="padding:10px;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;gap:4px;flex-wrap:wrap">
+            <span class="g g-na"><span class="num">–</span>price</span><span class="g g-na"><span class="num">–</span>stock</span>
+            <span class="g g-ok"><span class="num">✓</span>policy</span><span class="g g-ok"><span class="num">✓</span>grounding</span>
+            <span class="g g-ok"><span class="num">✓</span>tone</span><span class="g g-ok"><span class="num">✓</span>pii</span>
+          </div>
+          <div>
+            <div class="m">Evidence</div>
+            <div style="margin-top:5px;display:flex;flex-direction:column;gap:5px">
+              <div style="border:1px solid var(--line);border-radius:var(--r-sm);background:var(--canvas);padding:7px 8px">
+                <div style="font-size:11px">“Canada — flat $18.50, 1 business day handling.”</div>
+                <div class="num" style="margin-top:3px;display:flex;justify-content:space-between;font-size:11px;color:var(--ink3)"><span>policy:shipping#intl</span><span>0.94</span></div>
+              </div>
+              <div style="border:1px solid var(--line);border-radius:var(--r-sm);background:var(--canvas);padding:7px 8px">
+                <div style="font-size:11px">Lot #007 · Levi's 505, 34×32 · $142.00</div>
+                <div class="num" style="margin-top:3px;display:flex;justify-content:space-between;font-size:11px;color:var(--ink3)"><span>listing:007#price · v13</span><span>0.91</span></div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="m">Timing</div>
+            <div style="margin-top:5px;display:flex;height:7px;border-radius:99px;overflow:hidden">
+              <span style="width:14%;background:var(--ink3)"></span><span style="width:36%;background:var(--accent)"></span>
+              <span style="width:38%;background:oklch(0.5487 0.1908 262.3/.45)"></span><span style="width:12%;background:var(--ok)"></span>
+            </div>
+            <div class="num" style="margin-top:5px;display:flex;justify-content:space-between;font-size:11px;color:var(--ink3)">
+              <span>admit 0.2s</span><span>retrieve 0.5s</span><span>draft 0.5s</span><span>guards 0.2s</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- sheet -->
+    <div>
+      <div class="lbl">Sheet · setup, over the shows list</div>
+      <div style="border:1px solid var(--line);border-radius:var(--r-md);background:var(--canvas);overflow:hidden;box-shadow:var(--z3)">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 11px;border-bottom:1px solid var(--line)">
+          <span style="font-size:12px;font-weight:600;flex:1">Monitor a show</span>
+          <span class="kbd">esc</span>
+        </div>
+        <div style="padding:11px;display:flex;flex-direction:column;gap:9px">
+          <div style="border:1px solid var(--line2);border-radius:var(--r-sm);background:var(--panel);padding:7px 9px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3)">ebay.com/ebaylive/events/…</div>
+          <div style="display:flex;align-items:center;gap:7px">
+            <span class="chip" style="border-color:oklch(0.5421 0.1489 147.8/.4);color:var(--ok)">0 blockers</span>
+            <span class="chip" style="border-color:oklch(0.5812 0.1264 71.5/.45);color:var(--warn)">1 warning</span>
+            <span class="m">host audio not connected</span>
+          </div>
+          <div style="display:flex;gap:7px">
+            <span style="display:inline-flex;align-items:center;height:28px;padding:0 11px;border-radius:var(--r-sm);background:var(--accent);color:oklch(0.99 0 0);font-size:11.5px;font-weight:500">Start monitoring</span>
+            <span style="display:inline-flex;align-items:center;height:28px;padding:0 11px;border-radius:var(--r-sm);border:1px solid var(--line);font-size:11.5px;color:var(--ink2)">Readiness detail</span>
+          </div>
+        </div>
+      </div>
+      <p class="m" style="margin-top:8px">A sheet for a flow with a beginning and an end; a modal only for something destructive; a popover for something you read and dismiss.</p>
+    </div>
+
+    <!-- tooltip / popover spec -->
+    <div>
+      <div class="lbl">Tooltip and popover</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:inline-flex;align-self:flex-start;align-items:center;gap:6px;background:var(--ink);color:oklch(0.99 0 0);border-radius:var(--r-sm);padding:4px 8px;font-size:11px;box-shadow:var(--z3)">
+          Blocked by the price guard <span class="num" style="opacity:.6">v12 ≠ v13</span>
+        </div>
+        <div style="border:1px solid var(--line);border-radius:var(--r-md);background:var(--canvas);padding:9px 10px;box-shadow:var(--z3)">
+          <div style="font-size:11.5px;font-weight:500">price · block</div>
+          <p class="p" style="margin-top:4px">The amount was read from listing v12; the listing is now v13.</p>
+          <div class="num" style="margin-top:6px;border-top:1px solid var(--line);padding-top:6px;font-size:11.5px">
+            expected <span style="color:var(--ok)">$142.00</span> · found <span style="color:var(--bad)">$132.00</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <div class="m">tooltip · dark, one line, 400ms delay, no actions</div>
+          <div class="m">popover · light, rich, opens on click, can contain a link</div>
+          <div class="m">inspector · anything you would keep open while working</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

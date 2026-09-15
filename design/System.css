@@ -1,0 +1,17 @@
+    .page{width:1340px;height:1520px;background:var(--canvas);padding:30px 34px;overflow:hidden}
+    .i{stroke:currentColor;stroke-width:1.5;fill:none;stroke-linecap:round;stroke-linejoin:round}
+    .lbl{font-size:12px;font-weight:500;color:var(--ink3);margin-bottom:9px}
+    .m{font-size:11.5px;line-height:1.55;color:var(--ink3)}
+    .p{font-size:12.5px;line-height:1.6;color:var(--ink2)}
+    .h3{font-size:15px;font-weight:600;letter-spacing:-0.008em}
+    .card{background:var(--panel);border-radius:var(--r-md);box-shadow:var(--z1);padding:16px}
+    .sw{height:46px;border-radius:var(--r-sm)}
+    .meta{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--ink3)}
+    .btn{display:inline-flex;align-items:center;gap:7px;height:28px;padding:0 10px;border-radius:var(--r-sm);
+      font-size:12.5px;font-weight:500}
+    .btn-p{background:var(--accent);color:oklch(0.99 0 0)}
+    .btn-s{background:var(--elev);color:var(--ink)}
+    .btn-g{color:var(--ink2)}
+    .btn-d{background:oklch(0.5468 0.2093 27.4/.12);color:oklch(0.4800 0.1900 27.4)}
+    .topic{display:inline-flex;align-items:center;gap:5px;border-radius:var(--r-sm);padding:3px 8px;
+      font-size:12px;font-weight:500}

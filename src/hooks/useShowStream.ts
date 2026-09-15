@@ -13,6 +13,8 @@ import type {
   ReplyProposal,
   ShowContext,
   ShowState,
+  BudgetState,
+  SourceStatus,
   StreamEvent,
 } from "@/lib/types";
 
@@ -41,6 +43,13 @@ export interface ShowStore {
   shows: ShowSummary[];
   /** ids of listings whose fields changed recently, for the flash highlight */
   flashed: Record<string, number>;
+  /** What the ingest watcher is doing. Silence from the watcher and a quiet
+   *  chat used to look identical; now the show bar can tell them apart. */
+  source: SourceStatus | null;
+  /** Null until the server has read the wallet at least once. */
+  budget: BudgetState | null;
+  /** The server's refusal — an unknown show id, most often. */
+  streamError: string | null;
 }
 
 function upsert<T extends { id: string }>(list: T[], item: T, newestFirst = false): T[] {
@@ -51,7 +60,7 @@ function upsert<T extends { id: string }>(list: T[], item: T, newestFirst = fals
   return next;
 }
 
-export function useShowStream() {
+export function useShowStream(showId?: string | null) {
   const [connection, setConnection] = useState<ConnectionState>("connecting");
   const [show, setShow] = useState<ShowState | null>(null);
   const [listings, setListings] = useState<Listing[]>([]);
@@ -66,6 +75,9 @@ export function useShowStream() {
   const [seller, setSeller] = useState<SellerProfile | null>(null);
   const [shows, setShows] = useState<ShowSummary[]>([]);
   const [flashed, setFlashed] = useState<Record<string, number>>({});
+  const [source, setSource] = useState<SourceStatus | null>(null);
+  const [budget, setBudget] = useState<BudgetState | null>(null);
+  const [streamError, setStreamError] = useState<string | null>(null);
   const listingsRef = useRef<Listing[]>([]);
   listingsRef.current = listings;
 
@@ -78,6 +90,8 @@ export function useShowStream() {
         setShow(e.data.show);
         setSeller(e.data.seller ?? null);
         setListings(e.data.listings);
+        // Mock mode seeds its own backlog; the server sends the real tail here.
+        if (e.data.chat) setChat(e.data.chat.slice(-MAX_CHAT));
         setProposals(e.data.proposals);
         setActions(e.data.actions);
         setAudit(e.data.audit);
@@ -124,10 +138,21 @@ export function useShowStream() {
       case "context":
         setContext(e.data);
         break;
+      case "source":
+        setSource(e.data);
+        break;
+      case "budget":
+        setBudget(e.data);
+        break;
+      case "stream_error":
+        setStreamError(e.data.error);
+        break;
     }
   }, []);
 
-  useEffect(() => subscribeStream(apply, setConnection), [apply]);
+  // Follow the show this console was opened for, not whichever one the server
+  // happens to consider active.
+  useEffect(() => subscribeStream(apply, setConnection, showId ?? null), [apply, showId]);
 
   const live = useMemo(
     () =>
@@ -151,6 +176,7 @@ export function useShowStream() {
     show,
     listings,
     chat,
+    budget,
     proposals,
     actions,
     audit,
@@ -161,6 +187,8 @@ export function useShowStream() {
     seller,
     shows,
     flashed,
+    source,
+    streamError,
   };
 
   return { ...store, live, recent, setShow, setListings, setProposals, setActions, setAudit };

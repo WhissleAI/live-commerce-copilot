@@ -1,0 +1,16 @@
+    .page{width:1440px;height:1560px;background:var(--canvas);padding:28px 30px;overflow:hidden}
+    .disp{font-family:'Archivo',Inter,sans-serif;font-weight:700;font-stretch:110%;letter-spacing:-0.022em;margin:0}
+    .m{font-size:10px;line-height:1.5;color:var(--ink3)}
+    .p{font-size:11.5px;line-height:1.6;color:var(--ink2)}
+    .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink3)}
+    .i{stroke:currentColor;stroke-width:1.5;fill:none;stroke-linecap:round;stroke-linejoin:round}
+    .col{border:0;border-radius:var(--r-md);background:var(--panel);box-shadow:var(--z1);overflow:hidden}
+    .ch{padding:10px 11px;box-shadow:0 1px 0 var(--line);background:var(--elev)}
+    .cb{padding:10px 11px;display:flex;flex-direction:column;gap:8px}
+    .row{display:grid;grid-template-columns:112px repeat(6,1fr);gap:10px;align-items:stretch}
+    .rl{font-size:11.5px;font-weight:500;color:var(--ink3);padding-top:12px}
+    .cell{border:1px solid transparent;border-radius:var(--r-sm);background:var(--panel);box-shadow:var(--z1);padding:10px 11px;font-size:12px;line-height:1.55;color:var(--ink2)}
+    .cell strong{color:var(--ink);font-weight:600}
+    .chip{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;border:1px solid var(--line2);
+      border-radius:var(--r-xs);padding:1px 6px;font-size:9.5px;color:var(--ink2)}
+    .beat{height:3px;border-radius:2px}

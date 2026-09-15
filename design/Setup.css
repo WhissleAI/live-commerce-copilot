@@ -1,0 +1,12 @@
+    .page{display:flex;flex-direction:row;width:1440px;height:1180px;background:var(--canvas);overflow:hidden}
+    .apphdr{flex:none;background:var(--panel);border-bottom:1px solid var(--line)}
+    .apphdr .in{margin:0 auto;max-width:1024px;height:48px;padding:0 20px;display:flex;align-items:center;justify-content:space-between}
+    .wm{display:flex;align-items:center;gap:8px;font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--ink2)}
+    .wrap{flex:1;min-height:0;overflow:hidden;margin:0 auto;width:1100px;padding:28px 20px 0}
+    .i{stroke:currentColor;stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+    .eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--ink3)}
+    .card{border:1px solid var(--line);border-radius:var(--r-md);background:var(--panel)}
+    .chip{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;border:1px solid var(--line2);border-radius:var(--r-sm);padding:1px 6px;font-size:10px;color:var(--ink2)}
+    .btn{display:inline-flex;align-items:center;gap:8px;border-radius:var(--r-md);padding:10px 16px;font-size:13px;font-weight:500}
+    .btn-p{background:var(--accent);color:oklch(0.99 0 0)}
+    .ck{display:flex;align-items:flex-start;gap:8px;padding:9px 12px;box-shadow:0 1px 0 var(--line);font-size:12.5px}

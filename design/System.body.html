@@ -1,0 +1,126 @@
+<div class="page">
+  <div style="display:flex;align-items:baseline;gap:12px">
+    <h1 style="margin:0;font-family:'Archivo',Inter,sans-serif;font-size:24px;font-weight:700;font-stretch:110%;letter-spacing:-0.022em">Design system · v3</h1>
+    <span class="p">what changed in this pass, and the rules that now hold everywhere</span>
+  </div>
+
+  <div style="margin-top:24px;display:grid;grid-template-columns:1fr 1fr;gap:34px">
+
+    <!-- LEFT -->
+    <div style="display:flex;flex-direction:column;gap:26px">
+
+      <div>
+        <div class="lbl">Surfaces — the page is grey, the work is white</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+          <div><div class="sw" style="background:var(--canvas);box-shadow:var(--ring)"></div><div class="meta" style="margin-top:6px">canvas</div><div class="meta">.980 .0028 264</div></div>
+          <div><div class="sw" style="background:var(--panel);box-shadow:var(--z1)"></div><div class="meta" style="margin-top:6px">panel</div><div class="meta">1 0 0</div></div>
+          <div><div class="sw" style="background:var(--elev)"></div><div class="meta" style="margin-top:6px">elevated</div><div class="meta">.969 .0035 264</div></div>
+          <div><div class="sw" style="background:var(--panel);box-shadow:var(--z3)"></div><div class="meta" style="margin-top:6px">overlay</div><div class="meta">z3</div></div>
+        </div>
+        <p class="p" style="margin-top:10px"><strong style="color:var(--ink)">The inversion is the change.</strong> A 1.5% lightness step made hairlines carry all the separation, four borders deep around a single pill. Now a card is white on grey with one ring, and anything already sitting on its own surface loses its outline.</p>
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+          <span class="meta">z1 ring</span><span class="meta">z2 raised</span><span class="meta">z3 overlay</span><span class="meta">z4 modal</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="lbl">Type — five sizes, nothing below 11px</div>
+        <div style="display:flex;flex-direction:column;gap:11px">
+          <div style="display:flex;align-items:baseline;gap:14px"><span class="meta" style="width:96px;flex:none">11 · num only</span><span class="num" style="font-size:11px">v13 · 1.42s · 0.86 · h147</span></div>
+          <div style="display:flex;align-items:baseline;gap:14px"><span class="meta" style="width:96px;flex:none">12.5 · UI</span><span style="font-size:12.5px">Labels, table cells, chips, buttons, captions</span></div>
+          <div style="display:flex;align-items:baseline;gap:14px"><span class="meta" style="width:96px;flex:none">15 · content</span><span style="font-size:15px">The drafted reply, and every section heading</span></div>
+          <div style="display:flex;align-items:baseline;gap:14px"><span class="meta" style="width:96px;flex:none">20 · figure</span><span class="num" style="font-size:20px">$148.00</span></div>
+          <div style="display:flex;align-items:baseline;gap:14px"><span class="meta" style="width:96px;flex:none">32+ · display</span><span style="font-family:'Archivo',sans-serif;font-weight:700;font-stretch:110%;letter-spacing:-0.025em;font-size:32px">Marketing only</span></div>
+        </div>
+        <p class="p" style="margin-top:12px">242 declarations at 9 and 10px were the real base of the old design — that is what made it read as an admin panel. Shrinking text to fit more in is not density; cutting content is.</p>
+        <p class="p" style="margin-top:8px"><strong style="color:var(--ink)">And nothing shouts.</strong> Seven uppercase label classes with 23 letter-spacings became one: 12px, medium, sentence case, no tracking. Headings are 15px semibold — larger than the body they sit above, which was not previously true.</p>
+      </div>
+
+      <div>
+        <div class="lbl">Topic hues — re-spaced out of the band red and amber own</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          <span class="topic" style="background:oklch(0.955 0.030 105);color:oklch(0.44 0.13 105)">returns</span>
+          <span class="topic" style="background:oklch(0.955 0.030 145);color:oklch(0.44 0.13 145)">stock</span>
+          <span class="topic" style="background:oklch(0.955 0.030 175);color:oklch(0.44 0.13 175)">authenticity</span>
+          <span class="topic" style="background:oklch(0.955 0.030 205);color:oklch(0.44 0.13 205)">price</span>
+          <span class="topic" style="background:oklch(0.955 0.030 235);color:oklch(0.44 0.13 235)">shipping</span>
+          <span class="topic" style="background:oklch(0.955 0.030 265);color:oklch(0.44 0.13 265)">hype</span>
+          <span class="topic" style="background:oklch(0.955 0.030 295);color:oklch(0.44 0.13 295)">compare</span>
+          <span class="topic" style="background:oklch(0.955 0.030 320);color:oklch(0.44 0.13 320)">sizing</span>
+          <span class="topic" style="background:oklch(0.955 0.030 340);color:oklch(0.44 0.13 340)">discount</span>
+          <span class="topic" style="background:var(--elev);color:var(--ink3)">other</span>
+        </div>
+        <p class="p" style="margin-top:10px">“Discount” used to sit at hue 20 — two degrees from <span style="color:var(--bad)">bad</span> — so a topic chip read as an alert on the one screen where red means blocked or live. Topics now start at 105 and step by 30–40°, and <em>other</em> carries no hue at all, because it is not a topic.</p>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div style="display:flex;flex-direction:column;gap:26px">
+
+      <div>
+        <div class="lbl">One badge, one key — no borders</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+          <span class="g g-na">– price</span><span class="g g-ok">✓ stock</span>
+          <span class="g g-warn">! policy</span><span class="g g-bad">✕ grounding</span>
+          <span class="chip">app-only</span><span class="chip">best effort</span>
+          <span class="kbd">⏎</span><span class="kbd">E</span><span class="kbd">⌘K</span>
+        </div>
+        <p class="p" style="margin-top:10px">Seven pill systems with four heights and three radii became one badge — 20px, tinted fill, 12px medium — and one 17px key. The guard row keeps its fixed order and its <span class="num">–</span> for “nothing to check”, which remains the best idea in the product.</p>
+      </div>
+
+      <div>
+        <div class="lbl">Controls — the sizes, and where each one is allowed</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+          <span class="btn btn-p" style="height:24px">Approve</span>
+          <span class="btn btn-p">Send <span class="kbd" style="background:oklch(0.99 0 0/.2);color:oklch(0.99 0 0)">⏎</span></span>
+          <span class="btn btn-s">Edit <span class="kbd">E</span></span>
+          <span class="btn btn-g">Dismiss <span class="kbd">X</span></span>
+          <span class="btn btn-d">Delete session</span>
+          <span style="display:inline-flex;align-items:center;height:36px;padding:0 14px;border-radius:var(--r-sm);background:var(--accent);color:oklch(0.99 0 0);font-size:13px;font-weight:600">Start monitoring</span>
+        </div>
+        <div style="margin-top:10px;display:flex;gap:16px" class="meta">
+          <span>24 in-row</span><span>26 chip-button</span><span>28 default</span><span>36 primary</span><span>52 marketing</span>
+          <span>rows 28 / 36 / 44</span><span>radius 3 · 5 · 7 · 10 · 14 print</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="lbl">The shell</div>
+        <div class="card" style="padding:0;overflow:hidden;display:flex;height:150px">
+          <div class="rail" style="padding:8px 0">
+            <span class="rr" style="color:var(--bad)"><svg viewBox="0 0 16 16" width="16" height="16" class="i"><circle cx="8" cy="8" r="2"/><path d="M4.5 11.5a5 5 0 0 1 0-7M11.5 4.5a5 5 0 0 1 0 7"/></svg></span>
+            <span class="rr on"><svg viewBox="0 0 16 16" width="15" height="15" class="i"><path d="M2.5 3.5h11v9h-11z"/></svg><span class="live"></span></span>
+            <span class="rr"><svg viewBox="0 0 16 16" width="15" height="15" class="i"><path d="M3 12.5V9M8 12.5V5M13 12.5V7.5"/></svg></span>
+            <span class="rr"><svg viewBox="0 0 16 16" width="15" height="15" class="i"><rect x="2.5" y="4" width="11" height="8.5" rx="1.5"/></svg></span>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;background:var(--canvas)">
+            <div class="strip" style="font-size:11.5px">
+              <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:6px;height:6px;border-radius:50%;background:var(--bad)"></span><span style="font-weight:600;color:var(--bad);font-size:11px">LIVE</span></span>
+              <span class="num" style="font-size:11.5px">01:12:36</span><span style="color:var(--ink3)">2 awaiting · 1 blocked</span>
+            </div>
+            <div class="cbar" style="height:38px"><span class="ctitle" style="font-size:13.5px">Cost</span></div>
+            <div class="navsub" style="height:30px"><span class="navlink on">Overview</span><span class="navlink">By show</span><span class="navlink">Limits</span></div>
+            <div style="flex:1;display:grid;place-items:center" class="m">content · one width, one gutter</div>
+          </div>
+        </div>
+        <p class="p" style="margin-top:10px">52px rail · 28px live strip · 44px content bar · 34px sub-nav · 420px inspector. Navigation spends width, never height — the console cannot spare the vertical, and it was previously giving up 92px of chrome plus 216px of section bars.</p>
+      </div>
+
+      <div>
+        <div class="lbl">Input and focus — the two the sheet was missing</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+          <span style="display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:var(--r-sm);background:var(--panel);box-shadow:var(--ring);font-size:12.5px;color:var(--ink3)">rest</span>
+          <span style="display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:var(--r-sm);background:var(--panel);box-shadow:0 0 0 1.5px var(--accent);font-size:12.5px;color:var(--ink)">focused</span>
+          <span style="display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:var(--r-sm);background:var(--panel);box-shadow:0 0 0 1.5px var(--bad);font-size:12.5px;color:oklch(0.4800 0.1900 27.4)">that regex does not compile</span>
+          <span style="display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:var(--r-sm);background:var(--elev);font-size:12.5px;color:var(--ink3)">disabled · needs a live adapter</span>
+        </div>
+        <p class="p" style="margin-top:10px">Keyboard focus is <span class="num">2px accent, offset 1</span> on every control, and it is the same ring a focused proposal card carries — the console is driven from the keyboard, so focus is not decoration.</p>
+      </div>
+
+      <div class="card" style="background:var(--elev);box-shadow:none">
+        <div class="h3">The rule behind all of it</div>
+        <p class="p" style="margin-top:8px">The console is read in peripheral vision by someone talking to a camera. Colour means state, position means category, and nothing moves unless something changed. Every number that could be mistaken for a promise carries the version it was read at — and every element that can be explained opens the same inspector, never a fifth kind of popover.</p>
+      </div>
+    </div>
+  </div>
+</div>

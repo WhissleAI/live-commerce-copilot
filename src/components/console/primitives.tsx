@@ -1,38 +1,41 @@
 import { useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import { INTENT_HUE, INTENT_LABEL } from "@/lib/format";
+import { Button, TopicBadge } from "@/components/ui/kit";
 import type { ChatIntent } from "@/lib/types";
 
-export function Kbd({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <kbd
-      className={cn(
-        "num inline-flex h-4 min-w-4 items-center justify-center rounded-[3px] border border-hairline-strong bg-canvas px-1 text-[10px] leading-none text-text-muted",
-        className,
-      )}
-    >
-      {children}
-    </kbd>
-  );
-}
+/** Re-exported so console code keeps its old name while there is one key cap. */
+export { Key as Kbd } from "@/components/ui/kit";
 
+/**
+ * A pane's label line.
+ *
+ * This used to be a full-width 36px bar with a 1px rule and a tracked-uppercase
+ * word. Six of them in a 900px console is 216px of chrome — a quarter of the
+ * viewport — before a single piece of operator content. Now it is a 26px
+ * borderless line inside the pane's own padding, and the panes are separated by
+ * a gutter instead of a rule.
+ */
 export function SectionHeader({
   title,
+  leading,
   children,
   className,
 }: {
   title: string;
+  /** Sits before the title. Narrow layouts put a drawer toggle here rather than
+   *  floating one over the row, which used to land on top of the counts. */
+  leading?: ReactNode;
   children?: ReactNode;
   className?: string;
 }) {
   return (
     <div
-      className={cn(
-        "flex h-9 shrink-0 items-center justify-between gap-2 border-b border-hairline px-3",
-        className,
-      )}
+      className={cn("flex h-[26px] shrink-0 items-center justify-between gap-2 px-3", className)}
     >
-      <span className="section-header">{title}</span>
+      <span className="flex min-w-0 items-center gap-2">
+        {leading}
+        <span className="section-header">{title}</span>
+      </span>
       <div className="flex items-center gap-2">{children}</div>
     </div>
   );
@@ -72,7 +75,7 @@ export function Hover({
         <span
           role="tooltip"
           className={cn(
-            "anim-in absolute z-50 w-72 rounded-md border border-hairline-strong bg-elevated p-2.5 text-[12px] leading-snug text-text-secondary",
+            "anim-in absolute z-50 w-72 rounded-md bg-panel p-3 text-[12.5px] leading-snug text-text-secondary z3",
             interactive ? "pointer-events-auto" : "pointer-events-none",
             side === "bottom" ? "top-[calc(100%+6px)]" : "bottom-[calc(100%+6px)]",
             align === "start" && "left-0",
@@ -88,17 +91,8 @@ export function Hover({
   );
 }
 
-/** How an utterance reads on the speech-act axis — the same vocabulary the
- *  host's voice metadata uses, so both sides of the room compare. */
-const ACT_NOTE: Record<string, string> = {
-  query: "a question — answerable",
-  command: "asks for an action — answerable",
-  inform: "a statement",
-  greeting: "a greeting",
-  wish: "wants the item, but asked nothing",
-  other: "unclassified",
-};
-
+/** Kept as a name because the console calls it this; the geometry, the hues and
+ *  the speech-act dot all live in the one shared badge now. */
 export function IntentBadge({
   intent,
   speechAct,
@@ -107,50 +101,18 @@ export function IntentBadge({
   animate = false,
 }: {
   intent: ChatIntent;
-  /** The second axis. A topic cue fires on the WORDS, so a statement can carry
-   *  one — which is why both are shown and why the tooltip names each. */
   speechAct?: string | null | undefined;
   dropReason?: string | undefined;
   className?: string;
   animate?: boolean;
 }) {
-  const hue = INTENT_HUE[intent];
-  const answerable = speechAct === "query" || speechAct === "command";
   return (
-    <span
-      title={
-        speechAct
-          ? `${INTENT_LABEL[intent]} · ${ACT_NOTE[speechAct] ?? speechAct}` +
-            (dropReason ? ` — ${dropReason}` : "")
-          : INTENT_LABEL[intent]
-      }
-      className={cn(
-        "inline-flex shrink-0 items-center gap-1 rounded-[4px] border px-1.5 text-[10px] leading-4 font-medium",
-        animate && "anim-in",
-        className,
-      )}
-      // Light-theme values. These were written against a near-black canvas
-      // (0.78 text on 0.26 fill) and survived the theme swap as dark blobs —
-      // legible only by accident. Now a tinted chip: dark ink, pale fill.
-      style={{
-        color: `oklch(0.45 0.12 ${hue})`,
-        borderColor: `oklch(0.86 0.05 ${hue})`,
-        backgroundColor: `oklch(0.965 0.02 ${hue})`,
-      }}
-    >
-      {/* The speech act as a dot rather than a second word: filled when this
-          comment is the kind that wants an answer, hollow when it is not. */}
-      {speechAct ? (
-        <span
-          aria-hidden
-          className={cn(
-            "size-1 rounded-full",
-            answerable ? "bg-current" : "border border-current opacity-50",
-          )}
-        />
-      ) : null}
-      {INTENT_LABEL[intent]}
-    </span>
+    <TopicBadge
+      intent={intent}
+      speechAct={speechAct}
+      dropReason={dropReason}
+      className={cn(animate && "anim-in", className)}
+    />
   );
 }
 
@@ -181,6 +143,8 @@ export function Bar({
   );
 }
 
+/** The console's own name for the shared button. Three heights exist — 24 in a
+ *  row, 28 by default, 36 for a primary call — and nothing else. */
 export function ConsoleButton({
   children,
   variant = "ghost",
@@ -190,23 +154,9 @@ export function ConsoleButton({
   variant?: "primary" | "secondary" | "ghost" | "danger";
 }) {
   return (
-    <button
-      type="button"
-      className={cn(
-        "inline-flex h-7 items-center gap-1.5 rounded-[4px] border px-2 text-[12px] font-medium transition-colors duration-150 ease-out disabled:cursor-not-allowed disabled:opacity-40",
-        variant === "primary" &&
-          "border-accent bg-accent text-accent-foreground hover:bg-accent/85",
-        variant === "secondary" &&
-          "border-hairline-strong bg-elevated text-text hover:border-text-muted",
-        variant === "ghost" &&
-          "border-transparent bg-transparent text-text-secondary hover:bg-elevated hover:text-text",
-        variant === "danger" && "border-bad/50 bg-transparent text-bad hover:bg-bad/10",
-        className,
-      )}
-      {...rest}
-    >
+    <Button variant={variant} size="sm" className={className} {...rest}>
       {children}
-    </button>
+    </Button>
   );
 }
 
