@@ -287,7 +287,6 @@ export function TopBar({
   onToggleCost,
   costOpen,
   account,
-  onClaim,
 }: {
   show: ShowState;
   seller?: SellerProfile | null;
@@ -301,7 +300,6 @@ export function TopBar({
   onToggleCost: () => void;
   costOpen: boolean;
   account?: Account | null;
-  onClaim?: () => void;
 }) {
   const now = useNow();
   const elapsed = (now - new Date(show.startedAt).getTime()) / 1000;

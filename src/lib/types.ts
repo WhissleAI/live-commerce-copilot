@@ -488,10 +488,10 @@ export interface BillingSnapshot {
   attribution: { perShow: string; note: string };
 }
 
-/** Who the console is acting as. A guest watches; a seller acts. */
+/** Who the console is acting as. Every account is a seller; there are no guests. */
 export interface Account {
   id: string;
-  kind: "guest" | "seller";
+  kind: "seller";
   handle: string;
   displayName: string;
   email?: string | null;

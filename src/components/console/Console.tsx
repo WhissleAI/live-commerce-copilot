@@ -14,7 +14,7 @@ import {
   Wallet,
   X,
 } from "lucide-react";
-import { api, API_BASE, USE_MOCKS, ensureSession, claimConsole, tokenQuery } from "@/lib/api";
+import { api, API_BASE, USE_MOCKS, ensureSession, tokenQuery } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useShowStream } from "@/hooks/useShowStream";
 import type {
@@ -119,6 +119,9 @@ export function Console() {
       return !v;
     });
   }, []);
+  // Something is open on the right, so the chat column gives up its width
+  // one breakpoint later than usual.
+  const sidePanel = inspect !== null || costOpen;
 
   // Who this console is acting as. Minted on first load so the audit chain can
   // answer "who approved that markdown" — it could not, when every write was
@@ -130,10 +133,6 @@ export function Console() {
       .catch(() => setAccount(null));
   }, []);
 
-  const claim = useCallback(async () => {
-    const a = await claimConsole().catch(() => null);
-    if (a) setAccount(a);
-  }, []);
   const [viewerDelta, setViewerDelta] = useState(0);
   const prevViewers = useRef<number | null>(null);
 
@@ -236,6 +235,7 @@ export function Console() {
         else if (shortcutsOpen) setShortcutsOpen(false);
         else if (editingId) setEditingId(null);
         else if (inspect) setInspect(null);
+        else if (costOpen) setCostOpen(false);
         return;
       }
       if (isTyping() || paletteOpen) return;
@@ -337,6 +337,7 @@ export function Console() {
     return () => window.removeEventListener("keydown", onKey);
   }, [
     actions,
+    costOpen,
     decidable,
     editingId,
     focusedId,
@@ -515,7 +516,6 @@ export function Console() {
         costOpen={costOpen}
         onToggleCost={toggleCost}
         account={account}
-        onClaim={claim}
       />
 
       {/* The cost rail is a COLUMN, not an overlay: it is read against the
@@ -529,13 +529,19 @@ export function Console() {
           // Three bands, and the order things are given up in is the order they
           // matter least while a buyer is waiting:
           //   ≥1280  chat · proposals · show rail
-          //   ≥1024  proposals · show rail, chat in a drawer
-          //   <1024  proposals only, both in drawers
+          //   ≥1024  proposals · show rail, chat in a sheet
+          //   <1024  proposals only, both in sheets
           // The queue is the product; it is the one column that never folds.
+          //
+          // The inspector (a 380px aside outside this grid) and the cost column
+          // are the same real estate and never open together. Either one takes
+          // the chat column's width until 1536px, where there is room for both;
+          // in between, chat is the same sheet it is below 1280 — one tap away,
+          // never gone.
           inspect
-            ? "grid-cols-[1fr] lg:grid-cols-[1fr_340px]"
+            ? "grid-cols-[1fr] lg:grid-cols-[1fr_340px] 2xl:grid-cols-[260px_1fr_340px]"
             : costOpen
-              ? "grid-cols-[1fr] lg:grid-cols-[1fr_320px] xl:grid-cols-[260px_1fr_340px_300px]"
+              ? "grid-cols-[1fr] lg:grid-cols-[1fr_340px] xl:grid-cols-[1fr_340px_300px] 2xl:grid-cols-[260px_1fr_340px_300px]"
               : "grid-cols-[1fr] lg:grid-cols-[1fr_380px] xl:grid-cols-[300px_1fr_380px]",
         )}
       >
@@ -543,7 +549,7 @@ export function Console() {
         <div
           className={cn(
             "hidden min-h-0 flex-col overflow-hidden rounded-md bg-panel z1",
-            !inspect && "xl:flex",
+            sidePanel ? "2xl:flex" : "xl:flex",
           )}
         >
           <div className="flex min-h-0 flex-[3] flex-col">
@@ -575,7 +581,10 @@ export function Console() {
               <button
                 type="button"
                 onClick={() => setDrawerOpen((o) => !o)}
-                className="flex h-[22px] shrink-0 items-center gap-1 rounded-sm bg-elevated px-1.5 text-[11px] text-text-muted hover:text-text xl:hidden"
+                className={cn(
+                  "flex h-[22px] shrink-0 items-center gap-1 rounded-sm bg-elevated px-1.5 text-[11px] text-text-muted hover:text-text",
+                  sidePanel ? "2xl:hidden" : "xl:hidden",
+                )}
               >
                 <PanelLeft className="size-3" aria-hidden /> Chat
               </button>
@@ -606,7 +615,12 @@ export function Console() {
             onInspect={(id) => openInspect({ kind: "proposal", id })}
           />
           {drawerOpen ? (
-            <div className="anim-in absolute inset-y-0 left-0 z-30 w-[300px] xl:hidden">
+            <div
+              className={cn(
+                "anim-in absolute inset-y-0 left-0 z-30 w-[300px] z3",
+                sidePanel ? "2xl:hidden" : "xl:hidden",
+              )}
+            >
               <ChatColumn
                 chat={chat}
                 onInject={(text) => void api.injectChat("you", text)}
@@ -665,7 +679,11 @@ export function Console() {
 
         {/* Opened on demand rather than resident: cost is a question the seller
             asks between lots, not something to watch while a buyer waits. */}
-        {costOpen && <CostPanel showId={show.id} onClose={() => setCostOpen(false)} />}
+        {costOpen && (
+          <div className="absolute inset-y-2 right-2 z-30 min-h-0 w-[320px] overflow-hidden rounded-md z3 xl:static xl:inset-auto xl:z-auto xl:w-auto xl:z1">
+            <CostPanel showId={show.id} onClose={() => setCostOpen(false)} />
+          </div>
+        )}
       </div>
 
       <ToastRail toasts={toasts} />

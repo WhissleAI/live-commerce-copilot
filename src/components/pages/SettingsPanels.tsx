@@ -14,7 +14,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { AlertTriangle, Download, ExternalLink, Loader2, Trash2 } from "lucide-react";
-import { api, claimConsole, ensureSession } from "@/lib/api";
+import { api } from "@/lib/api";
 import { GUARD_ORDER } from "@/lib/format";
 import type {
   DryRunResult,
@@ -645,11 +645,8 @@ export function EbayPanel() {
               disabled={busy !== null || w.blockers.length > 0}
               onClick={() =>
                 void run("connect", async () => {
-                  // Consent is recorded against an operator, not a guest. Claim
-                  // the console on the way rather than sending the seller to
-                  // find "Take control" on another tab.
-                  const who = await ensureSession().catch(() => null);
-                  if (!who || who.kind === "guest") await claimConsole();
+                  // Consent is recorded against the signed-in seller; there is
+                  // no guest to promote first.
                   const { url } = await api.ebayConnect();
                   setConnecting(true);
                   window.open(url, "_blank", "noopener,noreferrer");

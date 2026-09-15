@@ -153,11 +153,6 @@ export async function logout(): Promise<void> {
   memoryToken = null;
 }
 
-/** Kept for call sites that used to promote a guest; a registered account is already an operator. */
-export async function claimConsole(): Promise<Account | null> {
-  return ensureSession();
-}
-
 /**
  * What the server said, as a sentence.
  *

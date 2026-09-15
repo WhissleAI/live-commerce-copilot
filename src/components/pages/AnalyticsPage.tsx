@@ -93,7 +93,7 @@ export function AnalyticsPage() {
       title="Analytics"
       subtitle={
         o
-          ? `${o.shows.finished} shows in the last ${o.window.days} days · ${o.shows.hoursOnAir}h on air`
+          ? `${o.shows.finished} shows that finished in the last ${o.window.days} days · ${o.shows.hoursOnAir}h on air`
           : "reading your shows…"
       }
       tabs={tabs}

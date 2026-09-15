@@ -495,7 +495,9 @@ export function ProposalQueue({
             {unanswerable.length} unanswerable
           </Badge>
         )}
-        <span className="hidden text-[11px] text-text-muted xl:inline">
+        {/* The key legend is the first thing to go: below 1360px the counts,
+            the Chat toggle and this line no longer fit on one 26px row. */}
+        <span className="hidden min-w-0 truncate text-[11px] text-text-muted min-[1360px]:block">
           J/K move · Enter send · E edit · X dismiss · R regenerate
         </span>
         {trailing}
