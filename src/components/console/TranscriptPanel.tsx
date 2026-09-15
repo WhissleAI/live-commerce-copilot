@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Mic, MicOff, ExternalLink, Eye } from "lucide-react";
-import type { ShowContext, SignalDistribution, TranscriptSegment } from "@/lib/types";
+import type { ListenHealth, ShowContext, SignalDistribution, TranscriptSegment } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 /**
@@ -51,11 +51,13 @@ export function TranscriptPanel({
   levels,
   context,
   bridgeUrl,
+  listen,
 }: {
   transcript: TranscriptSegment[];
   levels: number[];
   context: ShowContext | null;
   bridgeUrl: string | null;
+  listen?: ListenHealth | null;
 }) {
   const canvas = useRef<HTMLCanvasElement | null>(null);
   const wrap = useRef<HTMLDivElement | null>(null);
@@ -116,6 +118,11 @@ export function TranscriptPanel({
     return () => clearInterval(t);
   }, []);
   const listening = lastLevelAt > 0 && now - lastLevelAt < 8_000;
+  // A frozen last line looked like a working panel. Say how old it is once it
+  // is old, and say plainly when the backend has judged the session deaf.
+  const shownAgeS = shown ? Math.max(0, Math.round((now - Date.parse(shown.at)) / 1000)) : 0;
+  const stale = listening && !!shown && shownAgeS > 30;
+  const stalled = listen?.state === "stalled" || listen?.state === "reconnecting";
 
   return (
     <section className="flex min-h-0 flex-1 flex-col shadow-[0_-1px_0_var(--hairline)]">
@@ -163,6 +170,20 @@ export function TranscriptPanel({
         )}
       </div>
 
+      {(stalled || stale) && (
+        <div
+          role="status"
+          className={cn(
+            "shrink-0 border-b border-hairline px-3 py-1.5 text-[10.5px] leading-snug",
+            stalled ? "bg-bad/10 text-bad" : "bg-warn/10 text-warn",
+          )}
+        >
+          {stalled
+            ? `Transcript stalled — ${listen?.detail ?? "audio is live but nothing is being transcribed"}. The bridge reconnects on its own; if this stays, stop and start it.`
+            : `No transcript for ${shownAgeS}s while audio is live. Replies are grounding on what the host said before that.`}
+        </div>
+      )}
+
       {/* The moment. Inline, never an overlay — which is why nothing clips it. */}
       <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
         {shown ? (
@@ -171,7 +192,7 @@ export function TranscriptPanel({
               <span className="num text-[10px] tabular-nums text-text-muted">
                 {new Date(shown.at).toLocaleTimeString([], { hour12: false })}
               </span>
-              <span className="text-[10px] text-ok">live</span>
+              <span className={cn("text-[10px]", stale ? "text-warn" : "text-ok")}>{stale ? `${shownAgeS}s ago` : "live"}</span>
               {shown.speechRate != null && (
                 <span className="num ml-auto text-[10px] tabular-nums text-text-muted">
                   {Math.round(shown.speechRate)} wpm

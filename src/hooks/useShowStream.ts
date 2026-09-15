@@ -15,8 +15,7 @@ import type {
   ShowState,
   BudgetState,
   SourceStatus,
-  StreamEvent,
-} from "@/lib/types";
+  StreamEvent, ListenHealth } from "@/lib/types";
 
 const MAX_CHAT = 220;
 const MAX_TRANSCRIPT = 120;
@@ -49,6 +48,7 @@ export interface ShowStore {
   /** What the ingest watcher is doing. Silence from the watcher and a quiet
    *  chat used to look identical; now the show bar can tell them apart. */
   source: SourceStatus | null;
+  listen: ListenHealth | null;
   /** Null until the server has read the wallet at least once. */
   budget: BudgetState | null;
   /** The server's refusal — an unknown show id, most often. */
@@ -79,6 +79,7 @@ export function useShowStream(showId?: string | null) {
   const [shows, setShows] = useState<ShowSummary[]>([]);
   const [flashed, setFlashed] = useState<Record<string, number>>({});
   const [source, setSource] = useState<SourceStatus | null>(null);
+  const [listen, setListen] = useState<ListenHealth | null>(null);
   const [budget, setBudget] = useState<BudgetState | null>(null);
   const [streamError, setStreamError] = useState<string | null>(null);
   const [greeted, setGreeted] = useState(false);
@@ -154,6 +155,9 @@ export function useShowStream(showId?: string | null) {
       case "source":
         setSource(e.data);
         break;
+      case "listen":
+        setListen(e.data);
+        break;
       case "budget":
         setBudget(e.data);
         break;
@@ -202,6 +206,7 @@ export function useShowStream(showId?: string | null) {
     shows,
     flashed,
     source,
+    listen,
     streamError,
   };
 

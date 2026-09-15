@@ -385,6 +385,8 @@ export type StreamEvent =
   // What this show has cost against the seller's cap, and whether the cap has
   // stopped the copilot drafting. Server-side: the console never computes it.
   | { type: "budget"; data: BudgetState }
+  // The host-audio path's health: loud audio with no transcript is `stalled`.
+  | { type: "listen"; data: ListenHealth }
   // The server says so when the show id it was asked for does not exist. The
   // browser used to ignore it and sit on an empty stream forever.
   | { type: "stream_error"; data: { error: string } };
@@ -849,8 +851,19 @@ export interface TimelineFrame {
   seq: number;
   at: string;
   offsetMs: number;
+  /** The twelve-word live reading, what the copilot used as show context. */
   reading: string;
+  /** The fuller post-show reading; null until the describer has run. */
+  description: string | null;
   bytes: number;
+}
+
+/** The host-audio path's health, from the backend's `listen` event. */
+export interface ListenHealth {
+  showId: string;
+  at: string;
+  state: "ok" | "stalled" | "reconnecting";
+  detail: string;
 }
 
 export interface TimelineAudio {
@@ -868,6 +881,8 @@ export interface ShowTimeline {
   utterances: Utterance[];
   frames: TimelineFrame[];
   audio: TimelineAudio[];
+  /** True while the describer is still writing frame descriptions. */
+  describing?: boolean;
 }
 
 /** The evidence behind a report, from the tables that kept it. */

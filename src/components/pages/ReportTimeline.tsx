@@ -3,9 +3,11 @@
  *
  * During the show the host-audio panel showed one strip and the latest
  * utterance; scrubbing back was deliberately left for here, where there is
- * room. This puts the three kept signals on one clock — the audio chunks, the
- * utterances with their distributions, and the frames the agent read — and
- * lets the seller point at a moment and hear it.
+ * room. This puts the three kept signals on ONE clock and ONE feed: the audio
+ * chunks drive a player, and the utterances and the frames the agent read are
+ * interleaved in time order below it, so a frame sits beside what the host was
+ * saying when it was taken. Click any row to hear that moment; click a frame
+ * to see it large, with the fuller reading the agent wrote after the show.
  *
  * Audio is a sequence of ~10 s chunks, each independently playable. One
  * <audio> element plays them in order; seeking picks the chunk that contains
@@ -15,11 +17,11 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Eye, Mic, Pause, Play } from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye, Mic, Pause, Play, Sparkles, X } from "lucide-react";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import type { ShowTimeline, SignalDistribution, Utterance } from "@/lib/types";
-import { Badge, Card, EmptyState, Skeleton } from "@/components/ui/kit";
+import type { ShowTimeline, SignalDistribution, TimelineFrame, Utterance } from "@/lib/types";
+import { Badge, Button, Card, EmptyState, Skeleton } from "@/components/ui/kit";
 
 /** `EMOTION_HAPPY` → `happy`. */
 export function pretty(raw: string): string {
@@ -35,16 +37,26 @@ const clock = (ms: number) => {
 export function ReportTimeline({ showId }: { showId: string }) {
   const [t, setT] = useState<ShowTimeline | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const load = useCallback(() => api.timeline(showId), [showId]);
+
   useEffect(() => {
     let stop = false;
-    api
-      .timeline(showId)
+    load()
       .then((x) => !stop && setT(x))
       .catch((e: Error) => !stop && setError(e.message));
     return () => {
       stop = true;
     };
-  }, [showId]);
+  }, [load]);
+
+  // While the describer is writing, the page fills in on its own.
+  useEffect(() => {
+    if (!t?.describing) return;
+    const timer = setInterval(() => {
+      load().then(setT).catch(() => {});
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [t?.describing, load]);
 
   if (error) return <p className="text-[12.5px] text-bad">{error}</p>;
   if (!t) return <Skeleton className="h-[220px]" />;
@@ -58,17 +70,38 @@ export function ReportTimeline({ showId }: { showId: string }) {
       </Card>
     );
   }
-  return <Player t={t} showId={showId} />;
+  return (
+    <Player
+      t={t}
+      showId={showId}
+      onDescribe={() =>
+        api
+          .describeTimeline(showId)
+          .then(() => setT((prev) => (prev ? { ...prev, describing: true } : prev)))
+          .catch(() => {})
+      }
+    />
+  );
 }
 
-function Player({ t, showId }: { t: ShowTimeline; showId: string }) {
+type Row =
+  | { kind: "say"; at: number; u: Utterance }
+  | { kind: "see"; at: number; f: TimelineFrame; repeat: boolean };
+
+function Player({ t, showId, onDescribe }: { t: ShowTimeline; showId: string; onDescribe: () => void }) {
   const audio = useRef<HTMLAudioElement | null>(null);
+  const feed = useRef<HTMLDivElement | null>(null);
   const [chunkIx, setChunkIx] = useState(0);
   const [playing, setPlaying] = useState(false);
   /** Milliseconds from show start, updated while playing. */
   const [pos, setPos] = useState(0);
+  const [follow, setFollow] = useState(true);
+  const [allFrames, setAllFrames] = useState(false);
+  const [open, setOpen] = useState<number | null>(null);
 
-  const chunks = t.audio;
+  // Chunks in show order. The server numbers them, but a show recorded before
+  // that had bridge numbers that restart per page load; time is the truth.
+  const chunks = useMemo(() => [...t.audio].sort((a, b) => a.offsetMs - b.offsetMs), [t.audio]);
   const end = useMemo(() => {
     const last = [
       ...chunks.map((c) => c.offsetMs + c.durationMs),
@@ -77,6 +110,22 @@ function Player({ t, showId }: { t: ShowTimeline; showId: string }) {
     ];
     return Math.max(1, ...last);
   }, [chunks, t.frames, t.utterances]);
+
+  // One feed. A run of frames that read the same is one moment on the table;
+  // the repeats are folded unless asked for.
+  const rows = useMemo<Row[]>(() => {
+    const out: Row[] = t.utterances.map((u) => ({ kind: "say", at: u.offsetMs, u }));
+    let prev = "";
+    for (const f of t.frames) {
+      const key = f.reading.trim().toLowerCase();
+      out.push({ kind: "see", at: f.offsetMs, f, repeat: key === prev });
+      prev = key;
+    }
+    return out.sort((a, b) => a.at - b.at);
+  }, [t.utterances, t.frames]);
+  const shownRows = useMemo(() => (allFrames ? rows : rows.filter((r) => r.kind === "say" || !r.repeat)), [rows, allFrames]);
+  const frames = useMemo(() => t.frames, [t.frames]);
+  const undescribed = frames.filter((f) => f.description == null).length;
 
   const chunkFor = useCallback(
     (ms: number) => {
@@ -102,7 +151,11 @@ function Player({ t, showId }: { t: ShowTimeline; showId: string }) {
       const src = api.audioUrl(showId, c.seq);
       const within = Math.max(0, (ms - c.offsetMs) / 1000);
       const apply = () => {
-        el.currentTime = within;
+        try {
+          el.currentTime = within;
+        } catch {
+          /* a chunk with no duration metadata: play from its start */
+        }
         if (andPlay) void el.play().catch(() => setPlaying(false));
       };
       if (el.src !== src) {
@@ -141,16 +194,39 @@ function Player({ t, showId }: { t: ShowTimeline; showId: string }) {
     }
   };
 
-  const current = useMemo(() => {
-    let best: Utterance | null = null;
-    for (const u of t.utterances) if (u.offsetMs <= pos) best = u;
+  // The row for "now": the last row at or before the playhead.
+  const currentKey = useMemo(() => {
+    let best: string | null = null;
+    for (const r of shownRows) {
+      if (r.at > pos) break;
+      best = r.kind === "say" ? `u${r.u.seq}` : `f${r.f.seq}`;
+    }
     return best;
-  }, [pos, t.utterances]);
+  }, [pos, shownRows]);
   const currentFrame = useMemo(() => {
-    let best = null as ShowTimeline["frames"][number] | null;
-    for (const f of t.frames) if (f.offsetMs <= pos) best = f;
+    let best: TimelineFrame | null = null;
+    for (const f of frames) if (f.offsetMs <= pos) best = f;
     return best;
-  }, [pos, t.frames]);
+  }, [pos, frames]);
+
+  // Keep the playing row in view without fighting a reader who scrolled away.
+  useEffect(() => {
+    if (!playing || !follow || !currentKey || !feed.current) return;
+    const el = feed.current.querySelector<HTMLElement>(`[data-row="${currentKey}"]`);
+    el?.scrollIntoView({ block: "center", behavior: "smooth" });
+  }, [currentKey, playing, follow]);
+
+  // Lightbox keys.
+  useEffect(() => {
+    if (open == null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(null);
+      if (e.key === "ArrowRight") setOpen((o) => (o == null ? o : Math.min(frames.length - 1, o + 1)));
+      if (e.key === "ArrowLeft") setOpen((o) => (o == null ? o : Math.max(0, o - 1)));
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, frames.length]);
 
   return (
     <div className="flex flex-col gap-3">
@@ -164,112 +240,226 @@ function Player({ t, showId }: { t: ShowTimeline; showId: string }) {
       />
 
       {/* transport + scrub ---------------------------------------------- */}
-      <Card className="px-4 py-3">
+      <Card className="sticky top-0 z-10 px-4 py-3">
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={toggle}
             disabled={!chunks.length}
             aria-label={playing ? "Pause" : "Play"}
-            className="grid size-8 shrink-0 place-items-center rounded-full bg-accent text-accent-foreground disabled:opacity-40"
+            className="grid size-8 shrink-0 place-items-center rounded-full bg-accent text-accent-foreground transition-transform hover:scale-105 active:scale-95 disabled:opacity-40"
           >
             {playing ? <Pause className="size-3.5" aria-hidden /> : <Play className="size-3.5" aria-hidden />}
           </button>
           <span className="num w-[72px] shrink-0 text-[12.5px]">{clock(pos)}</span>
-          <Scrub t={t} end={end} pos={pos} onSeek={(ms) => seek(ms, playing)} />
+          <Scrub t={t} chunks={chunks} end={end} pos={pos} onSeek={(ms) => seek(ms, playing)} />
           <span className="num w-[72px] shrink-0 text-right text-[12px] text-text-muted">{clock(end)}</span>
         </div>
-        <p className="mt-2 text-[11.5px] text-text-muted">
-          {chunks.length
-            ? `${chunks.length} audio chunks · ${t.utterances.length} utterances · ${t.frames.length} frames the agent read. Click the strip or any line to jump.`
-            : `No audio was kept — ${t.utterances.length} utterances and ${t.frames.length} frames are on the clock, but there is nothing to play.`}
-        </p>
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11.5px] text-text-muted">
+          <span>
+            {chunks.length
+              ? `${chunks.length} audio chunks · ${t.utterances.length} utterances · ${frames.length} frames. Click any line to jump; click a frame to see it large.`
+              : `No audio was kept — ${t.utterances.length} utterances and ${frames.length} frames are on the clock, but there is nothing to play.`}
+          </span>
+          <label className="ml-auto flex cursor-pointer items-center gap-1.5">
+            <input type="checkbox" checked={follow} onChange={(e) => setFollow(e.target.checked)} className="size-3" />
+            follow playback
+          </label>
+          <label className="flex cursor-pointer items-center gap-1.5">
+            <input type="checkbox" checked={allFrames} onChange={(e) => setAllFrames(e.target.checked)} className="size-3" />
+            every frame
+          </label>
+          {t.describing ? (
+            <span className="flex items-center gap-1 text-accent">
+              <Sparkles className="size-3 animate-pulse" aria-hidden /> writing frame descriptions…
+            </span>
+          ) : undescribed > 0 && frames.length > 0 ? (
+            <Button variant="ghost" size="sm" onClick={onDescribe} title="Ask the show's agent for a fuller reading of each frame">
+              <Sparkles className="size-3" aria-hidden /> Describe {undescribed} frame{undescribed === 1 ? "" : "s"}
+            </Button>
+          ) : null}
+        </div>
       </Card>
 
-      <div className="grid gap-3 lg:grid-cols-[1.4fr_1fr]">
-        {/* what was said -------------------------------------------------- */}
-        <Card className="max-h-[520px] overflow-y-auto">
-          <div className="sticky top-0 bg-panel px-4 py-2.5 text-[12px] text-text-muted shadow-[0_1px_0_var(--hairline)]">
-            What the host said · emotion and intent as measured
+      {/* the feed --------------------------------------------------------- */}
+      <div className="grid gap-3 lg:grid-cols-[1fr_300px]">
+        <Card className="max-h-[70vh] overflow-y-auto" >
+          <div ref={feed}>
+            <div className="sticky top-0 z-[1] bg-panel px-4 py-2.5 text-[12px] text-text-muted shadow-[0_1px_0_var(--hairline)]">
+              What the host said and what the camera showed, in order · emotion and intent as measured
+            </div>
+            <ul>
+              {shownRows.map((r) =>
+                r.kind === "say" ? (
+                  <li key={`u${r.u.seq}`} data-row={`u${r.u.seq}`}>
+                    <button
+                      type="button"
+                      onClick={() => seek(r.u.offsetMs, true)}
+                      className={cn(
+                        "flex w-full items-start gap-3 px-4 py-2 text-left shadow-[0_1px_0_var(--hairline)] transition-colors hover:bg-elevated/60",
+                        currentKey === `u${r.u.seq}` && "bg-accent/[0.06]",
+                      )}
+                    >
+                      <span className="num w-[62px] shrink-0 pt-0.5 text-[11px] text-text-muted">{clock(r.u.offsetMs)}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[12.5px] leading-snug">{r.u.text}</span>
+                        <span className="mt-1 flex flex-wrap items-center gap-1">
+                          {r.u.emotion ? <Chip kind="sounds" d={r.u.emotion} /> : null}
+                          {r.u.intent ? <Chip kind="intent" d={r.u.intent} /> : null}
+                          {r.u.speechRate ? (
+                            <span className="num text-[10.5px] text-text-muted">{Math.round(r.u.speechRate)} wpm</span>
+                          ) : null}
+                        </span>
+                      </span>
+                    </button>
+                  </li>
+                ) : (
+                  <li key={`f${r.f.seq}`} data-row={`f${r.f.seq}`}>
+                    <div
+                      className={cn(
+                        "flex w-full items-start gap-3 px-4 py-2 shadow-[0_1px_0_var(--hairline)] transition-colors hover:bg-elevated/60",
+                        currentKey === `f${r.f.seq}` && "bg-accent/[0.06]",
+                        r.repeat && "opacity-70",
+                      )}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => seek(r.f.offsetMs, true)}
+                        className="num w-[62px] shrink-0 pt-0.5 text-left text-[11px] text-text-muted"
+                        title="Play from here"
+                      >
+                        {clock(r.f.offsetMs)}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setOpen(frames.findIndex((f) => f.seq === r.f.seq))}
+                        className="group flex min-w-0 flex-1 items-start gap-3 text-left"
+                        title="See this frame large"
+                      >
+                        <img
+                          src={api.frameUrl(showId, r.f.seq)}
+                          alt={r.f.reading}
+                          loading="lazy"
+                          className="h-[54px] w-24 shrink-0 rounded-sm bg-elevated object-cover ring-1 ring-hairline transition-transform group-hover:scale-[1.03]"
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-center gap-1.5 text-[12.5px] leading-snug">
+                            <Eye className="size-3 shrink-0 text-text-muted" aria-hidden />
+                            <span className="truncate font-medium">{r.f.reading}</span>
+                          </span>
+                          <span className="mt-0.5 line-clamp-2 block text-[11.5px] leading-snug text-text-secondary">
+                            {r.f.description ??
+                              (t.describing ? "description on its way…" : "on camera · the fuller reading is written after the show")}
+                          </span>
+                        </span>
+                      </button>
+                    </div>
+                  </li>
+                ),
+              )}
+              {shownRows.length === 0 ? (
+                <li className="px-4 py-3 text-[12.5px] text-text-muted">No host speech was transcribed and no frames were read.</li>
+              ) : null}
+            </ul>
           </div>
-          <ul>
-            {t.utterances.map((u) => (
-              <li key={u.seq}>
-                <button
-                  type="button"
-                  onClick={() => seek(u.offsetMs, true)}
-                  className={cn(
-                    "flex w-full items-start gap-3 px-4 py-2 text-left shadow-[0_1px_0_var(--hairline)] hover:bg-elevated/60",
-                    current?.seq === u.seq && "bg-accent/[0.06]",
-                  )}
-                >
-                  <span className="num w-[62px] shrink-0 pt-0.5 text-[11px] text-text-muted">
-                    {clock(u.offsetMs)}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[12.5px] leading-snug">{u.text}</span>
-                    <span className="mt-1 flex flex-wrap items-center gap-1">
-                      {u.emotion ? <Chip kind="sounds" d={u.emotion} /> : null}
-                      {u.intent ? <Chip kind="intent" d={u.intent} /> : null}
-                      {u.speechRate ? (
-                        <span className="num text-[10.5px] text-text-muted">{Math.round(u.speechRate)} wpm</span>
-                      ) : null}
-                    </span>
-                  </span>
-                </button>
-              </li>
-            ))}
-            {t.utterances.length === 0 ? (
-              <li className="px-4 py-3 text-[12.5px] text-text-muted">No host speech was transcribed.</li>
-            ) : null}
-          </ul>
         </Card>
 
-        {/* what was on screen -------------------------------------------- */}
-        <Card className="max-h-[520px] overflow-y-auto">
-          <div className="sticky top-0 bg-panel px-4 py-2.5 text-[12px] text-text-muted shadow-[0_1px_0_var(--hairline)]">
-            What the camera showed · read by the agent
-          </div>
+        {/* the current frame, beside the feed ------------------------------ */}
+        <Card className="hidden self-start lg:block">
+          <div className="px-4 py-2.5 text-[12px] text-text-muted shadow-[0_1px_0_var(--hairline)]">On camera at the playhead</div>
           {currentFrame ? (
-            <div className="px-4 pt-3">
-              <img
-                src={api.frameUrl(showId, currentFrame.seq)}
-                alt={currentFrame.reading}
-                className="w-full rounded-sm bg-elevated object-cover"
-              />
-              <p className="mt-1.5 flex items-start gap-1.5 text-[12px] leading-snug">
-                <Eye className="mt-0.5 size-3 shrink-0 text-text-muted" aria-hidden />
-                {currentFrame.reading}
-              </p>
-            </div>
-          ) : null}
-          <ul className="mt-2">
-            {t.frames.map((f) => (
-              <li key={f.seq}>
-                <button
-                  type="button"
-                  onClick={() => seek(f.offsetMs, playing)}
-                  className={cn(
-                    "flex w-full items-center gap-3 px-4 py-1.5 text-left hover:bg-elevated/60",
-                    currentFrame?.seq === f.seq && "bg-accent/[0.06]",
-                  )}
-                >
-                  <img
-                    src={api.frameUrl(showId, f.seq)}
-                    alt=""
-                    loading="lazy"
-                    className="h-9 w-14 shrink-0 rounded-sm bg-elevated object-cover"
-                  />
-                  <span className="num w-[62px] shrink-0 text-[11px] text-text-muted">{clock(f.offsetMs)}</span>
-                  <span className="min-w-0 flex-1 truncate text-[12px]">{f.reading}</span>
-                </button>
-              </li>
-            ))}
-            {t.frames.length === 0 ? (
-              <li className="px-4 py-3 text-[12.5px] text-text-muted">No frames were read.</li>
-            ) : null}
-          </ul>
+            <button type="button" onClick={() => setOpen(frames.findIndex((f) => f.seq === currentFrame.seq))} className="block w-full px-4 pb-4 pt-3 text-left">
+              <img src={api.frameUrl(showId, currentFrame.seq)} alt={currentFrame.reading} className="w-full rounded-sm bg-elevated object-cover ring-1 ring-hairline" />
+              <p className="mt-2 text-[12.5px] font-medium leading-snug">{currentFrame.reading}</p>
+              {currentFrame.description ? (
+                <p className="mt-1 text-[11.5px] leading-snug text-text-secondary">{currentFrame.description}</p>
+              ) : null}
+              <p className="num mt-1.5 text-[10.5px] text-text-muted">{clock(currentFrame.offsetMs)}</p>
+            </button>
+          ) : (
+            <p className="px-4 py-3 text-[12.5px] text-text-muted">{frames.length ? "Play, or click a frame, to see it here." : "No frames were read."}</p>
+          )}
         </Card>
+      </div>
+
+      {open != null && frames[open] ? (
+        <Lightbox
+          showId={showId}
+          frame={frames[open]!}
+          index={open}
+          count={frames.length}
+          onClose={() => setOpen(null)}
+          onPrev={() => setOpen(Math.max(0, open - 1))}
+          onNext={() => setOpen(Math.min(frames.length - 1, open + 1))}
+          onPlay={() => {
+            seek(frames[open]!.offsetMs, true);
+            setOpen(null);
+          }}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function Lightbox({
+  showId,
+  frame,
+  index,
+  count,
+  onClose,
+  onPrev,
+  onNext,
+  onPlay,
+}: {
+  showId: string;
+  frame: TimelineFrame;
+  index: number;
+  count: number;
+  onClose: () => void;
+  onPrev: () => void;
+  onNext: () => void;
+  onPlay: () => void;
+}) {
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Frame"
+      className="anim-fade fixed inset-0 z-50 grid place-items-center bg-black/70 p-4"
+      onClick={onClose}
+    >
+      <div className="w-full max-w-[880px] rounded-md bg-panel shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2 px-4 py-2.5 shadow-[0_1px_0_var(--hairline)]">
+          <span className="num text-[12px] text-text-muted">
+            {clock(frame.offsetMs)} · frame {index + 1} of {count}
+          </span>
+          <div className="ml-auto flex items-center gap-1">
+            <button type="button" onClick={onPrev} disabled={index === 0} aria-label="Previous frame" className="rounded-sm p-1 hover:bg-elevated disabled:opacity-40">
+              <ChevronLeft className="size-4" aria-hidden />
+            </button>
+            <button type="button" onClick={onNext} disabled={index >= count - 1} aria-label="Next frame" className="rounded-sm p-1 hover:bg-elevated disabled:opacity-40">
+              <ChevronRight className="size-4" aria-hidden />
+            </button>
+            <button type="button" onClick={onClose} aria-label="Close" className="rounded-sm p-1 hover:bg-elevated">
+              <X className="size-4" aria-hidden />
+            </button>
+          </div>
+        </div>
+        <img src={api.frameUrl(showId, frame.seq)} alt={frame.reading} className="max-h-[60vh] w-full bg-black object-contain" />
+        <div className="px-4 py-3">
+          <p className="flex items-center gap-1.5 text-[13.5px] font-medium">
+            <Eye className="size-3.5 text-text-muted" aria-hidden /> {frame.reading}
+          </p>
+          <p className="mt-1 text-[12.5px] leading-relaxed text-text-secondary">
+            {frame.description ?? "The fuller reading has not been written for this frame yet."}
+          </p>
+          <div className="mt-3 flex items-center gap-2">
+            <Button size="sm" onClick={onPlay}>
+              <Play className="size-3" aria-hidden /> Play from here
+            </Button>
+            <span className="text-[11px] text-text-muted">← → to step, Esc to close</span>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -278,11 +468,13 @@ function Player({ t, showId }: { t: ShowTimeline; showId: string }) {
 /** A strip of the whole show: audio coverage, utterances as ticks, frames as dots. */
 function Scrub({
   t,
+  chunks,
   end,
   pos,
   onSeek,
 }: {
   t: ShowTimeline;
+  chunks: ShowTimeline["audio"];
   end: number;
   pos: number;
   onSeek: (ms: number) => void;
@@ -309,7 +501,7 @@ function Scrub({
       }}
       className="relative h-8 min-w-0 flex-1 cursor-pointer rounded-sm bg-elevated"
     >
-      {t.audio.map((c) => (
+      {chunks.map((c) => (
         <span
           key={c.seq}
           aria-hidden
@@ -318,12 +510,7 @@ function Scrub({
         />
       ))}
       {t.utterances.map((u) => (
-        <span
-          key={u.seq}
-          aria-hidden
-          className="absolute top-1 h-2 w-px bg-text-muted/60"
-          style={{ left: x(u.offsetMs) }}
-        />
+        <span key={u.seq} aria-hidden className="absolute top-1 h-2 w-px bg-text-muted/60" style={{ left: x(u.offsetMs) }} />
       ))}
       {t.frames.map((f) => (
         <span

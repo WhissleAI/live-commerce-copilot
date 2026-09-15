@@ -235,6 +235,10 @@ const STREAM_EVENTS = [
   // Host speech from the Whissle listen-only session, and the set of shows this
   // backend is watching.
   "transcript",
+  // The listen session's health as the backend sees it: loud audio with no
+  // transcript for a while is `stalled`, and the console says so instead of
+  // showing a frozen last line.
+  "listen",
   // The loudness envelope behind the audio timeline. Missing from this list is
   // why the strip said "no audio yet" while transcripts streamed in beside it:
   // the server emitted every frame and the browser had never asked for them.
@@ -424,6 +428,9 @@ export const api = {
    *  report's playable timeline. Works after the show has ended. */
   timeline: (showId: string): Promise<ShowTimeline> =>
     get(`/api/shows/${encodeURIComponent(showId)}/timeline`),
+  /** Ask the show's agent for the fuller per-frame readings, in the background. */
+  describeTimeline: (showId: string): Promise<{ ok: boolean; describing: boolean }> =>
+    post(`/api/shows/${encodeURIComponent(showId)}/timeline/describe`),
 
   /** The evidence behind a report: every comment, proposal, action and audit
    *  entry, from the tables that kept them. */

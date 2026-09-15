@@ -566,6 +566,7 @@ export function Console() {
               transcript={transcript}
               levels={levels}
               context={store.context}
+              listen={store.listen}
               bridgeUrl={
                 USE_MOCKS
                   ? null
