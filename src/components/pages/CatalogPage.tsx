@@ -16,8 +16,10 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import {
   AlertTriangle,
+  ArrowRight,
   ExternalLink,
   Loader2,
   PackageSearch,
@@ -41,9 +43,9 @@ import {
 
 type View = "lineup" | "search";
 
-export function CatalogPage() {
+export function CatalogPage({ initialId }: { initialId?: string | undefined } = {}) {
   const [catalogs, setCatalogs] = useState<CatalogSummary[] | null>(null);
-  const [chosen, setChosen] = useState<string | null>(null);
+  const [chosen, setChosen] = useState<string | null>(initialId ?? null);
   const [market, setMarket] = useState<CatalogMarket | null>(null);
   const [view, setView] = useState<View>("lineup");
 
@@ -52,10 +54,13 @@ export function CatalogPage() {
       .catalogs()
       .then((c) => {
         setCatalogs(c);
-        setChosen((cur) => cur ?? c[0]?.id ?? null);
+        // A deep link to a catalog that no longer exists falls back to the first.
+        setChosen((cur) => (cur && c.some((x) => x.id === cur) ? cur : (c[0]?.id ?? null)));
       })
       .catch(() => setCatalogs([]));
   }, []);
+
+  const current = useMemo(() => catalogs?.find((c) => c.id === chosen) ?? null, [catalogs, chosen]);
 
   const read = useCallback(
     async (warm: boolean) => {
@@ -116,7 +121,7 @@ export function CatalogPage() {
             >
               {catalogs.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.name}
+                  {catalogLabel(c)}
                 </option>
               ))}
             </select>
@@ -133,6 +138,7 @@ export function CatalogPage() {
       }
     >
       {view === "search" ? <EbaySearch /> : null}
+      {view === "lineup" && current ? <Provenance catalog={current} /> : null}
 
       {view === "lineup" ? (
         <>
@@ -295,6 +301,92 @@ function MarketRowLine({ row }: { row: MarketRow }) {
         )}
       </td>
     </tr>
+  );
+}
+
+/** "Kicks by Rae · @kicksbyrae" — and what kind of catalog it is, in one line. */
+function catalogLabel(c: CatalogSummary): string {
+  const who = c.seller?.handle ? ` · @${c.seller.handle}` : "";
+  const kind =
+    c.origin?.kind === "prepared"
+      ? " · prepared show"
+      : c.origin?.kind === "imported"
+        ? " · your listings"
+        : c.origin?.kind === "seed"
+          ? " · demo"
+          : "";
+  return `${c.name}${who}${kind}`;
+}
+
+/**
+ * Where this lineup came from, and the way back. A catalog named after an
+ * event id told nobody which show it was; this says the show, the host, when
+ * it was prepared, and links to the show on Discover.
+ */
+function Provenance({ catalog }: { catalog: CatalogSummary }) {
+  const o = catalog.origin;
+  if (!o) return null;
+  if (o.kind === "prepared") {
+    const who = o.sellerHandle ? `@${o.sellerHandle}` : o.host;
+    return (
+      <p className="mb-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-text-secondary">
+        <Badge tone="neutral">prepared show</Badge>
+        <span>
+          Lineup of <span className="font-medium text-text">{o.showTitle}</span>
+          {who ? <> by {who}</> : null}
+          {o.preparedAt ? (
+            <>
+              {" "}
+              · prepared{" "}
+              {new Date(o.preparedAt).toLocaleString([], {
+                dateStyle: "medium",
+                timeStyle: "short",
+              })}
+            </>
+          ) : (
+            <> · its preparation is no longer on Discover; the lineup stays until you delete it</>
+          )}
+        </span>
+        <Link
+          to="/"
+          search={{ view: "discover" }}
+          className="inline-flex items-center gap-1 text-accent hover:underline"
+        >
+          Open on Discover <ArrowRight className="size-3" aria-hidden />
+        </Link>
+        <a
+          href={`https://www.ebay.com/ebaylive/events/${o.eventId}/stream`}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-1 text-text-muted hover:text-text"
+        >
+          The show on eBay <ExternalLink className="size-3" aria-hidden />
+        </a>
+      </p>
+    );
+  }
+  if (o.kind === "imported") {
+    return (
+      <p className="mb-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-text-secondary">
+        <Badge tone="neutral">your listings</Badge>
+        <span>Imported from the eBay account @{o.handle}.</span>
+        <Link
+          to="/settings"
+          search={{ tab: "ebay" }}
+          className="inline-flex items-center gap-1 text-accent hover:underline"
+        >
+          Re-import on Settings <ArrowRight className="size-3" aria-hidden />
+        </Link>
+      </p>
+    );
+  }
+  return (
+    <p className="mb-4 flex flex-wrap items-center gap-x-2 text-[12.5px] text-text-secondary">
+      <Badge tone="neutral">demo</Badge>
+      <span>
+        A seeded catalog that ships with SideStage — real inventory shapes, not a real seller.
+      </span>
+    </p>
   );
 }
 

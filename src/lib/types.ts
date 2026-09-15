@@ -51,6 +51,19 @@ export interface CatalogSummary {
   itemCount: number;
   policyCount: number;
   sample: { title: string; priceCents: number }[];
+  /** Where this catalog came from — a prepared show, your own listings, or a demo. */
+  origin?:
+    | {
+        kind: "prepared";
+        eventId: string;
+        showTitle: string;
+        host: string;
+        sellerHandle: string | null;
+        /** Null when the preparation itself is gone and only the lineup remains. */
+        preparedAt: string | null;
+      }
+    | { kind: "imported"; handle: string }
+    | { kind: "seed" };
 }
 
 /** A show this backend is watching. */

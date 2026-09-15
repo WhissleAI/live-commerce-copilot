@@ -20,6 +20,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import {
   AlertTriangle,
   ArrowRight,
@@ -436,6 +437,15 @@ function ShowCard({
                 <CheckCircle2 className="mt-0.5 size-3 shrink-0" aria-hidden />
               )}
               {empty ? "agent ready, catalog empty" : `${prepared.items} lots in its own agent`}
+              {prepared.catalogId && !empty ? (
+                <Link
+                  to="/catalog"
+                  search={{ id: prepared.catalogId }}
+                  className="ml-auto inline-flex items-center gap-1 text-accent hover:underline"
+                >
+                  Open catalog <ArrowRight className="size-3" aria-hidden />
+                </Link>
+              ) : null}
             </p>
             <div className="mt-2 flex gap-1.5">
               <Button size="sm" variant="primary" onClick={onAttach} className="flex-1">
