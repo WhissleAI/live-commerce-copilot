@@ -110,8 +110,11 @@ export function DiscoverView({ onAttach }: { onAttach: (url: string) => void }) 
         </SectionHeading>
         <span className="ml-auto flex items-center gap-2">
           {home?.discovery.session.present ? (
-            <Badge tone={home.discovery.session.stale ? "warn" : "ok"}>
-              session {home.discovery.session.ageHours}h old
+            <Badge
+              tone={home.discovery.session.stale ? "warn" : "ok"}
+              title="How long ago the house eBay Live session was signed in — not when the grid was read."
+            >
+              eBay sign-in {home.discovery.session.ageHours}h ago
             </Badge>
           ) : null}
           {busy ? (
@@ -120,11 +123,22 @@ export function DiscoverView({ onAttach }: { onAttach: (url: string) => void }) 
             </span>
           ) : refreshed ? (
             <span className="anim-fade text-[12px] text-text-muted" key={refreshed.at.getTime()}>
-              {refreshed.live} live · updated{" "}
+              {refreshed.live} live · read{" "}
               {refreshed.at.toLocaleTimeString([], {
                 hour: "2-digit",
                 minute: "2-digit",
                 second: "2-digit",
+              })}
+            </span>
+          ) : home?.discovery.checkedAt ? (
+            <span
+              className="text-[12px] text-text-muted"
+              title={new Date(home.discovery.checkedAt).toLocaleString()}
+            >
+              {home.live.length} live · grid read{" "}
+              {new Date(home.discovery.checkedAt).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
               })}
             </span>
           ) : null}

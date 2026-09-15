@@ -38,6 +38,7 @@ import { api, API_BASE, ensureSession, signedIn } from "@/lib/api";
 import { LogoMark } from "@/components/brand/Logo";
 import type { Account, ShowSummary } from "@/lib/types";
 import { Banner, Key } from "@/components/ui/kit";
+import { BUILD_ID } from "@/generated/buildId";
 import { CommandBar, type Command } from "@/components/app/CommandBar";
 
 export type { Command };
@@ -99,6 +100,45 @@ export function useLiveShow(): ShowSummary | null {
  * which is the wrong thing to show for a server that is down. Polled slowly
  * while healthy and quickly while not, so recovery is noticed within seconds.
  */
+/**
+ * Is a newer build deployed than the one this tab is running?
+ *
+ * Checked when the tab is (re)focused and every few minutes: a tab left open
+ * across a deploy keeps its old code, and "the button does nothing" was the
+ * old bundle, not the button. Says so with a Reload rather than reloading
+ * under someone mid-task.
+ */
+function useNewerBuild(): boolean {
+  const [newer, setNewer] = useState(false);
+  useEffect(() => {
+    let stopped = false;
+    const check = async () => {
+      try {
+        const r = await fetch(`/build.json?t=${Date.now()}`, { cache: "no-store" });
+        if (!r.ok) return;
+        const { id } = (await r.json()) as { id?: string };
+        if (!stopped && id && id !== BUILD_ID) setNewer(true);
+      } catch {
+        /* offline or a preview server without the file: nothing to say */
+      }
+    };
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void check();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    const t = setInterval(() => void check(), 3 * 60_000);
+    void check();
+    return () => {
+      stopped = true;
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+      clearInterval(t);
+    };
+  }, []);
+  return newer;
+}
+
 function useBackendHealth(): { ok: boolean; detail: string | null } {
   const [state, setState] = useState<{ ok: boolean; detail: string | null }>({
     ok: true,
@@ -267,6 +307,7 @@ export function AppShell({
   const navigate = useNavigate();
   const [commandOpen, setCommandOpen] = useState(false);
   const health = useBackendHealth();
+  const newerBuild = useNewerBuild();
 
   // No session, no app: every screen inside the shell needs a signed-in
   // seller. The landing page and the auth pages live outside it.
@@ -309,6 +350,20 @@ export function AppShell({
       <Rail section={section} />
 
       <div className="flex min-w-0 flex-1 flex-col">
+        {newerBuild ? (
+          <Banner
+            tone="neutral"
+            title="A newer SideStage is deployed"
+            action={
+              <button type="button" onClick={() => window.location.reload()} className="underline">
+                Reload
+              </button>
+            }
+          >
+            This tab is still running the build it opened with. Reload when convenient — nothing
+            here is lost, and a show on air keeps running on eBay either way.
+          </Banner>
+        ) : null}
         {!health.ok ? (
           <Banner
             tone="bad"

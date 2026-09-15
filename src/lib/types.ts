@@ -1130,7 +1130,12 @@ export interface PreparedShow {
 
 export interface HomeView {
   live: DiscoveredShow[];
-  discovery: { reason: DiscoveryReason; session: EbayLiveSession };
+  discovery: {
+    reason: DiscoveryReason;
+    session: EbayLiveSession;
+    /** When the live grid was last actually read. Null until a read succeeds. */
+    checkedAt?: string | null;
+  };
   prepared: PreparedShow[];
   preparing: string[];
   watching: ShowSummary[];
