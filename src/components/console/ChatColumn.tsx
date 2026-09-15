@@ -75,6 +75,7 @@ export function ChatColumn({
               key={m}
               type="button"
               onClick={() => setMode(m)}
+              aria-pressed={mode === m}
               className={cn(
                 "h-5 px-1.5 text-[10px] capitalize transition-colors duration-150",
                 mode === m ? "bg-elevated text-text" : "text-text-muted hover:text-text",

@@ -184,6 +184,23 @@ function AutonomyLadder({
       {open && (
         <div
           role="menu"
+          onKeyDown={(e) => {
+            const items = Array.from(
+              box.current?.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]') ?? [],
+            );
+            const i = items.findIndex((el) => el === document.activeElement);
+            if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+              e.preventDefault();
+              const next =
+                e.key === "ArrowDown"
+                  ? (i + 1) % items.length
+                  : (i - 1 + items.length) % items.length;
+              items[next]?.focus();
+            } else if (e.key === "Escape") {
+              e.preventDefault();
+              setOpen(false);
+            }
+          }}
           className="anim-in absolute right-0 z-50 mt-1 w-72 overflow-hidden rounded-[6px] border border-hairline bg-panel shadow-lg"
         >
           {LEVELS.map((l) => {
@@ -332,11 +349,18 @@ export function TopBar({
         )}
       </div>
 
-      <div className="flex items-center gap-1.5 rounded-[4px] border border-bad/40 bg-bad/10 px-2 py-1">
-        <span className="anim-live size-1.5 rounded-full bg-bad" />
-        <span className="text-[11px] font-semibold tracking-wide text-bad">LIVE</span>
-        <span className="num text-[12px] text-text">{formatSeconds(elapsed)}</span>
-      </div>
+      {show.status === "ended" ? (
+        <div className="flex items-center gap-1.5 rounded-[4px] border border-hairline bg-elevated px-2 py-1">
+          <span className="text-[11px] font-semibold tracking-wide text-text-muted">ENDED</span>
+          <span className="num text-[12px] text-text-secondary">{formatSeconds(elapsed)}</span>
+        </div>
+      ) : (
+        <div className="flex items-center gap-1.5 rounded-[4px] border border-bad/40 bg-bad/10 px-2 py-1">
+          <span className="anim-live size-1.5 rounded-full bg-bad" />
+          <span className="text-[11px] font-semibold tracking-wide text-bad">LIVE</span>
+          <span className="num text-[12px] text-text">{formatSeconds(elapsed)}</span>
+        </div>
+      )}
 
       <div className="hidden items-center gap-1.5 text-text-secondary lg:flex">
         <Users className="size-3.5" aria-hidden />

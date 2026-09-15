@@ -47,6 +47,7 @@ export function CatalogPage({ initialId }: { initialId?: string | undefined } = 
   const [catalogs, setCatalogs] = useState<CatalogSummary[] | null>(null);
   const [chosen, setChosen] = useState<string | null>(initialId ?? null);
   const [market, setMarket] = useState<CatalogMarket | null>(null);
+  const [marketError, setMarketError] = useState<string | null>(null);
   const [view, setView] = useState<View>("lineup");
 
   useEffect(() => {
@@ -65,8 +66,13 @@ export function CatalogPage({ initialId }: { initialId?: string | undefined } = 
   const read = useCallback(
     async (warm: boolean) => {
       if (!chosen) return;
-      const m = await api.catalogMarket(chosen, warm).catch(() => null);
-      if (m) setMarket(m);
+      try {
+        setMarket(await api.catalogMarket(chosen, warm));
+        setMarketError(null);
+      } catch (e) {
+        // A failed read used to leave the skeletons up forever.
+        setMarketError((e as Error).message);
+      }
     },
     [chosen],
   );
@@ -138,6 +144,27 @@ export function CatalogPage({ initialId }: { initialId?: string | undefined } = 
       }
     >
       {view === "search" ? <EbaySearch /> : null}
+      {view === "lineup" && catalogs && catalogs.length === 0 ? (
+        <Card className="mt-2">
+          <EmptyState
+            icon={<PackageSearch className="size-5" aria-hidden />}
+            title="No catalogs yet."
+          >
+            Import your listings on Settings › eBay, or prepare a show on Discover — either one
+            becomes a catalog here, priced against the market.
+          </EmptyState>
+        </Card>
+      ) : null}
+      {view === "lineup" && marketError ? (
+        <Card className="mt-2 border-bad/40 px-4 py-3">
+          <p className="text-[12.5px] text-bad">
+            Could not read the market for this catalog — {marketError}
+          </p>
+          <Button className="mt-2" onClick={() => void read(true)}>
+            <RefreshCw className="size-3.5" aria-hidden /> Try again
+          </Button>
+        </Card>
+      ) : null}
       {view === "lineup" && current ? <Provenance catalog={current} /> : null}
 
       {view === "lineup" ? (
@@ -187,7 +214,7 @@ export function CatalogPage({ initialId }: { initialId?: string | undefined } = 
             </SectionHeading>
 
             <Card className="mt-3 overflow-hidden">
-              {market === null ? (
+              {market === null && !marketError && catalogs?.length !== 0 ? (
                 <div className="flex flex-col gap-2 p-4">
                   <Skeleton className="h-4" />
                   <Skeleton className="h-4" />

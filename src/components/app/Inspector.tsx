@@ -30,10 +30,14 @@ import { Badge, SectionLabel } from "@/components/ui/kit";
 
 export type InspectorSubject = { kind: "proposal"; id: string } | { kind: "audit"; seq: number };
 
+// Keyed by GuardName as the server sends it. The old keys (stock, grounding)
+// were the console's pill labels, so the inspector printed raw snake_case.
 const GUARD_LABEL: Record<string, string> = {
   price: "Price",
+  availability: "Availability",
   stock: "Availability",
   policy: "Policy",
+  claim_grounding: "Grounding",
   grounding: "Grounding",
   tone: "Tone",
   pii: "PII",

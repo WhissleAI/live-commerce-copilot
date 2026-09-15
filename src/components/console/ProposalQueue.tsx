@@ -242,6 +242,15 @@ function ProposalCard({
     <li
       ref={ref}
       onClick={onFocus}
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.target !== e.currentTarget) return;
+        if (e.key === " ") {
+          e.preventDefault();
+          onFocus();
+        }
+      }}
+      aria-current={focused ? "true" : undefined}
       className={cn(
         "anim-in relative rounded-md border bg-panel transition-colors duration-150 ease-out",
         focused
@@ -325,7 +334,9 @@ function ProposalCard({
               }
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
                 e.preventDefault();
-                onSend(value);
+                // The Send button is hidden on a blocked card; the shortcut
+                // must not be a way around that.
+                if (!blocked) onSend(value);
               }
             }}
             rows={3}

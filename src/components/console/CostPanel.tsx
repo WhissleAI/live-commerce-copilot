@@ -85,8 +85,10 @@ function ReadFailure({
   );
 }
 
-function DoorRow({ door, report }: { door: GatewayDoor; report: DoorReport }) {
-  if (!report.calls) return null;
+function DoorRow({ door, report }: { door: GatewayDoor; report: DoorReport | undefined }) {
+  // A backend that has never opened a door (an older build without
+  // visual_read, say) sends no report for it; that is "nothing", not a crash.
+  if (!report?.calls) return null;
   return (
     <div className="border-t border-hairline py-1.5 first:border-t-0">
       <div className="flex items-baseline justify-between gap-3">

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Mic, MicOff, ExternalLink, Eye } from "lucide-react";
 import type { ShowContext, SignalDistribution, TranscriptSegment } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -104,7 +104,18 @@ export function TranscriptPanel({
     ctx.fillRect(0, mid - 0.5, w, 1);
   }, [levels, shown]);
 
-  const listening = levels.length > 0 || transcript.length > 0;
+  // Loudness frames arrive at 10 Hz while the bridge is open. Once they stop,
+  // the mic is not listening any more, however much transcript exists.
+  const [lastLevelAt, setLastLevelAt] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (levels.length) setLastLevelAt(Date.now());
+  }, [levels]);
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 2000);
+    return () => clearInterval(t);
+  }, []);
+  const listening = lastLevelAt > 0 && now - lastLevelAt < 8_000;
 
   return (
     <section className="flex min-h-0 flex-1 flex-col shadow-[0_-1px_0_var(--hairline)]">

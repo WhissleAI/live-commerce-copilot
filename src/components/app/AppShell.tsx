@@ -82,7 +82,10 @@ export function useLiveShow(): ShowSummary | null {
     let stop = false;
     const read = async () => {
       const shows = await api.shows().catch(() => [] as ShowSummary[]);
-      if (!stop) setLive(shows.find((s) => s.source === "ebaylive") ?? shows[0] ?? null);
+      // Only a show that is actually on air drives the strip and the rail
+      // dot; an ended eBay show used to keep both lit.
+      const onAir = shows.filter((s) => s.status === "live");
+      if (!stop) setLive(onAir.find((s) => s.source === "ebaylive") ?? onAir[0] ?? null);
     };
     void read();
     const t = setInterval(read, 15_000);
@@ -346,8 +349,10 @@ export function AppShell({
   }, [navigate]);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-canvas">
-      <Rail section={section} />
+    <div className="flex h-screen overflow-hidden bg-canvas print:block print:h-auto print:overflow-visible">
+      <div className="contents print:hidden">
+        <Rail section={section} />
+      </div>
 
       <div className="flex min-w-0 flex-1 flex-col">
         {newerBuild ? (
@@ -380,7 +385,11 @@ export function AppShell({
           </Banner>
         ) : null}
         {banner}
-        {live && section !== "console" ? <LiveStrip show={live} /> : null}
+        {live && section !== "console" ? (
+          <div className="contents print:hidden">
+            <LiveStrip show={live} />
+          </div>
+        ) : null}
 
         {title ? (
           <header className="flex h-11 shrink-0 items-center gap-3 bg-panel px-4 shadow-[0_1px_0_var(--hairline)]">
@@ -444,7 +453,10 @@ export function AppShell({
 
         <div className="flex min-h-0 flex-1">
           <main
-            className={cn("min-w-0 flex-1", bare ? "flex flex-col" : "scroll-thin overflow-y-auto")}
+            className={cn(
+              "min-w-0 flex-1 print:overflow-visible",
+              bare ? "flex flex-col" : "scroll-thin overflow-y-auto",
+            )}
           >
             {bare ? (
               children

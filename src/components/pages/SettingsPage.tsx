@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { AlertTriangle, Check, Plus, RotateCcw, Save, ShieldCheck, Trash2 } from "lucide-react";
-import { api, claimConsole, ensureSession } from "@/lib/api";
+import { api, ensureSession } from "@/lib/api";
 import type {
   Account,
   NeverSayRule,
@@ -576,32 +576,21 @@ function AccountAndData() {
       .then(setAccount)
       .catch(() => setAccount(null));
   }, []);
-  const guest = account?.kind === "guest";
 
   return (
     <>
       <Section
         title="Account"
-        hint="A guest can watch the show and read every proposal, but cannot send a reply or approve an action."
+        hint="Every send and approval is recorded against the signed-in account in the audit chain — which is the only way “who approved that markdown” has an answer."
       >
         <Card className="px-4 py-3.5">
           <div className="flex items-center gap-2.5">
-            <Badge tone={guest ? "warn" : "ok"}>{guest ? "watching" : "operator"}</Badge>
+            <Badge tone="ok">operator</Badge>
             <span className="text-[12.5px]">{account?.displayName ?? "No session"}</span>
+            {account?.email ? (
+              <span className="text-[12px] text-text-muted">{account.email}</span>
+            ) : null}
           </div>
-          <p className="mt-2 max-w-[640px] text-[12px] leading-relaxed text-text-secondary">
-            Take control and every send and approval is recorded against you in the audit chain —
-            which is the only way “who approved that markdown” has an answer.
-          </p>
-          {guest ? (
-            <Button
-              variant="primary"
-              className="mt-3"
-              onClick={() => void claimConsole().then((a) => a && setAccount(a))}
-            >
-              <Check className="size-3" aria-hidden /> Take control
-            </Button>
-          ) : null}
         </Card>
       </Section>
 

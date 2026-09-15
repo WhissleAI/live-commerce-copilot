@@ -11,6 +11,7 @@ const ROWS: [string, string][] = [
   ["R", "regenerate the focused proposal"],
   ["A", "approve the top pending action"],
   ["U", "undo the most recent committed action"],
+  ["I", "inspect the focused proposal — facts, verdicts, audit"],
   ["⌘/Ctrl + K", "command bar — go anywhere, run anything"],
   ["⌘/Ctrl + J", "research a product"],
   ["⌘/Ctrl + 1…6", "jump to a section of the rail"],

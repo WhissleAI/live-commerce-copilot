@@ -21,12 +21,14 @@ export function CommandPalette({
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [card, setCard] = useState<ResearchCard | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
       setQuery("");
       setCard(null);
+      setError(null);
       setLoading(false);
       requestAnimationFrame(() => inputRef.current?.focus());
     }
@@ -38,8 +40,12 @@ export function CommandPalette({
     if (!q.trim()) return;
     setLoading(true);
     setCard(null);
+    setError(null);
     try {
       setCard(await onResearch(q.trim()));
+    } catch (e) {
+      // A failed lookup used to clear the spinner and render nothing at all.
+      setError(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
     }
@@ -108,6 +114,11 @@ export function CommandPalette({
           </ul>
         ) : null}
 
+        {error ? (
+          <p className="px-3 py-3 text-[12px] text-bad" role="alert">
+            Research failed — {error}
+          </p>
+        ) : null}
         {loading ? (
           <p className="px-3 py-4 text-[12px] text-text-muted">Pulling comparable sales…</p>
         ) : null}

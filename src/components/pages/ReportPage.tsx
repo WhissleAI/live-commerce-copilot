@@ -70,6 +70,41 @@ export function ReportPage({ showId }: { showId: string }) {
   const [report, setReport] = useState<ShowReport | null>(null);
   const [record, setRecord] = useState<ShowRecord | null>(null);
   const [readiness, setReadiness] = useState<PromotionReadiness | null>(null);
+  // Export PDF prints the page. Every tab is a section of one report, so
+  // while printing all of them render, in order, instead of the active one.
+  const [printing, setPrinting] = useState(false);
+  useEffect(() => {
+    const on = () => setPrinting(true);
+    const off = () => setPrinting(false);
+    window.addEventListener("beforeprint", on);
+    window.addEventListener("afterprint", off);
+    return () => {
+      window.removeEventListener("beforeprint", on);
+      window.removeEventListener("afterprint", off);
+    };
+  }, []);
+  const [exporting, setExporting] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  async function exportJson() {
+    setExporting(true);
+    try {
+      // The export is cross-origin, so an <a download> is ignored and cannot
+      // carry the session header. Fetch it and save the blob.
+      const blob = await api.exportBlob(showId);
+      const href = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = href;
+      a.download = `${showId}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(href), 10_000);
+    } catch (e) {
+      setLoadError(`Export failed — ${(e as Error).message}`);
+    } finally {
+      setExporting(false);
+    }
+  }
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<View>("summary");
 
@@ -86,11 +121,15 @@ export function ReportPage({ showId }: { showId: string }) {
     api
       .record(showId)
       .then((r) => !stop && setRecord(r))
-      .catch(() => {});
+      .catch(
+        (e) => !stop && setLoadError(`The record could not be read — ${(e as Error).message}`),
+      );
     api
       .autonomyReadiness()
       .then((r) => !stop && setReadiness(r))
-      .catch(() => {});
+      .catch(() => {
+        /* the rung is decoration on this page; the Autonomy tab reports it */
+      });
     return () => {
       stop = true;
     };
@@ -202,16 +241,25 @@ export function ReportPage({ showId }: { showId: string }) {
       tabs={tabs}
       actions={
         <>
-          <a href={api.exportUrl(showId)} download>
-            <BadgeButton title="Everything about this show as one JSON file — report, every reply, action and audit entry, and the timeline">
-              <Download className="size-3" aria-hidden /> Export JSON
-            </BadgeButton>
-          </a>
-          <BadgeButton onClick={() => window.print()}>Export PDF</BadgeButton>
+          <BadgeButton
+            title="Everything about this show as one JSON file — report, every reply, action and audit entry, and the timeline"
+            onClick={() => void exportJson()}
+            disabled={exporting}
+          >
+            <Download className="size-3" aria-hidden /> {exporting ? "Exporting…" : "Export JSON"}
+          </BadgeButton>
+          <BadgeButton onClick={() => window.print()} title="Prints every section of the summary">
+            Export PDF
+          </BadgeButton>
         </>
       }
     >
-      {view === "summary" ? (
+      {loadError ? (
+        <p className="mb-3 text-[12.5px] text-bad" role="alert">
+          {loadError}
+        </p>
+      ) : null}
+      {view === "summary" || printing ? (
         <>
           {/* did it help --------------------------------------------------- */}
           <SectionHeading hint="Measured against the targets in the PRD. Answered means the copilot put a sendable reply in front of you; sent means you pressed Enter on it. A question nothing could ground is a gap below, never an answer.">
@@ -473,10 +521,10 @@ export function ReportPage({ showId }: { showId: string }) {
         </>
       ) : null}
 
-      {view === "replies" ? <Replies record={record} /> : null}
-      {view === "actions" ? <Actions record={record} /> : null}
-      {view === "audit" ? <Audit record={record} /> : null}
-      {view === "timeline" ? (
+      {view === "replies" || printing ? <Replies record={record} /> : null}
+      {view === "actions" || printing ? <Actions record={record} /> : null}
+      {view === "audit" || printing ? <Audit record={record} /> : null}
+      {view === "timeline" || printing ? (
         <>
           <SectionHeading hint="Every signal the show produced, on one clock: what the host said with the emotion and intent measured on it, what the camera showed and what the agent read from it, and the audio to play it back.">
             The show, played back
@@ -487,9 +535,15 @@ export function ReportPage({ showId }: { showId: string }) {
         </>
       ) : null}
 
-      {view === "blocked" ? (
+      {view === "blocked" || printing ? (
         <>
-          <SectionHeading hint="Every reply a guard refused, with the fact it contradicted. This is the list to read when the block rate moves.">
+          <SectionHeading
+            hint={
+              report.safety.examples.length < report.safety.blocked
+                ? `${report.safety.examples.length} of ${report.safety.blocked} blocked replies are kept as examples; the Replies tab lists every one with its verdict. This is the list to read when the block rate moves.`
+                : "Every reply a guard refused, with the fact it contradicted. This is the list to read when the block rate moves."
+            }
+          >
             Blocked replies
           </SectionHeading>
           <div className="mt-3 flex flex-col gap-2">
@@ -519,7 +573,7 @@ export function ReportPage({ showId }: { showId: string }) {
         </>
       ) : null}
 
-      {view === "gaps" ? <Gaps report={report} /> : null}
+      {view === "gaps" || printing ? <Gaps report={report} /> : null}
     </AppShell>
   );
 }

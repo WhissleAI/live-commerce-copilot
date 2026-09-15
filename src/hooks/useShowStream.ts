@@ -26,6 +26,9 @@ const MAX_RECENT = 20;
 
 export interface ShowStore {
   connection: ConnectionState;
+  /** The server has said `hello` at least once on this connection. `open`
+   *  fires before it, which is why "Nothing is on air" flashed on every show. */
+  greeted: boolean;
   show: ShowState | null;
   listings: Listing[];
   chat: ChatMessage[];
@@ -78,6 +81,7 @@ export function useShowStream(showId?: string | null) {
   const [source, setSource] = useState<SourceStatus | null>(null);
   const [budget, setBudget] = useState<BudgetState | null>(null);
   const [streamError, setStreamError] = useState<string | null>(null);
+  const [greeted, setGreeted] = useState(false);
   const listingsRef = useRef<Listing[]>([]);
   listingsRef.current = listings;
 
@@ -90,6 +94,15 @@ export function useShowStream(showId?: string | null) {
         setShow(e.data.show);
         setSeller(e.data.seller ?? null);
         setListings(e.data.listings);
+        // Per-connection state goes too: the previous show's audio strip,
+        // loudness, ingest health, cap state and "server does not know that
+        // show" banner all outlived a reconnect or a switch.
+        setTranscript([]);
+        setLevels([]);
+        setSource(null);
+        setBudget(null);
+        setStreamError(null);
+        setGreeted(true);
         // Mock mode seeds its own backlog; the server sends the real tail here.
         if (e.data.chat) setChat(e.data.chat.slice(-MAX_CHAT));
         setProposals(e.data.proposals);
@@ -173,6 +186,7 @@ export function useShowStream(showId?: string | null) {
 
   const store: ShowStore = {
     connection,
+    greeted,
     show,
     listings,
     chat,

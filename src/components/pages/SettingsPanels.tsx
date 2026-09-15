@@ -464,13 +464,38 @@ export function EbayPanel() {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [imported, setImported] = useState<EbayImportResult | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
+  // True from Connect until the status read reports a connection: the consent
+  // happens in another tab, so this one polls and re-reads on focus.
+  const [connecting, setConnecting] = useState(false);
 
   const load = useCallback(async () => {
-    setStatus(await api.ebayStatus().catch(() => null));
+    try {
+      const s = await api.ebayStatus();
+      setStatus(s);
+      setStatusError(null);
+      if (s.write.connected) setConnecting(false);
+    } catch (e) {
+      setStatusError((e as Error).message);
+    }
   }, []);
   useEffect(() => {
     void load();
   }, [load]);
+  useEffect(() => {
+    if (!connecting) return;
+    const t = setInterval(() => void load(), 3000);
+    const onFocus = () => void load();
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+    const stop = setTimeout(() => setConnecting(false), 10 * 60_000);
+    return () => {
+      clearInterval(t);
+      clearTimeout(stop);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
+  }, [connecting, load]);
 
   async function run<T>(what: string, fn: () => Promise<T>): Promise<T | null> {
     setBusy(what);
@@ -491,7 +516,18 @@ export function EbayPanel() {
       <>
         <SectionHeading>eBay</SectionHeading>
         <Card className="mt-3 px-4 py-3">
-          <p className="text-[12.5px] text-text-muted">Reading the application status…</p>
+          {statusError ? (
+            <>
+              <p className="text-[12.5px] text-bad">
+                Could not read the eBay status — {statusError}
+              </p>
+              <Button className="mt-2" onClick={() => void load()}>
+                Try again
+              </Button>
+            </>
+          ) : (
+            <p className="text-[12.5px] text-text-muted">Reading the application status…</p>
+          )}
         </Card>
       </>
     );
@@ -615,6 +651,7 @@ export function EbayPanel() {
                   const who = await ensureSession().catch(() => null);
                   if (!who || who.kind === "guest") await claimConsole();
                   const { url } = await api.ebayConnect();
+                  setConnecting(true);
                   window.open(url, "_blank", "noopener,noreferrer");
                 })
               }

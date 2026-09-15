@@ -54,8 +54,12 @@ export function tokenQuery(): string {
   const t = authToken() ?? memoryToken;
   return t ? `token=${encodeURIComponent(t)}` : "";
 }
+// Mocks are opt-in. Defaulting to "true" meant any build without the variable
+// set — a preview, a fresh clone — shipped the scripted stream as if it were
+// a product. In dev with nothing set you still get mocks; a build never does.
 export const USE_MOCKS =
-  ((import.meta.env["VITE_USE_MOCKS"] as string | undefined) ?? "true") === "true";
+  ((import.meta.env["VITE_USE_MOCKS"] as string | undefined) ??
+    (import.meta.env.DEV ? "true" : "false")) === "true";
 
 const url = (path: string) => `${BASE}${path}`;
 
@@ -121,8 +125,16 @@ export function signedIn(): boolean {
   return Boolean(authToken() ?? memoryToken);
 }
 
-export async function register(email: string, password: string, displayName: string): Promise<Account> {
-  const s = await post<{ token: string; account: Account }>("/api/auth/register", { email, password, displayName });
+export async function register(
+  email: string,
+  password: string,
+  displayName: string,
+): Promise<Account> {
+  const s = await post<{ token: string; account: Account }>("/api/auth/register", {
+    email,
+    password,
+    displayName,
+  });
   setToken(s.token);
   memoryToken = s.token;
   return s.account;
@@ -166,7 +178,9 @@ async function failure(res: Response, path: string): Promise<Error> {
     /* not JSON — the text is the best we have */
   }
   // A status with no body is still more useful than an empty string.
-  const err = new Error(message ? message.slice(0, 400) : `${path} failed: ${res.status}`) as Error & { status?: number };
+  const err = new Error(
+    message ? message.slice(0, 400) : `${path} failed: ${res.status}`,
+  ) as Error & { status?: number };
   err.status = status;
   return err;
 }
@@ -236,6 +250,10 @@ const STREAM_EVENTS = [
   // were emitted and neither was heard — the same class of bug as `levels`.
   "source",
   "stream_error",
+  // The spend cap and the low-balance warning. Emitted by the server on every
+  // wallet read; never subscribed to, so the banner that stops a show from
+  // draining a wallet quietly could not render. Same class of bug as `levels`.
+  "budget",
 ] as const;
 
 /**
@@ -419,7 +437,17 @@ export const api = {
 
   /** Everything about one show as one JSON document. A link, not a fetch:
    *  the browser downloads it. */
-  exportUrl: (showId: string): string => `${BASE}/api/shows/${encodeURIComponent(showId)}/export`,
+  // The export is a cross-origin URL: a browser ignores `download` on those,
+  // and an <a> cannot send a bearer header. Fetch it and hand back a blob.
+  exportUrl: (showId: string): string =>
+    `${BASE}/api/shows/${encodeURIComponent(showId)}/export?${tokenQuery()}`,
+  exportBlob: async (showId: string): Promise<Blob> => {
+    const res = await fetch(url(`/api/shows/${encodeURIComponent(showId)}/export`), {
+      headers: bearer(),
+    });
+    if (!res.ok) throw await failure(res, "export");
+    return res.blob();
+  },
   // Media is loaded by <img> and <audio>, which cannot send a bearer header,
   // so the session travels in the query string the way the stream's does.
   frameUrl: (showId: string, seq: number): string =>

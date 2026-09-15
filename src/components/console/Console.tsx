@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import {
   AlertTriangle,
   ArrowRight,
@@ -43,7 +44,15 @@ function isTyping(): boolean {
   const el = document.activeElement;
   if (!el) return false;
   const tag = el.tagName;
-  return tag === "INPUT" || tag === "TEXTAREA" || (el as HTMLElement).isContentEditable;
+  // A focused button counts too: after clicking Edit or Dismiss, a bare Enter
+  // both re-fired that button and sent the focused proposal.
+  return (
+    tag === "INPUT" ||
+    tag === "TEXTAREA" ||
+    tag === "BUTTON" ||
+    tag === "SELECT" ||
+    (el as HTMLElement).isContentEditable
+  );
 }
 
 export function Console() {
@@ -66,8 +75,20 @@ export function Console() {
     source,
     streamError,
     budget,
+    greeted,
   } = store;
+  const navigate = useNavigate();
   const toasts = useToasts();
+  // Every write goes through here. A 409 (the guards refused), 404 (not your
+  // show), 403 (you cannot write here) or 500 used to be an unhandled
+  // rejection: the button did nothing and the operator learned nothing.
+  const failed = useCallback(
+    (what: string) => (e: unknown) => {
+      const msg = e instanceof Error ? e.message : String(e);
+      toasts.push({ tone: "bad", text: `${what} — ${msg}` });
+    },
+    [toasts],
+  );
 
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -153,9 +174,12 @@ export function Console() {
   const send = useCallback(
     (id: string, text?: string) => {
       setEditingId(null);
-      void api.sendProposal(id, text).then((p) => {
-        toasts.push({ tone: "ok", text: `Reply sent to ${p.message.author}` });
-      });
+      void api
+        .sendProposal(id, text)
+        .then((p) => {
+          toasts.push({ tone: "ok", text: `Reply sent to ${p.message.author}` });
+        })
+        .catch(failed("Not sent"));
     },
     [toasts],
   );
@@ -164,9 +188,12 @@ export function Console() {
    *  see it. A floor, and the report says so. */
   const flagWrong = useCallback(
     (id: string, reason: string) => {
-      void api.flagProposal(id, reason).then(() => {
-        toasts.push({ tone: "warn", text: `Flagged as wrong · ${reason}` });
-      });
+      void api
+        .flagProposal(id, reason)
+        .then(() => {
+          toasts.push({ tone: "warn", text: `Flagged as wrong · ${reason}` });
+        })
+        .catch(failed("Not flagged"));
     },
     [toasts],
   );
@@ -174,9 +201,12 @@ export function Console() {
   /** The gate dropped it and the operator disagrees. */
   const answerDropped = useCallback(
     (messageId: string) => {
-      void api.answerDropped(messageId).then(() => {
-        toasts.push({ tone: "neutral", text: "Drafting an answer for a dropped comment" });
-      });
+      void api
+        .answerDropped(messageId)
+        .then(() => {
+          toasts.push({ tone: "neutral", text: "Drafting an answer for a dropped comment" });
+        })
+        .catch(failed("Could not answer"));
     },
     [toasts],
   );
@@ -188,7 +218,7 @@ export function Console() {
   );
 
   const setAutonomy = useCallback((level: AutonomyLevel) => {
-    void api.setAutonomy(level);
+    void api.setAutonomy(level).catch(failed("Autonomy unchanged"));
   }, []);
 
   useEffect(() => {
@@ -225,9 +255,18 @@ export function Console() {
           move(-1);
           break;
         case "Enter":
-          if (focused && focused.status !== "blocked") {
+          // Bare Enter sends only a reply the guards allowed outright. A
+          // needs_review card's button says "Send anyway" for a reason: that
+          // decision takes a click, not a reflex.
+          if (focused && focused.status === "ready") {
             e.preventDefault();
             send(focused.id);
+          } else if (focused && focused.status === "needs_review") {
+            e.preventDefault();
+            toasts.push({
+              tone: "warn",
+              text: "This reply was revised by a guard — use Send anyway to send it",
+            });
           }
           break;
         case "e":
@@ -241,14 +280,14 @@ export function Console() {
         case "X":
           if (focused) {
             e.preventDefault();
-            void api.dismissProposal(focused.id);
+            void api.dismissProposal(focused.id).catch(failed("Not dismissed"));
           }
           break;
         case "r":
         case "R":
           if (focused && focused.status !== "blocked") {
             e.preventDefault();
-            void api.regenerateProposal(focused.id);
+            void api.regenerateProposal(focused.id).catch(failed("Not regenerated"));
           }
           break;
         case "a":
@@ -256,7 +295,7 @@ export function Console() {
           const top = actions.find((x) => x.status === "proposed" && x.preflight.ok);
           if (top) {
             e.preventDefault();
-            void api.approveAction(top.id);
+            void api.approveAction(top.id).catch(failed("Not approved"));
           }
           break;
         }
@@ -272,7 +311,8 @@ export function Console() {
             e.preventDefault();
             void api
               .rollbackAction(undoable.id)
-              .then(() => toasts.push({ tone: "neutral", text: "Rolled back" }));
+              .then(() => toasts.push({ tone: "neutral", text: "Rolled back" }))
+              .catch(failed("Not rolled back"));
           }
           break;
         }
@@ -380,7 +420,9 @@ export function Console() {
   // honest answer — and it is an answer, not a bounce to another screen, because
   // the operator clicked Console.
   if (!show) {
-    const idle = Boolean(streamError) || connection === "open";
+    // `open` fires before `hello`, so the empty state used to flash for every
+    // real show. Idle means the server answered and there is no show.
+    const idle = Boolean(streamError) || (connection === "open" && greeted);
     return (
       <AppShell
         section="console"
@@ -400,8 +442,8 @@ export function Console() {
                 </Link>
               }
             >
-              Paste an eBay Live link on Home and the copilot attaches to the stream — it builds
-              the lineup from the show itself, and this console fills as buyers start asking.
+              Paste an eBay Live link on Home and the copilot attaches to the stream — it builds the
+              lineup from the show itself, and this console fills as buyers start asking.
             </EmptyState>
           </Card>
         ) : (
@@ -458,9 +500,15 @@ export function Console() {
         // left where it is so you can walk back into it.
         onEndSession={() => {
           if (liveSession) {
-            void api.endSession(show.id).finally(() => window.location.reload());
+            // The server writes the report as part of detaching; land on it
+            // rather than reloading into an empty console.
+            const id = show.id;
+            void api
+              .endSession(id)
+              .then(() => navigate({ to: "/reports/$showId", params: { showId: id } }))
+              .catch(failed("Could not end the session"));
           } else {
-            window.location.reload();
+            void navigate({ to: "/" });
           }
         }}
         endSessionLabel={liveSession ? "End session" : "Switch show"}
@@ -501,7 +549,7 @@ export function Console() {
           <div className="flex min-h-0 flex-[3] flex-col">
             <ChatColumn
               chat={chat}
-              onInject={(text) => void api.injectChat("you", text)}
+              onInject={(text) => void api.injectChat("you", text).catch(failed("Not injected"))}
               onHoverProposal={setHighlightedId}
               linkedProposalIds={new Set(live.map((p) => p.id))}
               onAnswerDropped={answerDropped}
@@ -513,7 +561,9 @@ export function Console() {
               levels={levels}
               context={store.context}
               bridgeUrl={
-                USE_MOCKS ? null : `${API_BASE}/audio-bridge?showId=${encodeURIComponent(show.id)}&${tokenQuery()}`
+                USE_MOCKS
+                  ? null
+                  : `${API_BASE}/audio-bridge?showId=${encodeURIComponent(show.id)}&${tokenQuery()}`
               }
             />
           </div>
@@ -550,8 +600,8 @@ export function Console() {
             onSend={send}
             onEdit={setEditingId}
             onCancelEdit={() => setEditingId(null)}
-            onDismiss={(id) => void api.dismissProposal(id)}
-            onRegenerate={(id) => void api.regenerateProposal(id)}
+            onDismiss={(id) => void api.dismissProposal(id).catch(failed("Not dismissed"))}
+            onRegenerate={(id) => void api.regenerateProposal(id).catch(failed("Not regenerated"))}
             onFlag={flagWrong}
             onInspect={(id) => openInspect({ kind: "proposal", id })}
           />
@@ -601,9 +651,9 @@ export function Console() {
             flashed={flashed}
             actions={actions}
             audit={audit}
-            onApprove={(id) => void api.approveAction(id)}
-            onReject={(id) => void api.rejectAction(id)}
-            onRollback={(id) => void api.rollbackAction(id)}
+            onApprove={(id) => void api.approveAction(id).catch(failed("Not approved"))}
+            onReject={(id) => void api.rejectAction(id).catch(failed("Not rejected"))}
+            onRollback={(id) => void api.rollbackAction(id).catch(failed("Not rolled back"))}
             onRename={(id, title) => {
               void api
                 .nameLot(id, title)
@@ -629,6 +679,7 @@ export function Console() {
           if (a === "autonomy") {
             setPaletteOpen(false);
             setShortcutsOpen(false);
+            window.setTimeout(() => document.getElementById("autonomy-picker")?.click(), 50);
           }
           if (a === "verify") {
             setPaletteOpen(false);

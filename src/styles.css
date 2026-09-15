@@ -378,3 +378,42 @@
     opacity 0.55s ease,
     transform 0.55s ease;
 }
+
+/* Export PDF is window.print(). The shell is a fixed-height, inner-scrolling
+   console; on paper it must be a document: nothing clamped, nothing hidden
+   behind a scrollbar, no chrome. Sections that were tabs print in full. */
+@media print {
+  html,
+  body,
+  #root {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+  body {
+    color: #111 !important;
+    font-size: 11pt;
+  }
+  .scroll-thin {
+    overflow: visible !important;
+    max-height: none !important;
+  }
+  [data-print="hide"],
+  nav[aria-label="Sections"],
+  .anim-live {
+    display: none !important;
+  }
+  [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  a[href]::after {
+    content: none !important;
+  }
+  * {
+    box-shadow: none !important;
+  }
+  @page {
+    margin: 16mm;
+  }
+}

@@ -29,7 +29,9 @@ export function SetupPage({ showId }: { showId?: string | undefined }) {
 
   const load = useCallback(async () => {
     const shows = await api.shows().catch(() => [] as ShowSummary[]);
-    const target = shows.find((s) => s.showId === showId) ?? shows[0] ?? null;
+    // An id the server does not know is "not found", not the first show it
+    // does know — a readiness page for the wrong show is worse than none.
+    const target = showId ? (shows.find((s) => s.showId === showId) ?? null) : (shows[0] ?? null);
     setShow(target);
     const [r, f] = await Promise.all([
       target?.catalogId
@@ -51,7 +53,9 @@ export function SetupPage({ showId }: { showId?: string | undefined }) {
   const checks = readiness?.checks ?? [];
   const blockers = checks.filter((c) => !c.ok && c.severity === "blocker");
   const warnings = checks.filter((c) => !c.ok && c.severity === "warning");
-  const bridge = show ? `${API_BASE}/audio-bridge?showId=${encodeURIComponent(show.showId)}&${tokenQuery()}` : null;
+  const bridge = show
+    ? `${API_BASE}/audio-bridge?showId=${encodeURIComponent(show.showId)}&${tokenQuery()}`
+    : null;
 
   return (
     <AppShell
@@ -129,16 +133,20 @@ export function SetupPage({ showId }: { showId?: string | undefined }) {
                   </Link>
                 </div>
                 <p className="px-4 pt-2.5 text-[11.5px] leading-relaxed text-text-muted">
-                  {readiness.carried.gaps.length} question{readiness.carried.gaps.length === 1 ? "" : "s"} the
-                  catalog could not ground last time — this is the last moment to fix them before the same
-                  buyers ask again.
+                  {readiness.carried.gaps.length} question
+                  {readiness.carried.gaps.length === 1 ? "" : "s"} the catalog could not ground last
+                  time — this is the last moment to fix them before the same buyers ask again.
                 </p>
                 <ul className="pb-1">
                   {readiness.carried.gaps.slice(0, 6).map((g, i) => (
                     <li key={i} className="flex items-center gap-3 px-4 py-1.5 text-[12.5px]">
-                      <span className="num w-7 shrink-0 text-[11.5px] text-text-muted">×{g.asked}</span>
+                      <span className="num w-7 shrink-0 text-[11.5px] text-text-muted">
+                        ×{g.asked}
+                      </span>
                       <span className="min-w-0 flex-1 truncate">{g.question}</span>
-                      <span className="hidden shrink-0 text-[11px] text-text-muted sm:block">{g.reason}</span>
+                      <span className="hidden shrink-0 text-[11px] text-text-muted sm:block">
+                        {g.reason}
+                      </span>
                     </li>
                   ))}
                 </ul>

@@ -134,6 +134,7 @@ export function ShowsPage({ view = "live" }: { view?: View }) {
           <div className="mt-3 flex items-start gap-2.5">
             <div className="flex-1">
               <input
+                id="stream-url"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 onKeyDown={(e) => {
@@ -192,7 +193,11 @@ export function ShowsPage({ view = "live" }: { view?: View }) {
                   <EmptyState
                     icon={<Tv className="size-5" aria-hidden />}
                     title="Paste a live show to begin."
-                    action={<Key>⌘K</Key>}
+                    action={
+                      <Button onClick={() => document.getElementById("stream-url")?.focus()}>
+                        Paste a stream
+                      </Button>
+                    }
                   >
                     The copilot learns the lineup from the show itself. Nothing to install, and a
                     show you do not own is monitored read-only — nothing is ever written to a

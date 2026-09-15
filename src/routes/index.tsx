@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { LandingPage } from "@/components/pages/LandingPage";
 import { ShowsPage } from "@/components/pages/ShowsPage";
-import { ensureSession } from "@/lib/api";
+import { ensureSession, signedIn } from "@/lib/api";
 
 export const Route = createFileRoute("/")({
   // `/?view=discover` opens Home on its Discover tab — the one deep link the
@@ -34,7 +34,10 @@ export const Route = createFileRoute("/")({
     const { view } = Route.useSearch();
     const [state, setState] = useState<"unknown" | "in" | "out">("unknown");
     useEffect(() => {
-      void ensureSession().then((a) => setState(a ? "in" : "out"));
+      // Only a 401 demotes a seller to the landing page. ensureSession clears
+      // the token on 401 alone, so a blip on /me (network, a restart) leaves
+      // signedIn() true and the seller stays where they were.
+      void ensureSession().then((a) => setState(a || signedIn() ? "in" : "out"));
     }, []);
     if (state === "unknown") return null;
     return state === "in" ? (

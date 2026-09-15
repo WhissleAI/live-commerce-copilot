@@ -186,7 +186,12 @@ export function DiscoverView({ onAttach }: { onAttach: (url: string) => void }) 
                 onPrepareOther={(u) => void prepare(u)}
                 onAttach={() => onAttach(s.url)}
                 onAttachUrl={onAttach}
-                onDrop={() => void api.dropPrepared(s.eventId).then(() => read(false))}
+                onDrop={() =>
+                  void api
+                    .dropPrepared(s.eventId)
+                    .then(() => read(false))
+                    .catch((e) => setError((e as Error).message))
+                }
               />
             ))}
           </div>
@@ -205,7 +210,12 @@ export function DiscoverView({ onAttach }: { onAttach: (url: string) => void }) 
               <PreparedRow
                 key={p.eventId}
                 p={p}
-                onDrop={() => void api.dropPrepared(p.eventId).then(() => read(false))}
+                onDrop={() =>
+                  void api
+                    .dropPrepared(p.eventId)
+                    .then(() => read(false))
+                    .catch((e) => setError((e as Error).message))
+                }
                 onAttach={() =>
                   onAttach(`https://www.ebay.com/ebaylive/events/${p.eventId}/stream`)
                 }
@@ -236,7 +246,8 @@ function NothingOnAir({
           title="Reading the live grid…"
         >
           The server has a session and has not read the grid yet — the first read after a start
-          takes about a minute. This refreshes itself.
+          takes about a minute after a restart; a refresh you ask for takes about ten seconds. This
+          refreshes itself.
         </EmptyState>
       </Card>
     );

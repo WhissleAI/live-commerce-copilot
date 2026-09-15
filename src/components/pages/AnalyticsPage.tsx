@@ -235,7 +235,9 @@ function Overview({ o }: { o: AnalyticsOverview | null }) {
             <ul className="mt-2 flex flex-col gap-1.5">
               {guards.map(([g, n]) => (
                 <li key={g} className="flex items-center gap-3 text-[12px]">
-                  <span className="w-24 shrink-0">{GUARD_LABEL[g as GuardName] ?? g.replace(/_/g, " ")}</span>
+                  <span className="w-24 shrink-0">
+                    {GUARD_LABEL[g as GuardName] ?? g.replace(/_/g, " ")}
+                  </span>
                   <span className="h-1.5 min-w-0 flex-1 rounded-full bg-hairline">
                     <span
                       className="block h-1.5 rounded-full bg-warn"
@@ -412,7 +414,12 @@ function Topics({ o }: { o: AnalyticsOverview | null }) {
                   <td className="px-4 py-2">{r.intent.replace(/_/g, " ")}</td>
                   <td className="num px-3 py-2 text-right">{r.asked}</td>
                   <td className="num px-3 py-2 text-right">{pctText(r.answeredRate)}</td>
-                  <td className={cn("num px-3 py-2 text-right", r.abstainedRate > 0.25 && "text-warn")}>
+                  <td
+                    className={cn(
+                      "num px-3 py-2 text-right",
+                      r.abstainedRate > 0.25 && "text-warn",
+                    )}
+                  >
                     {pctText(r.abstainedRate)}
                   </td>
                   <td className="num px-3 py-2 text-right">{r.blocked}</td>
@@ -435,8 +442,8 @@ function Topics({ o }: { o: AnalyticsOverview | null }) {
       {worstAbstain && worstAbstain.abstainedRate > 0.2 ? (
         <p className="mt-3 text-[12px] text-text-secondary">
           <span className="capitalize">{worstAbstain.intent.replace(/_/g, " ")}</span> abstains on{" "}
-          {pctText(worstAbstain.abstainedRate)} of what it is asked — that is a field the catalog does not
-          carry, and it is the same finding each report's gaps list makes.
+          {pctText(worstAbstain.abstainedRate)} of what it is asked — that is a field the catalog
+          does not carry, and it is the same finding each report's gaps list makes.
         </p>
       ) : null}
     </>
@@ -456,8 +463,8 @@ function Autonomy({ r, loaded }: { r: PromotionReadiness | null; loaded: boolean
     return (
       <Card>
         <EmptyState title="Readiness could not be computed.">
-          The ladder is scored from your own finished shows. Claim the console so shows are recorded
-          against you, then finish one.
+          The ladder is scored from your own finished shows. Finish one, and the criteria are judged
+          against its numbers.
         </EmptyState>
       </Card>
     );

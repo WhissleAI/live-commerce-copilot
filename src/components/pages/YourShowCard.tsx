@@ -67,7 +67,9 @@ export function YourShowCard() {
 
   // Catalogs written by the eBay importer or by preparing a show are the
   // seller's own; the two shipped fixtures are demo inventory.
-  const own = (catalogs ?? []).filter((c) => !["kicksbyrae", "curated-cards"].includes(c.id));
+  const own = (catalogs ?? []).filter((c) =>
+    c.origin ? c.origin.kind !== "seed" : !["kicksbyrae", "curated-cards"].includes(c.id),
+  );
   const session = home?.discovery.session;
   const prepared = home?.prepared ?? [];
   const live = home?.watching.some((w) => w.status === "live") ?? false;
