@@ -40,9 +40,21 @@ export function DiscoverView({ onAttach }: { onAttach: (url: string) => void }) 
   const [home, setHome] = useState<HomeView | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // When the last forced read finished, and what it found. A refresh that
+  // returns the same twenty-four shows looks like a refresh that did nothing
+  // unless the page says so.
+  const [refreshed, setRefreshed] = useState<{ at: Date; live: number } | null>(null);
 
   const read = useCallback(async (refresh: boolean) => {
-    const h = await api.home(refresh).catch(() => null);
+    if (refresh) {
+      // A forced read is something the operator asked for: let it throw, so
+      // the button can say why it came back empty-handed.
+      const h = await api.home(true);
+      setHome(h);
+      setRefreshed({ at: new Date(), live: h.live.length });
+      return;
+    }
+    const h = await api.home(false).catch(() => null);
     if (h) setHome(h);
   }, []);
 
@@ -101,6 +113,20 @@ export function DiscoverView({ onAttach }: { onAttach: (url: string) => void }) 
             <Badge tone={home.discovery.session.stale ? "warn" : "ok"}>
               session {home.discovery.session.ageHours}h old
             </Badge>
+          ) : null}
+          {busy ? (
+            <span className="text-[12px] text-text-muted">
+              reading the live grid… about ten seconds
+            </span>
+          ) : refreshed ? (
+            <span className="anim-fade text-[12px] text-text-muted" key={refreshed.at.getTime()}>
+              {refreshed.live} live · updated{" "}
+              {refreshed.at.toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+              })}
+            </span>
           ) : null}
           <Button onClick={() => void refresh()} disabled={busy}>
             {busy ? (
@@ -218,7 +244,9 @@ function NothingOnAir({
       <EmptyState
         icon={<Radio className="size-5" aria-hidden />}
         title={
-          reason === "blocked" ? "eBay refused the live grid from this network." : "Nobody is on air."
+          reason === "blocked"
+            ? "eBay refused the live grid from this network."
+            : "Nobody is on air."
         }
         action={
           <Button onClick={onRefresh} disabled={busy}>
