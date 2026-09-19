@@ -16,6 +16,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { NOTHING_BLOCKED, NO_FINISHED_SESSIONS, READINESS_UNAVAILABLE } from "@/lib/copy";
 import {
   AlertTriangle,
   Check,
@@ -147,9 +148,9 @@ function Overview({ o }: { o: AnalyticsOverview | null }) {
   if (o.shows.finished === 0) {
     return (
       <Card>
-        <EmptyState title={`No shows finished in the last ${o.window.days} days.`}>
-          Analytics is built from the report each session leaves behind. Monitor a show, end it, and
-          this fills in.
+        <EmptyState title={NO_FINISHED_SESSIONS.title}>
+          {`No session has ended in the last ${o.window.days} days. `}
+          {NO_FINISHED_SESSIONS.analytics}
         </EmptyState>
       </Card>
     );
@@ -462,10 +463,7 @@ function Autonomy({ r, loaded }: { r: PromotionReadiness | null; loaded: boolean
   if (!r) {
     return (
       <Card>
-        <EmptyState title="Readiness could not be computed.">
-          The ladder is scored from your own finished shows. Finish one, and the criteria are judged
-          against its numbers.
-        </EmptyState>
+        <EmptyState title={READINESS_UNAVAILABLE.title}>{READINESS_UNAVAILABLE.body}</EmptyState>
       </Card>
     );
   }
@@ -648,9 +646,7 @@ function LiveShowAnalytics({ showId }: { showId: string }) {
             </div>
           </div>
         ) : (
-          <p className="mt-3 text-[11px] text-text-muted">
-            No guard has blocked a reply in this show yet.
-          </p>
+          <p className="mt-3 text-[11px] text-text-muted">{NOTHING_BLOCKED.session}</p>
         )}
 
         <div className="mt-3 flex items-start gap-2 rounded-[6px] border border-hairline bg-panel px-3 py-2">

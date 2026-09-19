@@ -63,6 +63,7 @@ import type {
   SurfaceId,
   SurfaceInfo,
 } from "@/lib/types";
+import { NO_FINISHED_SESSIONS } from "@/lib/copy";
 import { AppShell, type Tab } from "@/components/app/AppShell";
 import { Badge, Button, Card, SectionHeading, Skeleton } from "@/components/ui/kit";
 import { DiscoverView } from "./DiscoverView";
@@ -561,8 +562,7 @@ export function BehindBand({
           <Skeleton className="h-[52px]" />
         ) : reports.length === 0 ? (
           <Card className="px-4 py-3 text-[12.5px] text-text-muted">
-            Nothing has finished yet. A session's report is written when it ends, and the gaps it
-            found are carried into the next one.
+            {NO_FINISHED_SESSIONS.title} {NO_FINISHED_SESSIONS.home}
           </Card>
         ) : (
           reports.map((r) => (

@@ -19,6 +19,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { NO_FINISHED_SESSIONS } from "@/lib/copy";
 import { Info, RefreshCw } from "lucide-react";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -243,9 +244,8 @@ export function CostPage() {
           {!data ? (
             <Skeleton className="h-[160px]" />
           ) : data.shows.length === 0 ? (
-            <EmptyState title="No finished sessions in this window">
-              A row is written when a session closes. Shows that are still on air appear in the
-              console's cost rail until they end.
+            <EmptyState title={NO_FINISHED_SESSIONS.title}>
+              {NO_FINISHED_SESSIONS.cost}
             </EmptyState>
           ) : (
             <div className="scroll-thin overflow-x-auto">

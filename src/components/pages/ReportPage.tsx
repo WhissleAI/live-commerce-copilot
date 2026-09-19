@@ -41,6 +41,13 @@ import type {
   ShowReport,
   Verdict,
 } from "@/lib/types";
+import { capabilitiesOf, guardOrderFor } from "@/lib/surfaces";
+import {
+  NOTHING_BLOCKED,
+  READINESS_UNAVAILABLE,
+  SENT_MEANS_REPLIES,
+  SENT_MEANS_SUMMARY,
+} from "@/lib/copy";
 import { ReportTimeline, pretty } from "./ReportTimeline";
 import { AppShell, type Tab } from "@/components/app/AppShell";
 import {
@@ -264,7 +271,7 @@ export function ReportPage({ showId }: { showId: string }) {
       {view === "summary" || printing ? (
         <>
           {/* did it help --------------------------------------------------- */}
-          <SectionHeading hint="Measured against the targets in the PRD. Answered means the copilot put a sendable reply in front of you; sent means you pressed Enter on it. A question nothing could ground is a gap below, never an answer.">
+          <SectionHeading hint={SENT_MEANS_SUMMARY}>
             Did it help
           </SectionHeading>
           <div className="mt-3 grid gap-3 sm:grid-cols-4">
@@ -472,9 +479,7 @@ export function ReportPage({ showId }: { showId: string }) {
                   <div className="section-header">What it stopped, in full</div>
                   <div className="mt-3 flex flex-col gap-3">
                     {report.safety.examples.length === 0 ? (
-                      <p className="text-[12.5px] text-text-muted">
-                        Nothing was blocked on this show.
-                      </p>
+                      <p className="text-[12.5px] text-text-muted">{NOTHING_BLOCKED.session}</p>
                     ) : (
                       report.safety.examples.map((x, i) => (
                         <div key={i} className="border-l-2 border-bad pl-3">
@@ -523,7 +528,9 @@ export function ReportPage({ showId }: { showId: string }) {
         </>
       ) : null}
 
-      {view === "replies" || printing ? <Replies record={record} /> : null}
+      {view === "replies" || printing ? (
+        <Replies record={record} surface={report?.source ?? null} />
+      ) : null}
       {view === "actions" || printing ? <Actions record={record} /> : null}
       {view === "audit" || printing ? <Audit record={record} /> : null}
       {view === "timeline" || printing ? (
@@ -553,9 +560,9 @@ export function ReportPage({ showId }: { showId: string }) {
               <Card>
                 <EmptyState
                   icon={<Check className="size-5 text-ok" aria-hidden />}
-                  title="Nothing was blocked"
+                  title={NOTHING_BLOCKED.title}
                 >
-                  Every draft cleared all six guards on this show.
+                  Every draft cleared every guard that ran on this session.
                 </EmptyState>
               </Card>
             ) : (
@@ -971,12 +978,12 @@ function ConclusionSection({ c }: { c: Conclusion | null | undefined }) {
   );
 }
 
-/** The rung this show counted toward. Promotion is a decision the seller makes on the console's show bar; this only says whether it is earned. */
+/** The rung this session counted toward. Promotion is a decision the seller makes on the console's session bar; this only says whether it is earned. */
 function NextRung({ r }: { r: PromotionReadiness | null }) {
   if (!r) {
     return (
       <Card className="flex items-center gap-3 px-4 py-3 text-[12.5px] text-text-muted">
-        Readiness for the next rung could not be read.
+        {READINESS_UNAVAILABLE.title} {READINESS_UNAVAILABLE.body}
       </Card>
     );
   }
@@ -1025,13 +1032,18 @@ function Loading({ what }: { what: string }) {
   );
 }
 
-/** Every proposal the show produced, with its verdicts. */
-function Replies({ record }: { record: ShowRecord | null }) {
+/** Every proposal the session produced, with its verdicts. */
+function Replies({ record, surface }: { record: ShowRecord | null; surface?: string | null }) {
+  // CONTENT-20: this iterated the fixed six. A Reddit reply that showed seven
+  // pills in the console showed six here, with the room-rules verdict silently
+  // dropped — the one guard the operator most needs to see on that surface.
+  // Same function the console uses, off the same capability table.
+  const order = guardOrderFor(capabilitiesOf(surface));
   if (!record) return <Loading what="the record" />;
   const rows = [...record.proposals].reverse();
   return (
     <>
-      <SectionHeading hint="Every reply the copilot drafted, newest first, with the six verdicts it received. Sent means it reached a buyer; a strikethrough was blocked; 'edited' is your revealed opinion of the draft.">
+      <SectionHeading hint={SENT_MEANS_REPLIES}>
         Replies
       </SectionHeading>
       <Card className="mt-3">
@@ -1081,7 +1093,7 @@ function Replies({ record }: { record: ShowRecord | null }) {
                   {p.sentText ?? p.draft}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-1">
-                  {GUARD_ORDER.map((g) => {
+                  {order.map((g) => {
                     const hit = p.guards.find((x) => x.guard === g);
                     return (
                       <GuardPill

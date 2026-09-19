@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { NO_FINISHED_SESSIONS } from "@/lib/copy";
 import { fireEvent, screen } from "@testing-library/react";
 import { renderWithRouter } from "@/test/router";
 import { BehindBand, HomePage, NowBand, RehearsalCard, SurfaceRow, SurfaceTable } from "./HomePage";
@@ -185,7 +186,9 @@ describe("the BEHIND YOU band", () => {
 
   it("says nothing has finished rather than drawing an empty list", async () => {
     await renderWithRouter(<BehindBand reports={[]} followups={{ total: 0, ready: 0 }} />);
-    expect(screen.getByText(/Nothing has finished yet\./)).toBeInTheDocument();
+    // One sentence for this state, shared with Analytics and Cost — see
+    // `lib/copy`. Three pages used to say it three ways.
+    expect(screen.getByText(new RegExp(NO_FINISHED_SESSIONS.title))).toBeInTheDocument();
   });
 });
 
