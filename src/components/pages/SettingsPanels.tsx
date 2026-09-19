@@ -2,7 +2,7 @@
  * The three settings tabs that had no surface at all.
  *
  * `Agent & ingestion` and `Automation` were env-only: changing what the copilot
- * may use, or where a show starts on the ladder, meant editing a `.env` and
+ * may use, or where a session starts on the ladder, meant editing a `.env` and
  * restarting. Both are now fields on the seller's policy, honoured at the door
  * — turning host audio off makes the transcript route refuse, which makes the
  * copilot abstain on "last one in this waist" rather than guess at it.
@@ -171,7 +171,7 @@ export function AutomationPanel({ p, set }: { p: SellerGuardrailPolicy; set: Pat
       </SectionHeading>
 
       <Card className="mt-3 px-4 py-3">
-        <div className="text-[12.5px]">Start every show at</div>
+        <div className="text-[12.5px]">Start every session at</div>
         <div className="mt-2 flex flex-wrap gap-1.5">
           {RUNGS.map((r) => (
             <BadgeButton
@@ -183,11 +183,11 @@ export function AutomationPanel({ p, set }: { p: SellerGuardrailPolicy; set: Pat
             </BadgeButton>
           ))}
           <Badge title="Bounded auto-acting needs a session that writes to eBay (Settings · eBay) and a rollback rate under 10% across five sessions. Until both hold it stays locked.">
-            L4 Auto-act · locked until a show writes to eBay
+            L4 Auto-act · locked until a session writes to eBay
           </Badge>
         </div>
         <p className="mt-2.5 text-[11.5px] leading-snug text-text-muted">
-          Rungs above L1 unlock from your own finished shows. Readiness is on Analytics.
+          Rungs above L1 unlock from your own finished sessions. Readiness is on Analytics.
         </p>
       </Card>
 
@@ -235,7 +235,7 @@ export function AutomationPanel({ p, set }: { p: SellerGuardrailPolicy; set: Pat
             zero that reads as "stop immediately". */}
         <div className="rounded-md bg-panel px-4 py-3 z1">
           <div className="flex items-center gap-2">
-            <span className="flex-1 text-[12.5px]">Stop drafting when a show has cost</span>
+            <span className="flex-1 text-[12.5px]">Stop drafting when a session has cost</span>
             <BadgeButton
               tone={a.perShowCapUsd == null ? "neutral" : "accent"}
               onClick={() =>
@@ -278,7 +278,7 @@ export function AutomationPanel({ p, set }: { p: SellerGuardrailPolicy; set: Pat
           <li>· any reply a guard blocked</li>
         </ul>
         <p className="mt-2 text-[11.5px] leading-snug text-text-muted">
-          The first two change what the show <em>is</em>; the third is not a warning to click
+          The first two change what the session <em>is</em>; the third is not a warning to click
           through.
         </p>
       </Card>
@@ -371,7 +371,7 @@ export function AgentsPanel({
   onDropPrepared,
 }: {
   rows: ShowRow[] | null;
-  /** Agents created ahead of a show. They live on the same Whissle key and
+  /** Agents created ahead of a session. They live on the same Whissle key and
    *  were invisible here, which is how an account accumulates agents nobody
    *  can account for. */
   prepared: PreparedShow[];
@@ -379,7 +379,7 @@ export function AgentsPanel({
   onDropPrepared: (p: PreparedShow) => void;
 }) {
   const withAgents = (rows ?? []).filter((r) => r.agentId);
-  // A prepared show that has since been attached shows up in `rows` with the
+  // A prepared session that has since been attached shows up in `rows` with the
   // same agent; list it once, as the session.
   const sessionAgents = new Set(withAgents.map((r) => r.agentId));
   const preparedOnly = prepared.filter((p) => p.agentId && !sessionAgents.has(p.agentId));
@@ -393,13 +393,13 @@ export function AgentsPanel({
           <div className="px-4 py-4 text-[12.5px] text-text-muted">reading…</div>
         ) : withAgents.length + preparedOnly.length === 0 ? (
           <EmptyState title="No stream agents yet">
-            One is created when you attach to a show, and removed when you delete the session.
+            One is created when you attach to a session, and removed when you delete the session.
           </EmptyState>
         ) : (
           <table className="w-full text-[12.5px]">
             <thead>
               <tr className="text-left text-[11.5px] text-text-muted shadow-[0_1px_0_var(--hairline)]">
-                <th className="px-4 py-2.5 font-medium">Show</th>
+                <th className="px-4 py-2.5 font-medium">Session</th>
                 <th className="px-4 py-2.5 font-medium">Agent</th>
                 <th className="px-4 py-2.5 font-medium">Status</th>
                 <th className="px-4 py-2.5" />
@@ -610,7 +610,7 @@ export function EbayPanel() {
         ) : (
           <p className="mt-2 text-[12px] leading-relaxed text-text-secondary">
             {w.connected
-              ? `Connected ${w.connectedAt ? new Date(w.connectedAt).toLocaleString() : ""}. Markdowns, stock changes and ended listings can now be armed per show — they still default to the mock until you switch a show over.`
+              ? `Connected ${w.connectedAt ? new Date(w.connectedAt).toLocaleString() : ""}. Markdowns, stock changes and ended listings can now be armed per session — they still default to the mock until you switch a session over.`
               : "Sign in at eBay and approve inventory access. We ask for price, stock and listing scopes only — nothing that touches an order."}
           </p>
         )}
@@ -673,7 +673,7 @@ export function EbayPanel() {
                 <span className="num text-warn">{imported.skipped.length}</span> were skipped —{" "}
                 {imported.skipped[0]!.why} — and are listed in the response rather than dropped
                 quietly. Policies do not come across: eBay&apos;s are account settings, not the
-                clause text a reply can cite, so add those before the next show.
+                clause text a reply can cite, so add those before the next session.
               </>
             ) : null}
           </p>

@@ -15,6 +15,7 @@ import {
   SENT_MEANS_REPLIES,
   SENT_MEANS_SUMMARY,
   operatorMessage,
+  streamTitle,
 } from "./copy";
 
 describe("what sent means", () => {
@@ -101,5 +102,33 @@ describe("operatorMessage", () => {
   it("says something when there is nothing to say", () => {
     expect(operatorMessage(undefined, "This session")).toMatch(/No reason was given/);
     expect(operatorMessage(undefined)).toBeTruthy();
+  });
+});
+
+describe("streamTitle", () => {
+  /**
+   * CONTENT-31. Every `stream_error` used to be titled "The server does not
+   * know that show", including the ones where it plainly did.
+   */
+  it("keeps the not-found diagnosis where it is actually the diagnosis", () => {
+    expect(streamTitle("no show shw_412")).toMatch(/does not have that session/i);
+    expect(streamTitle(new Error("/api/stream failed: 404"))).toMatch(/does not have that session/i);
+  });
+
+  it("calls an auth failure an auth failure", () => {
+    expect(streamTitle("HTTP 401")).toMatch(/no longer signed in/i);
+    expect(streamTitle("forbidden")).toMatch(/no longer signed in/i);
+  });
+
+  it("does not guess at a failure it cannot classify", () => {
+    const t = streamTitle("ECONNRESET");
+    expect(t).toMatch(/stream stopped/i);
+    expect(t).not.toMatch(/does not have/i);
+  });
+
+  it("says nothing about a show", () => {
+    for (const e of ["no show s1", "HTTP 401", "boom"]) {
+      expect(streamTitle(e).toLowerCase()).not.toMatch(/\bshow\b/);
+    }
   });
 });

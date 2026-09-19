@@ -145,3 +145,23 @@ export function operatorMessage(e: unknown, what?: string): string {
   // Already a sentence somebody wrote for an operator. Leave it alone.
   return raw;
 }
+
+/**
+ * A title for the console's stream-failure banner, from the failure class.
+ *
+ * CONTENT-31. It used to be the constant "The server does not know that show"
+ * for every `stream_error` the server emits — a dropped socket, an expired
+ * console session and a 500 all got the same confident, usually wrong,
+ * sentence, with the real message demoted underneath it. Three classes is not
+ * a taxonomy, but it is three more than one.
+ */
+export function streamTitle(e: unknown): string {
+  const raw = (e instanceof Error ? e.message : String(e ?? "")).toLowerCase();
+  if (/\bno show\b|not found|unknown show|\b404\b/.test(raw)) {
+    return "The server does not have that session";
+  }
+  if (/\b401\b|\b403\b|unauthor|forbidden|expired/.test(raw)) {
+    return "This console is no longer signed in";
+  }
+  return "The session stream stopped";
+}

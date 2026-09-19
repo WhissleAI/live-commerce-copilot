@@ -6,16 +6,17 @@
  * both lived in process memory. Every finished session now writes a row, and
  * this page reads them.
  *
- * This page is YOURS: the shows this account ran, and what they cost this
+ * This page is YOURS: the sessions this account ran, and what they cost this
  * account. The Whissle key behind the backend is shared by every seller on the
  * host, so the workspace wallet is not shown here — it is not your balance.
  *
  * Two kinds of number, kept visually apart because conflating them is how a
  * dashboard ends up quoting a token count as a price:
  *   · CALLS are exact — this app makes them and counts them itself.
- *   · DOLLARS are priced per show on one of two bases, and each row says which:
- *     the wallet's movement while the show ran alone (its real spend), or the
- *     show's calls at the average cost per call measured from shows that did.
+ *   · DOLLARS are priced per session on one of two bases, and each row says
+ *     which: the wallet's movement while the session ran alone (its real spend),
+ *     or the session's calls at the average cost per call measured from sessions
+ *     that did.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -173,7 +174,7 @@ export function CostPage() {
       section="cost"
       title="Cost"
       subtitle={
-        data ? `Your shows · ${t?.shows ?? 0} shows · last ${days} days` : "reading the meter…"
+        data ? `Your sessions · ${t?.shows ?? 0} sessions · last ${days} days` : "reading the meter…"
       }
       tabs={tabs}
       actions={
@@ -204,7 +205,7 @@ export function CostPage() {
             <StatTile
               label={`Your spend, ${days} days`}
               value={usd(t?.estimatedUsd)}
-              hint={`${t?.shows ?? 0} shows · ${Math.floor((t?.minutes ?? 0) / 60)}h ${(t?.minutes ?? 0) % 60}m on air${
+              hint={`${t?.shows ?? 0} sessions · ${Math.floor((t?.minutes ?? 0) / 60)}h ${(t?.minutes ?? 0) % 60}m on air${
                 t?.metered ? ` · ${t.metered} priced from calls` : ""
               }`}
             />
@@ -213,7 +214,7 @@ export function CostPage() {
               value={usd(t?.perHourUsd)}
               hint={
                 t?.showsWithoutWallet
-                  ? `${t.showsWithoutWallet} show${t.showsWithoutWallet === 1 ? "" : "s"} could not be priced`
+                  ? `${t.showsWithoutWallet} session${t.showsWithoutWallet === 1 ? "" : "s"} could not be priced`
                   : "your spend over your time on air"
               }
             />
@@ -235,10 +236,10 @@ export function CostPage() {
 
       <CapLine />
 
-      {/* by show ---------------------------------------------------------- */}
+      {/* by session ------------------------------------------------------- */}
       <div className="mt-8">
         <SectionHeading hint="What each night cost, beside what it did. The last column is the one worth watching over time.">
-          By show
+          By session
         </SectionHeading>
         <Card className="mt-3 overflow-hidden">
           {!data ? (
@@ -252,7 +253,7 @@ export function CostPage() {
               <table className="w-full text-[12.5px]">
                 <thead>
                   <tr className="text-left text-[11.5px] text-text-muted shadow-[0_1px_0_var(--hairline)]">
-                    <th className="px-4 py-2.5 font-medium">Show</th>
+                    <th className="px-4 py-2.5 font-medium">Session</th>
                     <th className="px-4 py-2.5 font-medium">Ended</th>
                     <th className="px-4 py-2.5 text-right font-medium">On air</th>
                     <th className="px-4 py-2.5 text-right font-medium">Calls</th>
@@ -298,7 +299,7 @@ export function CostPage() {
                     </tr>
                   ))}
                   <tr className="text-text shadow-[0_-1px_0_var(--hairline)]">
-                    <td className="px-4 py-2.5 font-medium">{t?.shows} shows</td>
+                    <td className="px-4 py-2.5 font-medium">{t?.shows} sessions</td>
                     <td />
                     <td className="num px-4 py-2.5 text-right">
                       {Math.floor((t?.minutes ?? 0) / 60)}h{" "}
@@ -318,10 +319,10 @@ export function CostPage() {
           )}
         </Card>
         <p className="mt-2 text-[11.5px] leading-relaxed text-text-muted">
-          A show marked <BasisMark basis="wallet-exclusive" inline /> is priced by how much the
+          A session marked <BasisMark basis="wallet-exclusive" inline /> is priced by how much the
           wallet moved while it ran alone (its real spend); one marked{" "}
           <BasisMark basis="metered" inline /> is priced from its calls at the average cost per call
-          measured on shows that ran alone.
+          measured on sessions that ran alone.
         </p>
       </div>
 

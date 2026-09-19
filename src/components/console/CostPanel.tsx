@@ -13,18 +13,18 @@ import { ConsoleButton, SectionHeader } from "./primitives";
  *
  *   BALANCE   dollars, from the Whissle wallet. The only real money on screen.
  *   CONSUMED  tokens / seconds / characters, org-wide, from the platform meter.
- *   THIS APP  our own count of every call SideStage made, per show.
+ *   THIS APP  our own count of every call SideStage made, per session.
  *
  * The third exists because the platform cannot do it: `/usage/sessions` returns
  * `agent_id: null` for text turns, so there is no way to ask the gateway what
- * one show cost. We count our own calls instead, which is exact — we are the
+ * one session cost. We count our own calls instead, which is exact — we are the
  * one making them — and say so rather than implying the number came from
  * billing.
  */
 
 const DOOR_LABEL: Record<GatewayDoor, string> = {
   chat_turn: "Buyer replies",
-  utility_turn: "Show context",
+  utility_turn: "Session context",
   voice_start: "Host audio",
   kb_upload: "Catalog sync",
   // Metered since visual perception shipped, rendered nowhere until now.
@@ -132,7 +132,7 @@ export function CostPanel({ showId, onClose }: { showId: string | null; onClose:
 
   useEffect(() => {
     load();
-    // A show is 60–120 minutes and the wallet moves slowly; polling harder than
+    // A session is 60–120 minutes and the wallet moves slowly; polling harder than
     // this would spend gateway calls to watch gateway spend.
     const t = setInterval(load, 60_000);
     return () => clearInterval(t);
@@ -193,7 +193,7 @@ export function CostPanel({ showId, onClose }: { showId: string | null; onClose:
             )}
           </>
         ) : (
-          <p className="py-1 text-[11px] text-text-muted">No gateway calls yet this show.</p>
+          <p className="py-1 text-[11px] text-text-muted">No gateway calls yet this session.</p>
         )}
 
         {/* ── the money ──────────────────────────────────────────────────── */}
