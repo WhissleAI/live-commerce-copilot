@@ -1707,7 +1707,120 @@ export interface SurfaceRoom {
   room: string;
   /** A HUMAN turned this on. Default false, everywhere, always. */
   posting: boolean;
+  /**
+   * Whether the standing watch on this room is actually running.
+   *
+   * Optional, and ABSENT READS AS WATCHED: a room in this list is the watch,
+   * and a server from before the column existed says nothing about it. Only an
+   * explicit `false` means the room is recorded but not being read.
+   */
+  watching?: boolean;
   /** What we must say about who is talking, when we post here. */
   disclosure: string | null;
   addedAt: string;
+}
+
+// ── discover ────────────────────────────────────────────────────────────────
+//
+// Discovery used to mean one thing: scrape the eBay Live grid and draw it. That
+// was one surface out of six, and a grid of what is on air is a phone book —
+// what an operator needs is what is live THAT HAS ANYTHING TO DO WITH WHAT THEY
+// SELL, which we already hold in Knowledge.
+//
+// So discovery is one question asked of every surface, and the answer carries
+// its own reason for being on screen. `why` is never a score: it is the terms
+// that matched and where they matched, which is the only form of relevance an
+// operator can check.
+
+/** Where an interest term was found in a hit. Title beats body. */
+export type WhyWhere = "title" | "category" | "host" | "room" | "body";
+
+/** What the operator can do with a hit, given the surface it is on. */
+export type DiscoverAction = "prepare" | "attach" | "watch-room" | "open";
+
+export interface DiscoverWhy {
+  term: string;
+  where: WhyWhere;
+}
+
+export interface DiscoverHit {
+  surface: SurfaceId;
+  /** Stable per surface, and the attach target. */
+  id: string;
+  title: string;
+  /** Null is the honest answer where the source does not give one, and the UI
+   *  draws nothing rather than a dash — a dash reads as a host called "—". */
+  host: string | null;
+  url: string;
+  startedAt: string | null;
+  liveNow: boolean;
+  /** Null, never zero. Zero viewers is a measurement; a source that does not
+   *  publish viewer counts has not made one. */
+  viewers: number | null;
+  why: DiscoverWhy[];
+  action: DiscoverAction;
+  /**
+   * The legacy eBay row this hit was built from, when Discover is running on
+   * the fallback path. Client-side only — the server never sends it — and it
+   * exists so preparing a show off the old payload still carries the seller
+   * handle and tags that build its catalog.
+   */
+  legacy?: DiscoveredShow;
+}
+
+export interface DiscoverSourceResult {
+  surface: SurfaceId;
+  /** One plain sentence: how this list was obtained. An operator should never
+   *  have to guess whether they are looking at an API or a scrape. */
+  method: string;
+  hits: DiscoverHit[];
+  /** Present when this surface could not answer. Its hits are then empty and
+   *  the source is still listed — a missing tab reads as a broken product
+   *  rather than a door the platform never opened. */
+  unavailable: { reason: string; missing: string | null } | null;
+}
+
+/**
+ * A term the operator sells around.
+ *
+ * Derived from their catalogs, then owned: what they sell next month is not in
+ * last month's catalog, and a derived term they delete stays deleted.
+ *
+ * There is no catalog on this object and there cannot be one. Interests are
+ * derived from ALL of an account's catalogs at once and belong to none of
+ * them, so a chip that named one would be naming a source it does not have.
+ */
+export interface DiscoverInterest {
+  /** The match identity, and the stable key. */
+  slug: string;
+  /** The display form, with the operator's or the catalog's own spelling and
+   *  accents intact. Never the thing to compare on. */
+  term: string;
+  origin: "derived" | "own";
+  pinned: boolean;
+  /** How many of the account's listings carry the term — the whole of a
+   *  derived chip's provenance. `0` for a term the operator typed. */
+  weight: number;
+}
+
+/** `GET` and `PUT /api/discover/interests` — the set, and why it is that size. */
+export interface DiscoverInterests {
+  interests: DiscoverInterest[];
+  /**
+   * How many catalogs the account has.
+   *
+   * The empty state branches on this and not on the interests alone: no
+   * catalogs is "we do not know what you sell", which is a door to Knowledge,
+   * and catalogs with no terms is "you removed them all", which is not.
+   */
+  catalogs: number;
+}
+
+/** `GET /api/discover` — the interests it asked with, and one result per source. */
+export interface DiscoverView {
+  interests: DiscoverInterest[];
+  /** Null when this answer did not carry the count; the interests endpoint
+   *  always does. */
+  catalogs: number | null;
+  sources: DiscoverSourceResult[];
 }

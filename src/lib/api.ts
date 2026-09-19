@@ -5,6 +5,7 @@
  */
 import { getMockDriver } from "./mockStream";
 import { withRemote } from "./surfaces";
+import { foldSources, normalizeInterestSet, normalizeInterests } from "./discover";
 import type {
   DraftsQueue,
   DraftStatus,
@@ -47,6 +48,9 @@ import type {
   CatalogMarket,
   DiscoveredShow,
   DiscoveryReason,
+  DiscoverInterest,
+  DiscoverInterests,
+  DiscoverView,
   HomeView,
   EbayImportResult,
   EbayResult,
@@ -225,6 +229,39 @@ export function surfaceUnavailable(
   const surface = typeof body["surface"] === "string" ? body["surface"] : null;
   const missing = typeof body["missing"] === "string" ? body["missing"] : null;
   return { surface, missing, message: err.message };
+}
+
+/**
+ * Is this route simply not on this server?
+ *
+ * The difference between "not deployed yet" and "broken" is the whole of
+ * graceful degradation. A 404 or a 501 means the half of the product that
+ * answers this has not landed; anything else is a fault and is allowed to
+ * throw, so it can be said out loud rather than hidden behind a fallback.
+ */
+function absent(e: unknown): boolean {
+  const s = (e as ApiError | undefined)?.status;
+  return s === 404 || s === 405 || s === 501;
+}
+
+/**
+ * A discover payload, or null for a server that answered in the old shape.
+ *
+ * `sources` being an array is the discriminator, not its length: a server that
+ * asked every surface and found nothing has still answered, and must not be
+ * mistaken for one that has never heard of the question.
+ */
+function asDiscover(raw: unknown): DiscoverView | null {
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as { interests?: unknown; sources?: unknown; catalogs?: unknown };
+  if (!Array.isArray(o.sources)) return null;
+  return {
+    interests: normalizeInterests(o.interests),
+    // Null, not zero: "this answer did not carry the count" and "this account
+    // has no catalogs" are different facts and the empty state branches on it.
+    catalogs: typeof o.catalogs === "number" && Number.isFinite(o.catalogs) ? o.catalogs : null,
+    sources: foldSources(o.sources),
+  };
 }
 
 async function post<T>(path: string, body?: unknown): Promise<T> {
@@ -653,6 +690,56 @@ export const api = {
           watching: [],
         })
       : get(`/api/home${refresh ? "?refresh=1" : ""}`),
+
+  // ── discover ──────────────────────────────────────────────────────────────
+  //
+  // Both reads below answer `null` for "this server does not have it", and
+  // null is a real answer rather than a failure: the multi-surface index and
+  // the screen that renders it deploy separately, sometimes minutes apart, and
+  // a Discover tab that breaks in that window would be a worse regression than
+  // the single-surface grid it replaces. The caller falls back to `home()`.
+
+  /** Every surface asked one question: what is live that matches what you sell. */
+  discover: async (
+    opts: { surface?: SurfaceId | "all"; q?: string; limit?: number } = {},
+  ): Promise<DiscoverView | null> => {
+    if (USE_MOCKS) return null;
+    const qs = new URLSearchParams();
+    if (opts.surface && opts.surface !== "all") qs.set("surface", opts.surface);
+    if (opts.q) qs.set("q", opts.q);
+    if (opts.limit != null) qs.set("limit", String(opts.limit));
+    const query = qs.toString();
+    const raw = await get<unknown>(`/api/discover${query ? `?${query}` : ""}`).catch((e) => {
+      if (absent(e)) return null;
+      throw e;
+    });
+    return asDiscover(raw);
+  },
+
+  /** The operator's own set of interest terms, and how many catalogs it came
+   *  out of — which is what says whether an empty set means "no listings yet"
+   *  or "you removed them all". */
+  interests: async (): Promise<DiscoverInterests | null> => {
+    if (USE_MOCKS) return null;
+    const raw = await get<unknown>("/api/discover/interests").catch((e) => {
+      if (absent(e)) return null;
+      throw e;
+    });
+    return raw == null ? null : normalizeInterestSet(raw);
+  },
+
+  /**
+   * Writes the whole set: a derived term the operator removed must come back
+   * as removed, and a PATCH of additions could never say that.
+   *
+   * Only `term` and `pinned` are sent. `slug` is the server's to mint, and
+   * `weight` and `origin` are its measurements — echoing them back would be
+   * the client telling the server what the server told it.
+   */
+  saveInterests: (interests: DiscoverInterest[]): Promise<DiscoverInterests> =>
+    put<unknown>("/api/discover/interests", {
+      interests: interests.map((i) => ({ term: i.term, pinned: i.pinned })),
+    }).then(normalizeInterestSet),
 
   /** One seller's eBay Live page — live now plus what they have scheduled. */
   sellerShows: (

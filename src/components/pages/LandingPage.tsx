@@ -1080,7 +1080,7 @@ export function LandingPage() {
                 "Comparables are asking prices, not sold prices — eBay's completed-sales feed is limited-release and this keyset was not granted it.",
                 "TikTok Live, Twitch and Reddit need a flag or their own credentials; the app names the variable instead of failing vaguely. YouTube Live is a capability row with no adapter, so it is not offered.",
                 "Privacy and terms are pages of the product — /privacy, /terms — written from what it actually stores.",
-                "Discover needs your signed-in eBay Live session and runs on your own machine — the live grid is refused from a server. Attaching by link runs anywhere.",
+                "Discover's eBay Live source needs your signed-in session and runs on your own machine — that grid is refused from a server. The surfaces with public APIs need their own credentials instead, and attaching by link runs anywhere.",
               ],
             ],
             [
