@@ -151,18 +151,45 @@ const ACT_NOTE: Record<string, string> = {
 
 // ── guard pill ──────────────────────────────────────────────────────────────
 
-const MARK: Record<Verdict | "n/a", string> = {
+export const GUARD_MARK: Record<Verdict | "n/a", string> = {
   allow: "✓",
   revise: "!",
   block: "✕",
   "n/a": "–",
 };
 
-const GUARD_TONE: Record<Verdict | "n/a", BadgeTone> = {
+export const GUARD_TONE: Record<Verdict | "n/a", BadgeTone> = {
   allow: "ok",
   revise: "warn",
   block: "bad",
   "n/a": "neutral",
+};
+
+/**
+ * The pill, as a class string, for the two places that cannot use `GuardPill`
+ * itself — the console's hover-wrapped strip and the legend's swatch column.
+ *
+ * CONTENT-42. Both of those hand-rolled their own copies with raw `text-ok` /
+ * `text-warn` / `text-bad` on a `/12` wash at 10px, measuring 4.01 / 3.77 /
+ * 4.49 against white. `BADGE_TONE` above was darkened for exactly this reason
+ * and measures 5.66 / 5.31 / 5.83; the console never picked it up, and
+ * `styles.css:86-88` records that "a guardrail pill's COLOUR is the whole
+ * signal". So the failing copies are gone and both read from here. 11px is
+ * this file's floor and the pill now respects it.
+ */
+export const GUARD_PILL_CLASS: Record<Verdict | "n/a", string> = {
+  allow: `${BADGE_TONE.ok} border border-ok/45`,
+  revise: `${BADGE_TONE.warn} border border-warn/45`,
+  block: `${BADGE_TONE.bad} border border-bad/50`,
+  "n/a": "bg-canvas text-text-muted border border-hairline-strong",
+};
+
+/** What a verdict is called out loud. The mark is a glyph and says nothing. */
+export const VERDICT_WORD: Record<Verdict | "n/a", string> = {
+  allow: "passed",
+  revise: "revised",
+  block: "blocked",
+  "n/a": "did not apply",
 };
 
 /** Fixed order, fixed position, and `–` explicitly not a failure. The best
@@ -178,8 +205,15 @@ export function GuardPill({
 }) {
   return (
     <Badge tone={GUARD_TONE[verdict]} className={cn("px-2", className)}>
-      <span className="num">{MARK[verdict]}</span>
-      {GUARD_LABEL[guard]}
+      <span className="num" aria-hidden>
+        {GUARD_MARK[verdict]}
+      </span>
+      <span aria-hidden>{GUARD_LABEL[guard]}</span>
+      {/* The mark is a glyph. "✕ price" is what a screen reader was given for
+          the one thing this product exists to show. */}
+      <span className="sr-only">
+        {GUARD_LABEL[guard]} {VERDICT_WORD[verdict]}
+      </span>
     </Badge>
   );
 }

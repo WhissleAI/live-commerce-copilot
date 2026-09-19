@@ -52,7 +52,17 @@ const motion = (): ScrollBehavior =>
  * scroll-margin keeps the sticky header off the heading.
  */
 function jumpTo(id: string) {
-  document.getElementById(id)?.scrollIntoView({ behavior: motion(), block: "start" });
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.scrollIntoView({ behavior: motion(), block: "start" });
+  // CONTENT-41: it scrolled and stopped there, so focus stayed on the nav
+  // button and the next Tab went to the next nav button rather than into the
+  // section that had just been jumped to. For a keyboard user the nav moved
+  // the page and nothing else — decoration. `tabIndex={-1}` makes the section
+  // focusable without adding a tab stop; `preventScroll` keeps the smooth
+  // scroll that is already running.
+  el.setAttribute("tabindex", "-1");
+  el.focus({ preventScroll: true });
 }
 
 /** Which section is under the header right now, for the nav's active state. */

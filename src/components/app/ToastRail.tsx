@@ -88,12 +88,38 @@ export function ToastRail({ toasts }: { toasts: Toasts }) {
     return () => clearInterval(i);
   }, [toasts.items]);
 
-  if (!toasts.items.length) return null;
+  // CONTENT-39: this returned null when empty, so the live region was
+  // inserted into the DOM in the same tick as its first message — which
+  // assistive technology generally does not announce, because it was not
+  // watching a region that did not exist. Enter, then silence, on the only
+  // feedback the console has for "Reply sent to X" and "Not sent — …".
+  //
+  // The region is mounted always and empty, and a failure gets its own
+  // assertive one: `tone: "bad"` in a polite region is a refusal the operator
+  // hears after whatever else was queued, if at all.
+  const bad = toasts.items.filter((t) => t.tone === "bad");
+  const rest = toasts.items.filter((t) => t.tone !== "bad");
 
   return (
+    <>
+      <div className="sr-only" aria-live="assertive" role="alert">
+        {bad.map((t) => (
+          <p key={t.id}>{t.text}</p>
+        ))}
+      </div>
+      <div className="sr-only" aria-live="polite">
+        {rest.map((t) => (
+          <p key={t.id}>{t.text}</p>
+        ))}
+      </div>
+      {toasts.items.length ? renderRail() : null}
+    </>
+  );
+
+  function renderRail() {
+    return (
     <div
       className="pointer-events-none absolute bottom-3 left-3 z-30 flex w-[300px] flex-col gap-1.5"
-      aria-live="polite"
     >
       {toasts.items.map((t) => {
         const left = t.undo?.untilMs
@@ -142,7 +168,8 @@ export function ToastRail({ toasts }: { toasts: Toasts }) {
         );
       })}
     </div>
-  );
+    );
+  }
 }
 
 export function ToastProvider({ toasts, children }: { toasts: Toasts; children: ReactNode }) {

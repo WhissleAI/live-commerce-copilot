@@ -15,9 +15,16 @@
 import { useEffect } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Badge, Button, GuardPill, Key } from "@/components/ui/kit";
+import {
+  Badge,
+  Button,
+  GUARD_MARK,
+  GUARD_PILL_CLASS,
+  GuardPill,
+  Key,
+} from "@/components/ui/kit";
 import { GUARD_MEANS, GUARD_ORDER } from "@/lib/format";
-import type { GuardName } from "@/lib/types";
+import type { GuardName, Verdict } from "@/lib/types";
 
 /**
  * The two guards that do not run everywhere.
@@ -56,28 +63,27 @@ export function markLegendSeen(): void {
   }
 }
 
-const GUARDS: { mark: string; tone: string; name: string; means: string }[] = [
+// CONTENT-42: this duplicated the console's failing copy of the pill, so the
+// overlay that teaches an operator to read the pill taught them the version
+// that does not meet contrast. Both read from `kit.tsx` now.
+const GUARDS: { verdict: Verdict | "n/a"; name: string; means: string }[] = [
   {
-    mark: "✓",
-    tone: "border-ok/45 bg-ok/12 text-ok",
+    verdict: "allow",
     name: "passed",
     means: "the guard ran on this draft and had no objection",
   },
   {
-    mark: "!",
-    tone: "border-warn/45 bg-warn/12 text-warn",
+    verdict: "revise",
     name: "revised",
     means: "it sent the draft back once; what you see is the re-grounded version",
   },
   {
-    mark: "✕",
-    tone: "border-bad/50 bg-bad/12 text-bad",
+    verdict: "block",
     name: "blocked",
     means: "the reply cannot be sent — the card says which claim failed and why",
   },
   {
-    mark: "–",
-    tone: "border-hairline-strong bg-canvas text-text-muted",
+    verdict: "n/a",
     name: "not applicable",
     means: "nothing in this reply for that guard to check, so it did not run",
   },
@@ -131,11 +137,14 @@ export function LegendOverlay({ open, onClose }: { open: boolean; onClose: () =>
                 <li key={g.name} className="flex items-center gap-2.5">
                   <span
                     className={cn(
-                      "inline-flex shrink-0 items-center gap-1 rounded-[4px] border px-1.5 py-0.5 text-[10px]",
-                      g.tone,
+                      "inline-flex shrink-0 items-center gap-1 rounded-[4px] px-1.5 py-0.5 text-[11px]",
+                      GUARD_PILL_CLASS[g.verdict],
                     )}
                   >
-                    <span className="num">{g.mark}</span> price
+                    <span className="num" aria-hidden>
+                      {GUARD_MARK[g.verdict]}
+                    </span>{" "}
+                    price
                   </span>
                   <span className="w-[88px] shrink-0 text-[12px] font-medium">{g.name}</span>
                   <span className="min-w-0 flex-1 text-[12px] text-text-secondary">{g.means}</span>

@@ -80,7 +80,14 @@
      colour every hint, sub-label, table header and rail icon uses. One token,
      about two hundred declarations. */
   --text-muted: oklch(0.518 0.0165 261.3);
-  --text-faint: oklch(0.63 0.015 261.3);
+  /* Same treatment, and for the same reason the line above records: 0.63
+     measured 3.50 on --panel, 3.30 on --canvas and 3.20 on --elevated, all
+     under AA, on a token that is not decorative. It carries the StyleRef
+     provenance line, every ⌘K group header, the Inspector's fact ids and its
+     expected/found labels, the shell's tab counts, and every placeholder in
+     the product via placeholder:text-text-faint. It stays a step lighter than
+     --text-muted, which is the whole point of having two. */
+  --text-faint: oklch(0.5655 0.0158 261.3);
 
   /* The status colours are darkened rather than reused: the dark theme's greens
      and ambers were tuned against a near-black canvas and fail contrast on

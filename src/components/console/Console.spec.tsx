@@ -91,6 +91,13 @@ function proposal(over: Partial<ReplyProposal> = {}): ReplyProposal {
   };
 }
 
+/** What a sighted operator reads off an element — the sr-only half removed. */
+function visibleText(el: HTMLElement): string {
+  const clone = el.cloneNode(true) as HTMLElement;
+  clone.querySelectorAll(".sr-only").forEach((n) => n.remove());
+  return clone.textContent ?? "";
+}
+
 const queueProps = {
   recent: [],
   focusedId: null,
@@ -149,9 +156,23 @@ describe("an eBay Live show renders every column it renders today", () => {
         deliverable={layout.deliverable}
       />,
     );
-    const pills = screen.getByRole("list", { name: "Guardrail results" });
-    expect(pills.textContent).toBe("–price✓stock–policy–grounding–tone–pii");
+    // The visible half only. Each pill also carries an sr-only sentence now
+    // (CONTENT-38) — it announced "✕ price" and nothing else before, so the
+    // verdict and the reason were mouse-only on the one screen that matters.
+    expect(visibleText(screen.getByRole("list", { name: "Guardrail results" }))).toBe(
+      "–price✓stock–policy–grounding–tone–pii",
+    );
     expect(screen.getByText("Send")).toBeInTheDocument();
+  });
+
+  it("says the verdict and the reason out loud, not just the glyph", () => {
+    render(
+      <ProposalQueue {...queueProps} live={[proposal()]} guardOrder={guardOrderFor(caps)} />,
+    );
+    const pills = screen.getByRole("list", { name: "Guardrail results" });
+    const spoken = [...pills.querySelectorAll(".sr-only")].map((n) => n.textContent ?? "");
+    expect(spoken.join(" ")).toMatch(/stock passed/);
+    expect(spoken.join(" ")).toMatch(/price did not apply/);
   });
 
   /**
@@ -293,10 +314,13 @@ describe("the guard hover", () => {
     // The hover opens on focus — what an operator reaching for it with a
     // keyboard does. `focusIn` rather than `focus`, because that is the event
     // React's onFocus actually listens for.
-    fireEvent.focusIn(screen.getByText(GUARD_LABEL.community_rule));
-    expect(
-      screen.getByText(/the room's own rules are constraints on the reply/i),
-    ).toBeInTheDocument();
+    const pills = screen.getByRole("list", { name: "Guardrail results" });
+    const pill = [...pills.querySelectorAll('[aria-hidden="true"]')].find(
+      (n) => n.textContent === GUARD_LABEL.community_rule,
+    )!;
+    fireEvent.focusIn(pill);
+    const tip = screen.getByRole("tooltip");
+    expect(tip.textContent).toMatch(/the room's own rules are constraints on the reply/i);
   });
 });
 

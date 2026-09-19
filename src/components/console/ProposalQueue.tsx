@@ -17,7 +17,13 @@ import { cn } from "@/lib/utils";
 import { GUARD_LABEL, GUARD_MEANS, GUARD_ORDER, formatMs, timeAgo } from "@/lib/format";
 import type { Evidence, GuardName, GuardResult, ReplyProposal } from "@/lib/types";
 import { ConsoleButton, Dots, Hover, IntentBadge, Kbd, SectionHeader } from "./primitives";
-import { Badge, BadgeButton } from "@/components/ui/kit";
+import {
+  Badge,
+  BadgeButton,
+  GUARD_MARK,
+  GUARD_PILL_CLASS,
+  VERDICT_WORD,
+} from "@/components/ui/kit";
 
 const SOURCE_ICON: Record<Evidence["source"], typeof Tag> = {
   listing: Tag,
@@ -104,16 +110,11 @@ function GuardStrip({ guards, order }: { guards: GuardResult[]; order: GuardName
       {order.map((name) => {
         const g = guards.find((x) => x.guard === name);
         const verdict = g?.verdict ?? "n/a";
-        const tone =
-          verdict === "allow"
-            ? "border-ok/45 bg-ok/12 text-ok"
-            : verdict === "revise"
-              ? "border-warn/45 bg-warn/12 text-warn"
-              : verdict === "block"
-                ? "border-bad/50 bg-bad/12 text-bad"
-                : "border-hairline-strong bg-canvas text-text-muted";
-        const mark =
-          verdict === "allow" ? "✓" : verdict === "revise" ? "!" : verdict === "block" ? "✕" : "–";
+        // CONTENT-42: these were hand-rolled copies of `kit.tsx`'s pill with
+        // the pre-darkening colours, on the one element the stylesheet calls
+        // "the whole signal".
+        const tone = GUARD_PILL_CLASS[verdict];
+        const mark = GUARD_MARK[verdict];
         return (
           <Hover
             key={name}
@@ -150,12 +151,26 @@ function GuardStrip({ guards, order }: { guards: GuardResult[]; order: GuardName
               tabIndex={0}
               role="listitem"
               className={cn(
-                "inline-flex items-center gap-1 rounded-[4px] border px-1.5 py-0.5 text-[10px]",
+                "inline-flex items-center gap-1 rounded-[4px] px-1.5 py-0.5 text-[11px]",
                 tone,
               )}
             >
-              <span className="num">{mark}</span>
-              {GUARD_LABEL[name]}
+              <span className="num" aria-hidden>
+                {mark}
+              </span>
+              <span aria-hidden>{GUARD_LABEL[name]}</span>
+              {/* CONTENT-38. This announced "✕ price" and nothing else: the
+                  verdict, the reason and the expected/found detail were all
+                  inside a hover panel with no `aria-describedby` pointing at
+                  it. On the one screen the product exists for, a blocked
+                  reply could not be understood without a mouse. */}
+              <span className="sr-only">
+                {GUARD_LABEL[name]} {VERDICT_WORD[verdict]}.{" "}
+                {g?.reason ?? GUARD_MEANS[name]}
+                {g?.detail?.expected || g?.detail?.found
+                  ? ` Expected ${g.detail.expected ?? "—"}, found ${g.detail.found ?? "—"}.`
+                  : ""}
+              </span>
             </span>
           </Hover>
         );
@@ -620,6 +635,9 @@ export function ProposalQueue({
   const blockedCount = answerable.filter((p) => p.status === "blocked").length;
   const shown =
     filter === "blocked" ? answerable.filter((p) => p.status === "blocked") : answerable;
+  // The most recent proposal that has settled into a decidable state. It is
+  // what the live region announces — the event, not the count.
+  const newest = answerable.find((p) => p.status !== "drafting") ?? null;
 
   return (
     <section className="flex min-h-0 flex-1 flex-col bg-panel">
@@ -654,8 +672,21 @@ export function ProposalQueue({
       </SectionHeader>
 
       <div className="scroll-thin min-h-0 flex-1 overflow-y-auto p-3">
+        {/* CONTENT-39: this announced "{n} proposals awaiting a decision" and
+            nothing else — never that a reply had been drafted, never who
+            asked, never that one had been blocked. A count is the one fact a
+            screen-reader user could already get by reading the list. */}
         <div aria-live="polite" className="sr-only">
-          {live.length} proposals awaiting a decision
+          {newest
+            ? newest.status === "blocked"
+              ? `A reply to ${newest.message.author} was blocked: ${
+                  newest.guards.find((g) => g.verdict === "block")?.reason ??
+                  "it did not pass the checks a reply must pass"
+                }`
+              : newest.status === "needs_review"
+                ? `A reply to ${newest.message.author} needs review before it can be sent.`
+                : `A reply to ${newest.message.author} is ready. ${newest.draft}`
+            : ""}
         </div>
 
         {live.length === 0 ? (
