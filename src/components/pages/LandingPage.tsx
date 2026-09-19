@@ -558,10 +558,10 @@ export function LandingPage() {
               <H2>The same copilot, in four places that behave nothing alike.</H2>
             </div>
             <p className="text-[17px] leading-relaxed text-text-secondary lg:pb-1">
-              A live show is a session with a start and an end, a latency budget and a lot on
-              camera. A subreddit is a thread from Tuesday that still deserves a real answer. The
-              copilot changes shape between them — the console drops the meter, the lot rail becomes
-              the thread — and the guards, the citations and the approval do not change at all.
+              A live show runs at the speed of the block: a question is worth answering for about as
+              long as the lot is on it. A thread from Tuesday is still worth a real answer on
+              Friday, and the person who asked during last week's show and left is worth one too.
+              The copilot works at both speeds, out of the same ground truth, under the same guards.
             </p>
           </div>
           <div className="mt-14 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
@@ -683,12 +683,6 @@ export function LandingPage() {
 
           {/* 02 — during ------------------------------------------------------- */}
           <div className="mt-24 grid gap-12 lg:grid-cols-[520px_1fr] lg:items-start">
-            <Shot
-              src="/landing/console.jpg"
-              alt="The SideStage console attached to a live eBay Live watch auction: buyer chat on the left, drafted replies with guard verdicts in the middle, the pinned lot on the right"
-              caption="During: the room on the left, the drafts in the middle, what they are grounded in on the right."
-              className="lg:order-last"
-            />
             <div>
               <PhaseHead
                 n="02"
@@ -699,24 +693,26 @@ export function LandingPage() {
               <div className="mt-8 grid gap-8 sm:grid-cols-2">
                 {[
                   [
-                    "01 — perceive",
+                    "perceive",
                     "Buyer chat, the lot card re-read as the block moves, a frame off the camera, and your own voice with emotion and intent kept as distributions. Audio needs one human click in Chrome — nothing here starts listening on its own.",
                   ],
                   [
-                    "02 — ground",
+                    "ground",
                     "Exact lookup on a resolved lot, then keyword and trigram search across your policies, your comps and the questions you have already answered. Character trigrams, not embeddings, and the evals say what that costs. Nothing resolved and it abstains.",
                   ],
                   [
-                    "03 — check",
+                    "check",
                     "Six deterministic guards against state re-read at check time. Every guard runs even after one blocks, a guard that throws fails closed, and a revise verdict aggregates to a block — there is no quiet repair-and-send. Edit a draft and the whole chain runs again.",
                   ],
                   [
-                    "04 — propose",
+                    "propose",
                     "One keystroke clears a reply and writes it to the audit chain; you put it in the room. Listing changes are proposed with a preflight, committed two-phase against an idempotency ledger, and reversible for ninety seconds afterwards.",
                   ],
                 ].map(([k, b]) => (
                   <div key={k}>
-                    <p className="num text-[12px] font-medium text-bad">{k}</p>
+                    <p className="num text-[11px] font-medium tracking-[0.08em] text-bad uppercase">
+                      {k}
+                    </p>
                     <p className="mt-2 text-[15px] leading-relaxed text-text-secondary">{b}</p>
                   </div>
                 ))}
@@ -728,6 +724,12 @@ export function LandingPage() {
                 deadline to miss, and a copy button where the live console has send.
               </TempoNote>
             </div>
+            <Shot
+              src="/landing/console.jpg"
+              alt="The SideStage console attached to a live eBay Live watch auction: buyer chat on the left, drafted replies with guard verdicts in the middle, the pinned lot on the right"
+              caption="During: the room on the left, the drafts in the middle, what they are grounded in on the right."
+              className="lg:order-first"
+            />
           </div>
 
           {/* the same question, on both sides of the glass */}
@@ -822,7 +824,7 @@ export function LandingPage() {
           </div>
 
           <div className="mt-16 grid gap-10 lg:grid-cols-[1fr_520px] lg:items-center">
-            <div>
+            <div className="rounded-lg bg-panel p-7 shadow-[0_0_0_1px_var(--hairline)]">
               <p className="text-[20px] font-semibold">The show that made the inbox exist</p>
               <p className="mt-4 text-[16px] leading-relaxed text-text-secondary">
                 One real fragrance auction: 190 comments, 126 of them pure hype, and 60 answerable
@@ -948,7 +950,8 @@ export function LandingPage() {
         <H2>It starts as a copilot and earns every rung after that.</H2>
         <p className="mt-4 max-w-[640px] text-[16px] leading-relaxed text-text-secondary">
           Each level unlocks on evidence from your own finished shows — and an unknown never counts
-          as met.
+          as met. What a rung changes is how much may clear without you asking. It never changes who
+          carries the words into the room: that is you at L0, and it is still you at L4.
         </p>
         <div className="relative mt-12">
           <div className="absolute top-[13px] right-0 left-0 h-0.5 bg-hairline" aria-hidden />
@@ -963,7 +966,12 @@ export function LandingPage() {
                 "Pre-approved for a single keystroke, after three clean shows.",
                 false,
               ],
-              ["L3", "Auto-reply", "Allow-listed topics only. Never price, never discount.", false],
+              [
+                "L3",
+                "Auto-clear",
+                "Allow-listed topics clear themselves once every guard passes, ready for you to post. Never price, never discount.",
+                false,
+              ],
               [
                 "L4",
                 "Auto-act · locked",
