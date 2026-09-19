@@ -638,15 +638,17 @@ export function CorpusGrid({ catalogs }: { catalogs: CatalogSummary[] | null }) 
       ? `only the demo catalog so far — ${what}`
       : `nothing loaded — ${what}`;
 
-  const state: Record<CorpusKind, { has: boolean; line: string }> = {
+  const state: Record<CorpusKind, { has: boolean; line: string; demo?: boolean }> = {
     listing: {
       has: items > 0,
+      demo: demoOnly,
       line: items
         ? `${items} lots across ${own.length} catalog${own.length === 1 ? "" : "s"}`
         : nothingYet("import your listings on Settings › eBay, or prepare a session"),
     },
     policy: {
       has: policies > 0,
+      demo: demoOnly,
       line: policies
         ? `${policies} policies the copilot can cite verbatim`
         : nothingYet("a catalog carries your shipping, returns and authenticity wording"),
@@ -691,7 +693,7 @@ export function CorpusGrid({ catalogs }: { catalogs: CatalogSummary[] | null }) 
                   </td>
                   <td className="px-3 py-2.5 align-top">
                     <Badge tone={state[kind].has ? "ok" : "neutral"}>
-                      {state[kind].has ? "loaded" : "empty"}
+                      {state[kind].has ? "loaded" : state[kind].demo ? "demo only" : "empty"}
                     </Badge>
                     <div className="mt-1 max-w-[260px] text-[11.5px] leading-snug text-text-muted">
                       {state[kind].line}
