@@ -210,7 +210,12 @@ export function isDraftOnlyFamily(f: SurfaceFamily): boolean {
 
 export function FamilyCard({ f }: { f: SurfaceFamily }) {
   return (
-    <div className="flex h-full flex-col rounded-lg bg-panel p-6 shadow-[0_0_0_1px_var(--hairline),0_10px_28px_-22px_rgba(0,0,0,.35)]">
+    // Four cards side by side are one repeated object, so the rule above the
+    // limit has to land on the same line in each. Leads differ by a sentence,
+    // which floated it. At the four-across breakpoint every card borrows the
+    // strip's own row tracks (subgrid), so meta, title, chips, lead and limit
+    // share five baselines; narrower, the cards stack and it stops mattering.
+    <div className="flex h-full flex-col rounded-lg bg-panel p-6 shadow-[0_0_0_1px_var(--hairline),0_10px_28px_-22px_rgba(0,0,0,.35)] xl:grid xl:row-span-5 xl:grid-rows-subgrid">
       <div className="flex items-center gap-2">
         <span className="num text-[11px] tracking-[0.04em] text-text-muted uppercase">
           {tempoLabel(f.surfaces)}
@@ -219,7 +224,10 @@ export function FamilyCard({ f }: { f: SurfaceFamily }) {
         <span className="num text-[11px] text-text-muted">{f.delivery}</span>
       </div>
       <p className="mt-3 text-[20px] font-semibold">{f.title}</p>
-      <ul className="mt-3 flex flex-wrap gap-1.5" aria-label={`${f.title} surfaces`}>
+      <ul
+        className="mt-3 flex flex-wrap content-start items-start gap-1.5"
+        aria-label={`${f.title} surfaces`}
+      >
         {f.surfaces.map((id) => (
           <li
             key={id}
@@ -244,18 +252,25 @@ function Shot({
   alt,
   caption,
   className = "",
+  eager = false,
 }: {
   src: string;
   alt: string;
   caption?: React.ReactNode;
   className?: string;
+  /** The hero shot is the page's largest paint and sits above the fold —
+   *  deferring it leaves a grey rectangle in the first frame a visitor, a
+   *  thumbnail and a link preview all get. Every shot below the fold stays
+   *  lazy, which is what that attribute is actually for. */
+  eager?: boolean;
 }) {
   return (
     <figure className={className}>
       <img
         src={src}
         alt={alt}
-        loading="lazy"
+        loading={eager ? "eager" : "lazy"}
+        {...(eager ? { fetchPriority: "high" as const } : {})}
         decoding="async"
         className="block w-full rounded-lg bg-canvas shadow-[0_0_0_1px_var(--hairline),0_10px_28px_-14px_rgba(0,0,0,.35)]"
       />
@@ -510,6 +525,7 @@ export function LandingPage() {
           src="/landing/console.jpg"
           alt="The SideStage console attached to a live eBay Live watch auction: buyer chat on the left, drafted replies with guard verdicts in the middle, the pinned lot on the right"
           caption="The console on a real eBay Live show tonight — 558 watching, 19 replies drafted, 0 sent without you. A screenshot, not a mock."
+          eager
         />
       </section>
 
@@ -564,7 +580,7 @@ export function LandingPage() {
               The copilot works at both speeds, out of the same ground truth, under the same guards.
             </p>
           </div>
-          <div className="mt-14 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-14 grid gap-6 md:grid-cols-2 xl:grid-cols-4 xl:grid-rows-[auto_auto_auto_1fr_auto] xl:gap-y-0">
             {SURFACE_FAMILIES.map((f) => (
               <FamilyCard key={f.id} f={f} />
             ))}
