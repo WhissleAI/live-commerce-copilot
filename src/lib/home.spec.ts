@@ -460,13 +460,19 @@ describe("home against a server that has not shipped them", () => {
 
   it("builds BEHIND YOU from the sessions list, and admits it has no top gap", () => {
     const m = homeModel(legacy);
-    expect(m.behind.reports).toHaveLength(1);
-    expect(m.behind.reports[0]).toMatchObject({ showId: "s_old", answered: 39, blocked: 3 });
+    expect(m.behind.reports).toHaveLength(2);
+    expect(m.behind.reports[0]).toMatchObject({
+      showId: "s_old",
+      answered: 39,
+      blocked: 3,
+      hasReport: true,
+    });
     // The stored report holds the top gap; a list row does not, and inventing
     // a second answer here would put two of them in the product.
     expect(m.behind.reports[0]!.topGap).toBeNull();
-    // A session whose report never generated is not a report.
-    expect(m.behind.reports.map((r) => r.showId)).not.toContain("s_nolog");
+    // A session whose report never generated is still a row — it is the one an
+    // operator most wants to look at, and it simply has nothing to open.
+    expect(m.behind.reports[1]).toMatchObject({ showId: "s_nolog", hasReport: false });
   });
 
   it("scopes Discover to the one surface with a grid we can read", () => {

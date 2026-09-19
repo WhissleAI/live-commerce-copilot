@@ -338,22 +338,28 @@ function draftsFrom(drafts: SurfaceDraft[] | null): HomeDraftCount {
 }
 
 function reportsFrom(rows: ShowRow[] | null): HomeReport[] {
-  return (rows ?? [])
-    .filter((r) => r.status !== "live" && r.hasReport)
-    .slice(0, 6)
-    .map((r) => ({
-      showId: r.showId,
-      surface: (isSurfaceId(r.source) ? r.source : "ebaylive") as SurfaceId,
-      title: r.title,
-      // A row from the sessions list carries no end time. Its report's
-      // generation is the closest honest stand-in; never invent one.
-      endedAt: r.generatedAt ?? r.startedAt,
-      answered: r.answered ?? 0,
-      blocked: r.blocked ?? 0,
-      // The stored report holds the top gap. A list row does not, and
-      // computing a different one here would put two answers in the product.
-      topGap: null,
-    }));
+  return (
+    (rows ?? [])
+      // A session whose report never generated is still a row here. That is the
+      // one you most want to look at, and the sessions list this replaced said
+      // so — dropping it would lose the only place that fact is visible.
+      .filter((r) => r.status !== "live")
+      .slice(0, 6)
+      .map((r) => ({
+        showId: r.showId,
+        surface: (isSurfaceId(r.source) ? r.source : "ebaylive") as SurfaceId,
+        title: r.title,
+        // A row from the sessions list carries no end time. Its report's
+        // generation is the closest honest stand-in; never invent one.
+        endedAt: r.generatedAt ?? r.startedAt,
+        answered: r.answered ?? 0,
+        blocked: r.blocked ?? 0,
+        // The stored report holds the top gap. A list row does not, and
+        // computing a different one here would put two answers in the product.
+        topGap: null,
+        hasReport: r.hasReport,
+      }))
+  );
 }
 
 export interface HomeSources {

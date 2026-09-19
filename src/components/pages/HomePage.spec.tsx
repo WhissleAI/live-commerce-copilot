@@ -322,3 +322,17 @@ describe("one surface row", () => {
     expect(toggled).toHaveLength(1);
   });
 });
+
+describe("a session whose report never generated", () => {
+  // The old sessions list drew this as its own badge and said, in so many
+  // words, that it is the row you most want to look at. Dropping those rows
+  // from BEHIND YOU would have been the quietest possible regression.
+  it("is still a row, with nothing to open and the reason said", async () => {
+    await renderWithRouter(
+      <BehindBand reports={[{ ...report, hasReport: false }]} followups={{ total: 0, ready: 0 }} />,
+    );
+    expect(screen.getByText("Friday drop")).toBeInTheDocument();
+    expect(screen.getByText("no report")).toBeInTheDocument();
+    expect(screen.queryByText("Report")).not.toBeInTheDocument();
+  });
+});

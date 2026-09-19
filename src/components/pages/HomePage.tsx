@@ -519,9 +519,18 @@ export function BehindBand({
                 {r.answered} answered
                 {r.blocked ? ` · ${r.blocked} blocked` : ""}
               </span>
-              <Link to="/reports/$showId" params={{ showId: r.showId }}>
-                <Button size="sm">Report</Button>
-              </Link>
+              {r.hasReport === false ? (
+                // The session ended and its report never generated. That is the
+                // one an operator most wants to look at, so it is still a row —
+                // it just has nothing to open yet.
+                <Badge tone="warn" title="The session ended but its report never generated">
+                  no report
+                </Badge>
+              ) : (
+                <Link to="/reports/$showId" params={{ showId: r.showId }}>
+                  <Button size="sm">Report</Button>
+                </Link>
+              )}
             </Card>
           ))
         )}

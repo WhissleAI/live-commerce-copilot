@@ -1367,6 +1367,15 @@ export interface HomeReport {
   blocked: number;
   /** The highest-count unanswered question the stored report already holds. */
   topGap: string | null;
+  /**
+   * False for a session that ended without its report generating.
+   *
+   * Absent means true: everything in `behind.reports` is a report by
+   * definition. The derived path sets it, because a session whose report
+   * failed is the one an operator most wants to look at and the old sessions
+   * list said so — dropping those rows would quietly lose that.
+   */
+  hasReport?: boolean;
 }
 
 export interface HomeBehind {
