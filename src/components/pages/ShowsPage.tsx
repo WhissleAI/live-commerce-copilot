@@ -25,9 +25,10 @@ import {
   Tv,
   UserPlus,
 } from "lucide-react";
-import { api } from "@/lib/api";
+import { api, surfaceUnavailable } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import type { DiscoveredShow, ShowRow, ShowSummary } from "@/lib/types";
+import { recognise, surfaceLabel } from "@/lib/surfaces";
+import type { DiscoveredShow, ShowRow, ShowSummary, SurfaceInfo } from "@/lib/types";
 import { AppShell, type Tab } from "@/components/app/AppShell";
 import {
   Badge,
@@ -55,6 +56,15 @@ export function ShowsPage({ view = "live" }: { view?: View }) {
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<ShowRow | null>(null);
+  // Which surfaces this build can actually open. Read once: it changes when the
+  // server is redeployed, not while someone is typing into the box.
+  const [surfaces, setSurfaces] = useState<SurfaceInfo[] | null>(null);
+  useEffect(() => {
+    void api
+      .surfaces()
+      .then(setSurfaces)
+      .catch(() => setSurfaces(null));
+  }, []);
 
   const load = useCallback(async () => {
     const [r, w] = await Promise.all([
@@ -76,11 +86,20 @@ export function ShowsPage({ view = "live" }: { view?: View }) {
   const live = useMemo(() => rows?.filter((r) => r.status === "live") ?? [], [rows]);
   const past = useMemo(() => rows?.filter((r) => r.status !== "live") ?? [], [rows]);
 
-  const eventId = useMemo(() => {
-    const t = url.trim();
-    if (/^[A-Za-z0-9]{16}$/.test(t)) return t;
-    return t.match(/\/ebaylive\/events\/([A-Za-z0-9]{10,})/)?.[1] ?? null;
-  }, [url]);
+  /**
+   * What did they just paste?
+   *
+   * Answered before anything is sent, and shown, because the surface decides
+   * everything that happens next — whether there is a catalog, whether a reply
+   * can be delivered at all, whether this becomes a console or a draft. An
+   * operator who finds that out after committing has already committed.
+   */
+  const target = useMemo(() => recognise(url), [url]);
+  const eventId = target?.surface === "ebaylive" ? target.externalId : null;
+  // Recognised is not the same as openable. Saying so here costs a line and
+  // saves a 409 that would arrive after the operator had already committed.
+  const targetInfo = target ? (surfaces?.find((s) => s.id === target.surface) ?? null) : null;
+  const canOpen = !targetInfo || targetInfo.attachable !== false;
 
   const start = useCallback(
     async (paste?: string) => {
@@ -93,24 +112,52 @@ export function ShowsPage({ view = "live" }: { view?: View }) {
         try {
           res = await api.startSession({ url: value });
         } catch (e) {
+          // A surface we know and cannot reach. The response names the variable
+          // that would fix it, and that name is the entire value of the answer —
+          // "failed to open twitch" sends the operator to the logs for something
+          // the server already told us.
+          const unavailable = surfaceUnavailable(e);
+          if (unavailable) {
+            setError(
+              unavailable.missing
+                ? `${surfaceLabel(unavailable.surface ?? target?.surface ?? null)} is not connected — ${unavailable.missing} is not set on the server. The adapter is there; the key is not.`
+                : unavailable.message,
+            );
+            setStarting(false);
+            return;
+          }
           // A show that was never prepared has no catalog and no agent. Prepare
           // it here (about a minute: the seller's listings are read into a
           // catalog and a knowledge base) and attach once that lands.
           if (!/prepare the agent/i.test((e as Error).message)) throw e;
-          const eventId = value.match(/\/ebaylive\/events\/([A-Za-z0-9]{10,})/)?.[1] ?? (/^[A-Za-z0-9]{16}$/.test(value) ? value : null);
+          const eventId =
+            value.match(/\/ebaylive\/events\/([A-Za-z0-9]{10,})/)?.[1] ??
+            (/^[A-Za-z0-9]{16}$/.test(value) ? value : null);
           if (!eventId) throw e;
           setError("Preparing this show's agent and catalog first — about a minute…");
-          await api.prepareShow({ eventId, title: `eBay Live ${eventId}`, host: "", sellerHandle: null, tags: [], thumbnailUrl: null });
+          await api.prepareShow({
+            eventId,
+            title: `eBay Live ${eventId}`,
+            host: "",
+            sellerHandle: null,
+            tags: [],
+            thumbnailUrl: null,
+          });
           setError(null);
           res = await api.startSession({ url: value });
         }
         await navigate({ to: "/setup", search: { showId: res.showId } });
       } catch (e) {
-        setError((e as Error).message);
+        const unavailable = surfaceUnavailable(e);
+        setError(
+          unavailable?.missing
+            ? `${surfaceLabel(unavailable.surface ?? target?.surface ?? null)} is not connected — ${unavailable.missing} is not set on the server. The adapter is there; the key is not.`
+            : (e as Error).message,
+        );
         setStarting(false);
       }
     },
-    [navigate, starting, url],
+    [navigate, starting, url, target],
   );
 
   // Two views, not four. Live, Past and Following were three cuts of the one
@@ -141,8 +188,8 @@ export function ShowsPage({ view = "live" }: { view?: View }) {
           <YourShowCard />
 
           {/* attach ------------------------------------------------------- */}
-          <SectionHeading hint="Paste the stream. The copilot builds the lineup from the show itself — every lot the host puts on screen becomes inventory it can answer from, versioned as the auction moves.">
-            Monitor a live show
+          <SectionHeading hint="A show, a channel, or a thread. The copilot works out which surface it is, and what it can do there follows from that — a live show gives it a lineup to answer from, a subreddit gives it the room's rules and a reply you send yourself.">
+            Monitor a conversation
           </SectionHeading>
 
           <div className="mt-3 flex items-start gap-2.5">
@@ -155,23 +202,38 @@ export function ShowsPage({ view = "live" }: { view?: View }) {
                   if (e.key === "Enter") void start();
                 }}
                 spellCheck={false}
-                aria-label="eBay Live show URL"
-                placeholder="https://www.ebay.com/ebaylive/events/…/stream"
+                aria-label="A show, a channel, or a thread"
+                placeholder="a show, a channel, or a thread"
                 className="num w-full rounded-sm bg-panel px-3 py-2.5 text-[13px] z1 placeholder:text-text-faint focus:outline-none focus:ring-[1.5px] focus:ring-accent"
               />
-              <div className="num mt-1.5 h-4 text-[11px] text-text-muted">
-                {url.trim()
-                  ? eventId
-                    ? `event ${eventId} — a new agent is created for this stream`
-                    : "that does not look like an eBay Live show URL"
-                  : ""}
+              {/* Recognised BEFORE they commit. The surface is named in words,
+                  because "event 47tK1SX0VsiHEXN1" told an operator nothing about
+                  which of eight places they were about to attach to. */}
+              <div className="mt-1.5 h-4 text-[11px] text-text-muted">
+                {url.trim() ? (
+                  target ? (
+                    <>
+                      <span className="text-text-secondary">{surfaceLabel(target.surface)}</span>
+                      <span className="num"> · {target.detail}</span>
+                      {!canOpen
+                        ? " — this build has no adapter wired for it yet"
+                        : target.surface === "ebaylive"
+                          ? " — a new agent is created for this stream"
+                          : ""}
+                    </>
+                  ) : (
+                    "we do not recognise that — paste a show link, a channel, or a thread"
+                  )
+                ) : (
+                  ""
+                )}
               </div>
             </div>
             <Button
               size="md"
               variant="primary"
               onClick={() => void start()}
-              disabled={!eventId || starting}
+              disabled={!target || !canOpen || starting}
             >
               {starting ? (
                 <Loader2 className="size-3.5 animate-spin" aria-hidden />

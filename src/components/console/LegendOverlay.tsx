@@ -15,7 +15,26 @@
 import { useEffect } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Badge, Button, Key } from "@/components/ui/kit";
+import { Badge, Button, GuardPill, Key } from "@/components/ui/kit";
+import { GUARD_MEANS, GUARD_ORDER } from "@/lib/format";
+import type { GuardName } from "@/lib/types";
+
+/**
+ * The two guards that do not run everywhere.
+ *
+ * They are listed with the other six rather than in a section of their own —
+ * they are the same kind of thing and they leave the same kind of pill — but a
+ * pill an operator has never seen on their console needs to say why, or its
+ * absence reads as something missing rather than as something that did not
+ * apply.
+ */
+const SURFACE_GUARDS: { guard: GuardName; only: string }[] = [
+  {
+    guard: "community_rule",
+    only: "only where the room has rules of its own — a subreddit, a channel",
+  },
+  { guard: "sponsor", only: "only where a sponsored segment has approved copy to check against" },
+];
 
 const SEEN_KEY = "sidestage.legend.v1";
 
@@ -103,8 +122,9 @@ export function LegendOverlay({ open, onClose }: { open: boolean; onClose: () =>
         <div className="flex flex-col gap-4 p-4">
           <section>
             <p className="text-[12.5px] leading-relaxed text-text-secondary">
-              Six guards run on every drafted reply, in order, and each leaves a pill. The pills are
-              the reply&apos;s receipt: they say what was checked, not what the model thought.
+              Six guards run on every drafted reply, in order, and each leaves a pill — plus two
+              more on surfaces that have them. The pills are the reply&apos;s receipt: they say what
+              was checked, not what the model thought.
             </p>
             <ul className="mt-2.5 flex flex-col gap-1.5">
               {GUARDS.map((g) => (
@@ -119,6 +139,36 @@ export function LegendOverlay({ open, onClose }: { open: boolean; onClose: () =>
                   </span>
                   <span className="w-[88px] shrink-0 text-[12px] font-medium">{g.name}</span>
                   <span className="min-w-0 flex-1 text-[12px] text-text-secondary">{g.means}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          {/* What each guard is FOR. The marks above say how to read a pill;
+              this says what the pill is about — and it is the only place the
+              two surface-specific guards can be met before they appear. */}
+          <section>
+            <div className="section-header">what each one checks</div>
+            <ul className="mt-1.5 flex flex-col gap-1.5">
+              {GUARD_ORDER.map((g) => (
+                <li key={g} className="flex items-start gap-2.5">
+                  <span className="w-[92px] shrink-0">
+                    <GuardPill guard={g} verdict="allow" />
+                  </span>
+                  <span className="min-w-0 flex-1 text-[12px] leading-snug text-text-secondary">
+                    {GUARD_MEANS[g]}
+                  </span>
+                </li>
+              ))}
+              {SURFACE_GUARDS.map(({ guard, only }) => (
+                <li key={guard} className="flex items-start gap-2.5">
+                  <span className="w-[92px] shrink-0">
+                    <GuardPill guard={guard} verdict="allow" />
+                  </span>
+                  <span className="min-w-0 flex-1 text-[12px] leading-snug text-text-secondary">
+                    {GUARD_MEANS[guard]}
+                    <span className="block text-[11px] text-text-muted">{only}</span>
+                  </span>
                 </li>
               ))}
             </ul>

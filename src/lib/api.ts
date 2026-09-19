@@ -4,7 +4,16 @@
  * real endpoints with no component changes.
  */
 import { getMockDriver } from "./mockStream";
+import { withRemote } from "./surfaces";
 import type {
+  LearnReport,
+  Persona,
+  PersonaView,
+  SurfaceDraft,
+  SurfaceId,
+  SurfaceInfo,
+  SurfaceRoom,
+  VoiceCorpusDoc,
   Account,
   Analytics,
   BillingSnapshot,
@@ -161,12 +170,14 @@ export async function logout(): Promise<void> {
  * rendered inside the dialog, in front of the operator. The server answers with
  * `{ error }` on every path; read it.
  */
-async function failure(res: Response, path: string): Promise<Error> {
+async function failure(res: Response, path: string): Promise<ApiError> {
   const text = await res.text().catch(() => "");
   let message = text.trim();
   const status = res.status;
+  let body: Record<string, unknown> | null = null;
   try {
     const parsed = JSON.parse(text) as { error?: unknown; message?: unknown };
+    body = parsed as Record<string, unknown>;
     const said = parsed.error ?? parsed.message;
     if (typeof said === "string" && said.trim()) message = said.trim();
   } catch {
@@ -175,9 +186,43 @@ async function failure(res: Response, path: string): Promise<Error> {
   // A status with no body is still more useful than an empty string.
   const err = new Error(
     message ? message.slice(0, 400) : `${path} failed: ${res.status}`,
-  ) as Error & { status?: number };
+  ) as ApiError;
   err.status = status;
+  // The whole payload, not just its first sentence. A refusal that names the
+  // environment variable it needs is useless if the client keeps only the
+  // sentence and throws the name away — which is what "failed to open twitch"
+  // used to be on the other side of this boundary.
+  err.body = body;
+  const code = body?.["code"];
+  if (typeof code === "string") err.code = code;
   return err;
+}
+
+export interface ApiError extends Error {
+  status?: number;
+  code?: string;
+  body?: Record<string, unknown> | null;
+}
+
+/**
+ * Was that a surface we know about but cannot reach?
+ *
+ * The backend answers a missing key with a 409 naming the variable. The whole
+ * value of that is the NAME, so it is read out here once rather than parsed at
+ * three call sites — and a 409 that is not this shape reads as null, so nothing
+ * claims to know which key is missing when the server never said.
+ */
+export function surfaceUnavailable(
+  e: unknown,
+): { surface: string | null; missing: string | null; message: string } | null {
+  const err = e as ApiError | undefined;
+  if (!err || err.status !== 409) return null;
+  const body = err.body ?? {};
+  const named = err.code === "surface-unavailable" || typeof body["missing"] === "string";
+  if (!named) return null;
+  const surface = typeof body["surface"] === "string" ? body["surface"] : null;
+  const missing = typeof body["missing"] === "string" ? body["missing"] : null;
+  return { surface, missing, message: err.message };
 }
 
 async function post<T>(path: string, body?: unknown): Promise<T> {
@@ -324,6 +369,75 @@ export function subscribeStream(
     if (timer) clearTimeout(timer);
     source?.close();
   };
+}
+
+/**
+ * A list, whichever way the server chose to wrap it.
+ *
+ * Half this API answers with a bare array and half with `{ rooms: [...] }`, and
+ * the surface endpoints are being written in parallel with this file. Guessing
+ * wrong should cost an empty list, not a `.map of undefined` inside a render.
+ */
+function asArray<T>(raw: unknown, key: string): T[] {
+  if (Array.isArray(raw)) return raw as T[];
+  const inner = (raw as Record<string, unknown> | null)?.[key];
+  return Array.isArray(inner) ? (inner as T[]) : [];
+}
+
+const asRooms = (raw: unknown): SurfaceRoom[] => asArray<SurfaceRoom>(raw, "rooms");
+
+/**
+ * A follow-up, as the inbox stores it.
+ *
+ * Thinner than a room draft by design rather than by omission: a follow-up the
+ * guards blocked is never written at all, so there is no verdict to carry and
+ * no evidence to explain. What survives is a reply that already cleared the
+ * chain and the person it is owed to.
+ */
+interface FollowUpRow {
+  id: string;
+  showId: string;
+  buyer: string;
+  question: string;
+  draft: string;
+  status: "draft" | "sent" | "dismissed";
+  createdAt: string;
+  sentAt: string | null;
+}
+
+function fromFollowUp(f: FollowUpRow): SurfaceDraft {
+  return {
+    id: f.id,
+    surface: "dm",
+    room: f.showId,
+    question: { author: f.buyer, text: f.question, at: f.createdAt },
+    draft: f.draft,
+    createdAt: f.createdAt,
+    sentAt: f.sentAt,
+    status: f.status === "draft" ? "open" : f.status,
+  };
+}
+
+const EMPTY_PERSONA_VIEW: PersonaView = { persona: null, voice: { total: 0, docs: [] } };
+
+/** The persona and its corpus, however the payload was shaped. A persona sent
+ *  bare rather than in an envelope still reads, and a missing corpus reads as
+ *  an empty one rather than as a crash inside a render. */
+function asPersonaView(raw: unknown): PersonaView {
+  if (!raw || typeof raw !== "object") return EMPTY_PERSONA_VIEW;
+  const o = raw as {
+    persona?: unknown;
+    voice?: { total?: number; docs?: unknown };
+    name?: unknown;
+  };
+  const persona =
+    o.persona && typeof o.persona === "object"
+      ? (o.persona as Persona)
+      : typeof o.name === "string"
+        ? (raw as Persona)
+        : null;
+  const docs = Array.isArray(o.voice?.docs) ? (o.voice.docs as VoiceCorpusDoc[]) : [];
+  return { persona, voice: { total: o.voice?.total ?? docs.length, docs } };
 }
 
 export const api = {
@@ -603,6 +717,154 @@ export const api = {
           error: null,
         })
       : get(`/api/budget${showId ? `?showId=${encodeURIComponent(showId)}` : ""}`),
+
+  // ── surfaces ──────────────────────────────────────────────────────────────
+
+  /**
+   * Every surface this build knows how to watch, and whether it can right now.
+   *
+   * Answers in either shape the backend might send — a bare array, or an
+   * envelope — and folds whatever comes back over the built-in table, so the
+   * console has a complete answer the moment it renders and a better one when
+   * this lands. A failure is not an error here: it is "the server has not
+   * shipped this yet", and the table is the answer.
+   */
+  surfaces: async (): Promise<SurfaceInfo[]> => {
+    if (USE_MOCKS) return withRemote(null);
+    const raw = await get<unknown>("/api/surfaces").catch(() => null);
+    const rows = Array.isArray(raw)
+      ? raw
+      : Array.isArray((raw as { surfaces?: unknown } | null)?.surfaces)
+        ? ((raw as { surfaces: unknown[] }).surfaces as SurfaceInfo[])
+        : null;
+    return withRemote(rows as SurfaceInfo[] | null);
+  },
+
+  /** The rooms watched on one surface — a subreddit, a channel — and whether a
+   *  human has turned posting on for each. */
+  rooms: (surface: SurfaceId): Promise<SurfaceRoom[]> =>
+    USE_MOCKS
+      ? Promise.resolve([])
+      : get<unknown>(`/api/surfaces/${encodeURIComponent(surface)}/rooms`).then(asRooms),
+
+  addRoom: (
+    surface: SurfaceId,
+    room: string,
+    patch: { posting?: boolean } = {},
+  ): Promise<SurfaceRoom[]> =>
+    post<unknown>(`/api/surfaces/${encodeURIComponent(surface)}/rooms`, { room, ...patch }).then(
+      asRooms,
+    ),
+
+  /** Turning posting on is a decision a human makes, one room at a time. */
+  setRoomPosting: (surface: SurfaceId, room: string, posting: boolean): Promise<SurfaceRoom[]> =>
+    post<unknown>(`/api/surfaces/${encodeURIComponent(surface)}/rooms`, { room, posting }).then(
+      asRooms,
+    ),
+
+  removeRoom: (surface: SurfaceId, room: string): Promise<SurfaceRoom[]> =>
+    del<unknown>(
+      `/api/surfaces/${encodeURIComponent(surface)}/rooms?room=${encodeURIComponent(room)}`,
+    ).then(asRooms),
+
+  // ── drafts ────────────────────────────────────────────────────────────────
+
+  /**
+   * Every reply written for a surface we will not post to.
+   *
+   * Two sources, one list. The follow-up inbox is the `dm` surface and has
+   * shipped; `/api/drafts` is where a room-based surface's drafts land and may
+   * not have. Neither failing is an error — a destination whose whole point is
+   * "these are yours to send" should show what it has, not a stack trace for
+   * what it has not.
+   */
+  drafts: async (surface?: SurfaceId): Promise<SurfaceDraft[]> => {
+    if (USE_MOCKS) return [];
+    const [roomDrafts, followups] = await Promise.all([
+      surface === "dm"
+        ? Promise.resolve([])
+        : get<unknown>(`/api/drafts${surface ? `?surface=${encodeURIComponent(surface)}` : ""}`)
+            .then((r) => asArray<SurfaceDraft>(r, "drafts"))
+            .catch(() => [] as SurfaceDraft[]),
+      surface && surface !== "dm"
+        ? Promise.resolve([])
+        : get<unknown>("/api/followups")
+            .then((r) => asArray<FollowUpRow>(r, "followups").map(fromFollowUp))
+            .catch(() => [] as SurfaceDraft[]),
+    ]);
+    return [...roomDrafts, ...followups].sort(
+      (a, b) => +new Date(b.createdAt) - +new Date(a.createdAt),
+    );
+  },
+
+  /**
+   * The operator pasted it in themselves. Recorded, never inferred — we cannot
+   * see the subreddit, so the person who sent it is the only honest source.
+   */
+  markDraftSent: (id: string, surface: SurfaceId): Promise<unknown> =>
+    surface === "dm"
+      ? post(`/api/followups/${encodeURIComponent(id)}/sent`)
+      : post(`/api/drafts/${encodeURIComponent(id)}/sent`),
+
+  dismissDraft: (id: string, surface: SurfaceId): Promise<unknown> =>
+    surface === "dm"
+      ? post(`/api/followups/${encodeURIComponent(id)}/dismiss`)
+      : post(`/api/drafts/${encodeURIComponent(id)}/dismiss`),
+
+  // ── persona ───────────────────────────────────────────────────────────────
+
+  /**
+   * Who the copilot is speaking as, and the corpus of the operator's own words.
+   *
+   * The two travel together and are not the same kind of thing: the persona is
+   * edited, the corpus is learned. A 404 is "you have not written one", which
+   * is an empty state and not a failure.
+   */
+  persona: (): Promise<PersonaView> =>
+    USE_MOCKS
+      ? Promise.resolve(EMPTY_PERSONA_VIEW)
+      : get<unknown>("/api/persona")
+          .then(asPersonaView)
+          .catch((e: ApiError) => {
+            if (e.status === 404) return EMPTY_PERSONA_VIEW;
+            throw e;
+          }),
+
+  /**
+   * A PARTIAL update. The server merges what it is given, so a PUT that omits
+   * `boundaries` leaves them alone rather than clearing them — which means the
+   * caller must send only what changed, and never the whole object "to be
+   * safe". Sending the whole object is how a second tab's edit gets reverted by
+   * a first tab that was open before it.
+   */
+  savePersona: (p: Partial<Persona>): Promise<PersonaView> =>
+    put<unknown>("/api/persona", p).then(asPersonaView),
+
+  /**
+   * Read the operator's own past sends into the voice corpus.
+   *
+   * Answers with how many were indexed and which shows they came from. The
+   * count has been spelled two ways across the two sides of this boundary, so
+   * both are read and neither is assumed.
+   */
+  learnPersona: async (): Promise<LearnReport & PersonaView> => {
+    const raw = await post<unknown>("/api/persona/learn");
+    const r = (raw ?? {}) as Partial<LearnReport> & { learned?: number };
+    const shows = Array.isArray(r.shows)
+      ? r.shows.filter(
+          (s): s is LearnReport["shows"][number] => Boolean(s) && typeof s === "object",
+        )
+      : [];
+    return {
+      total: r.total ?? 0,
+      // `learned` was this count's name in the contract and `indexed` is its
+      // name in the server. Read both; assume neither.
+      indexed: r.indexed ?? r.learned ?? 0,
+      shows,
+      pasted: r.pasted ?? 0,
+      ...asPersonaView(raw),
+    };
+  },
 
   /** Sellers you follow. Same grid, same best-effort — the response says when
    *  it was last read so the console never implies a check it did not make. */

@@ -85,6 +85,13 @@ export const INTENT_HUE: Record<ChatIntent, string | null> = {
   other: null,
 };
 
+/**
+ * The six guards every reply passes, in order.
+ *
+ * Still six, deliberately. The two surface-specific guards are appended by
+ * `guardOrderFor` only on a surface that has them — see `lib/surfaces.ts` — so
+ * a live-commerce card carries exactly the six pills it has always carried.
+ */
 export const GUARD_ORDER: GuardName[] = [
   "price",
   "availability",
@@ -101,4 +108,29 @@ export const GUARD_LABEL: Record<GuardName, string> = {
   claim_grounding: "grounding",
   tone: "tone",
   pii: "pii",
+  // A room's rules are not the seller's policy and the two must not read as one
+  // word: "policy" is what the operator promises, "room rules" is what the
+  // place they are speaking in demands.
+  community_rule: "room rules",
+  sponsor: "sponsor",
+};
+
+/**
+ * What each guard is actually checking, in one line.
+ *
+ * Written in the register the console already speaks in: a statement of what
+ * was checked, never a claim about what the model thought.
+ */
+export const GUARD_MEANS: Record<GuardName, string> = {
+  price:
+    "every figure in the reply matches the listing it came from, at the version it was read at",
+  availability: "the reply does not offer something that is sold out or was never in the lineup",
+  policy: "nothing in it contradicts the seller's own shipping, returns and refund rules",
+  claim_grounding: "every claim of fact cites a retrieved fact — an uncited one is not sent",
+  tone: "it sounds like the seller, within the never-say list and the length they set",
+  pii: "no buyer's address, order number or contact detail is repeated back in public",
+  community_rule:
+    "the room's own rules are constraints on the reply, never facts to answer from — a violated one blocks and names the rule",
+  sponsor:
+    "a claim about a sponsored product stands on the sponsor's approved copy, or it is not made",
 };

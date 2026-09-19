@@ -23,11 +23,14 @@ import {
   BarChart3,
   CornerDownLeft,
   FileText,
+  Hash,
   MonitorPlay,
   PackageSearch,
   Radio,
   Search,
   SlidersHorizontal,
+  Speech,
+  SquarePen,
   Tv,
   Wallet,
   type LucideIcon,
@@ -51,10 +54,13 @@ export interface Command {
 const NAV: { id: string; label: string; to: string; icon: LucideIcon; keys: string }[] = [
   { id: "go_shows", label: "Home", to: "/", icon: Tv, keys: "⌘1" },
   { id: "go_console", label: "Console", to: "/console", icon: MonitorPlay, keys: "⌘2" },
-  { id: "go_catalog", label: "Catalog", to: "/catalog", icon: PackageSearch, keys: "⌘3" },
-  { id: "go_analytics", label: "Analytics", to: "/analytics", icon: BarChart3, keys: "⌘4" },
-  { id: "go_cost", label: "Cost", to: "/cost", icon: Wallet, keys: "⌘5" },
-  { id: "go_settings", label: "Settings", to: "/settings", icon: SlidersHorizontal, keys: "⌘6" },
+  { id: "go_drafts", label: "Drafts", to: "/drafts", icon: SquarePen, keys: "⌘3" },
+  { id: "go_catalog", label: "Catalog", to: "/catalog", icon: PackageSearch, keys: "⌘4" },
+  { id: "go_rooms", label: "Rooms", to: "/rooms", icon: Hash, keys: "⌘5" },
+  { id: "go_persona", label: "Persona", to: "/persona", icon: Speech, keys: "⌘6" },
+  { id: "go_analytics", label: "Analytics", to: "/analytics", icon: BarChart3, keys: "⌘7" },
+  { id: "go_cost", label: "Cost", to: "/cost", icon: Wallet, keys: "⌘8" },
+  { id: "go_settings", label: "Settings", to: "/settings", icon: SlidersHorizontal, keys: "⌘9" },
 ];
 
 /** Subsequence match — "anlt" finds "Analytics", which is how people type here. */

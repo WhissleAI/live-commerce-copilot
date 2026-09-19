@@ -356,7 +356,17 @@ export class MockDriver {
       autoSent: 4,
       dismissed: 5,
       blocked: 3,
-      guardBlocks: { price: 2, availability: 0, policy: 1, claim_grounding: 0, tone: 0, pii: 0 },
+      guardBlocks: {
+        price: 2,
+        availability: 0,
+        policy: 1,
+        claim_grounding: 0,
+        tone: 0,
+        pii: 0,
+        // The scripted show is live commerce, where neither of these runs.
+        community_rule: 0,
+        sponsor: 0,
+      },
       latency: { p50: 520, p95: 840, p99: 1610, budgetMs: 2000, breaches: 2 },
       cacheHitRate: 0.41,
       answeredRate: 0.78,
