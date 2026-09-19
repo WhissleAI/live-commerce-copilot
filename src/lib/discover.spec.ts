@@ -2,6 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   DISCOVER_SURFACES,
   actionLabel,
+  isWatched,
+  mergeRooms,
+  roomKey,
+  roomSurfacesIn,
   ebayReasonLine,
   foldSources,
   hitFromShow,
@@ -15,7 +19,7 @@ import {
   readableSurfaces,
   sourceFor,
 } from "./discover";
-import type { DiscoverHit, HomeView } from "./types";
+import type { DiscoverHit, HomeView, SurfaceRoom } from "./types";
 
 const home = (over: Partial<HomeView> = {}): HomeView => ({
   live: [],
@@ -33,13 +37,8 @@ describe("the surfaces Discover asks", () => {
   // The whole bug, in one assertion. Twitch and Reddit both have first-class
   // public APIs — an app token lists Helix streams with no user sign-in — and
   // they were absent from discovery because nobody had looked.
-  it("asks every surface an operator could discover on, not just eBay Live", () => {
-    expect(DISCOVER_SURFACES).toContain("ebaylive");
-    expect(DISCOVER_SURFACES).toContain("twitch");
-    expect(DISCOVER_SURFACES).toContain("reddit");
-    expect(DISCOVER_SURFACES).toContain("whatnot");
-    expect(DISCOVER_SURFACES).toContain("tiktoklive");
-    expect(DISCOVER_SURFACES).toContain("youtubelive");
+  it("asks every registered adapter an operator could discover on, not just eBay Live", () => {
+    expect(DISCOVER_SURFACES).toEqual(["ebaylive", "twitch", "reddit", "whatnot", "tiktoklive"]);
   });
 
   // Not the same omission: an inbox and a scripted rehearsal are not places
@@ -47,6 +46,13 @@ describe("the surfaces Discover asks", () => {
   it("leaves out the two that are not places to find anything", () => {
     expect(DISCOVER_SURFACES).not.toContain("dm");
     expect(DISCOVER_SURFACES).not.toContain("simulated");
+  });
+
+  // A capability row is not an adapter. `youtubelive` has one and no adapter
+  // directory and no registration, which is why Home's surface table draws
+  // six rows; a chip for it would promise a surface nothing can reach.
+  it("leaves out the capability row that has no adapter behind it", () => {
+    expect(DISCOVER_SURFACES).not.toContain("youtubelive");
   });
 });
 
@@ -325,5 +331,67 @@ describe("counting", () => {
 
   it("lists each matched term once, in the order it first appeared", () => {
     expect(matchedTerms(hitsFor(sources, "twitch"))).toEqual(["Omega", "GMK"]);
+  });
+});
+
+// ── the standing watch ──────────────────────────────────────────────────────
+
+describe("whether a room is already watched", () => {
+  const room = (over: Partial<SurfaceRoom> = {}): SurfaceRoom => ({
+    surface: "reddit",
+    room: "r/mechmarket",
+    posting: false,
+    disclosure: null,
+    addedAt: "2026-09-18T00:00:00.000Z",
+    ...over,
+  });
+  const hit = { surface: "reddit" as const, id: "mechmarket" };
+
+  // `r/mechmarket` and `mechmarket` are one subreddit. Comparing them raw is
+  // how the same room gets added twice.
+  it("reads the room and the hit id as the same room", () => {
+    expect(roomKey("r/MechMarket")).toBe(roomKey("mechmarket"));
+    expect(isWatched([room()], hit)).toBe(true);
+  });
+
+  it("does not match a room of the same name on another surface", () => {
+    expect(isWatched([room({ surface: "twitch" })], hit)).toBe(false);
+  });
+
+  // Absent reads as watched — the room being in the list IS the watch, and a
+  // server from before the column existed says nothing about it.
+  it("treats an absent flag as watched and an explicit false as not", () => {
+    expect(isWatched([room({ watching: true })], hit)).toBe(true);
+    expect(isWatched([room()], hit)).toBe(true);
+    expect(isWatched([room({ watching: false })], hit)).toBe(false);
+  });
+
+  it("is false when nothing is watched at all", () => {
+    expect(isWatched([], hit)).toBe(false);
+  });
+
+  it("replaces one surface's list wholesale and leaves the others alone", () => {
+    const before = [room(), room({ surface: "twitch", room: "raewatches" })];
+    const after = mergeRooms(before, "reddit", [room({ room: "r/watches" })]);
+    expect(after.filter((r) => r.surface === "reddit").map((r) => r.room)).toEqual(["r/watches"]);
+    expect(after.some((r) => r.surface === "twitch")).toBe(true);
+  });
+});
+
+describe("which watch lists are worth reading", () => {
+  it("names only the surfaces that offered a room to watch", () => {
+    const sources = foldSources([
+      { surface: "ebaylive", method: "a scrape", hits: [{ id: "e1", title: "A" }] },
+      {
+        surface: "reddit",
+        method: "search",
+        hits: [{ id: "r/x", title: "X", action: "watch-room" }],
+      },
+    ]);
+    expect(roomSurfacesIn(sources)).toEqual(["reddit"]);
+  });
+
+  it("asks for nothing when no hit has a room", () => {
+    expect(roomSurfacesIn(foldSources([]))).toEqual([]);
   });
 });

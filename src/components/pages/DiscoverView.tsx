@@ -5,7 +5,8 @@
  * This replaces a tab labelled "Discover · eBay Live" that drew a grid of
  * whatever was on air on one platform. Two things were wrong with it.
  *
- * It read ONE SURFACE OUT OF SIX, and the code said so in a comment: "the
+ * It read ONE of the five surfaces an operator can discover on, and the code
+ * said so in a comment: "the
  * others have discovery pages behind a login or an app review". That is true of
  * the scraped surfaces and wrong about the two with first-class public APIs —
  * Helix lists live streams against an app token with no user sign-in, and
@@ -58,7 +59,10 @@ import {
   actionLabel,
   hitsFor,
   interestOrigin,
+  isWatched,
   legacyDiscover,
+  mergeRooms,
+  roomSurfacesIn,
   sourceFor,
 } from "@/lib/discover";
 import type {
@@ -69,6 +73,7 @@ import type {
   HomeView,
   PreparedShow,
   SurfaceId,
+  SurfaceRoom,
 } from "@/lib/types";
 import { Badge, Button, Card, EmptyState, SectionHeading, Skeleton } from "@/components/ui/kit";
 
@@ -84,7 +89,11 @@ export function DiscoverView({ onAttach }: { onAttach: (url: string) => void }) 
   const [filter, setFilter] = useState<Filter>("all");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [watching, setWatching] = useState<string[]>([]);
+  // The standing watch, as the SERVER holds it. This used to be a list of
+  // keys this page had pressed, which a reload forgot — so the button came
+  // back, the same subreddit could be added twice, and nothing on this screen
+  // said whether the first one had taken.
+  const [rooms, setRooms] = useState<SurfaceRoom[]>([]);
   const [refreshed, setRefreshed] = useState<{ at: Date; hits: number } | null>(null);
 
   const read = useCallback(async (refresh: boolean) => {
@@ -106,6 +115,17 @@ export function DiscoverView({ onAttach }: { onAttach: (url: string) => void }) 
     setMode(asked.view ? "index" : "legacy");
     setRefreshed({ at: new Date(), hits: hitsFor(next.sources, "all").length });
     if (asked.failed) setError(asked.failed.message);
+
+    // Only the surfaces that actually offered a room to watch, and only after
+    // we know which those are — reading every surface's watch list to draw a
+    // grid of eBay shows would be four requests for nothing.
+    const needed = roomSurfacesIn(next.sources);
+    if (needed.length === 0) {
+      setRooms([]);
+      return;
+    }
+    const lists = await Promise.all(needed.map((id) => api.rooms(id).catch(() => [])));
+    setRooms(lists.flat());
   }, []);
 
   useEffect(() => {
@@ -203,8 +223,11 @@ export function DiscoverView({ onAttach }: { onAttach: (url: string) => void }) 
           return;
         }
         if (hit.action === "watch-room") {
-          await api.addRoom(hit.surface, hit.id);
-          setWatching((w) => [...w, `${hit.surface}:${hit.id}`]);
+          // The add answers with that surface's whole watch list, so the state
+          // this screen draws is the state the server just confirmed — not an
+          // assumption that the press worked.
+          const list = await api.addRoom(hit.surface, hit.id);
+          setRooms((prev) => mergeRooms(prev, hit.surface, list));
           return;
         }
         if (hit.action === "attach") {
@@ -298,7 +321,7 @@ export function DiscoverView({ onAttach }: { onAttach: (url: string) => void }) 
             all={filter === "all"}
             preparedBy={preparedBy}
             preparing={home?.preparing ?? []}
-            watching={watching}
+            isWatched={(h) => isWatched(rooms, h)}
             onAct={(h) => void act(h)}
           />
         )}
@@ -597,14 +620,14 @@ export function SourceResults({
   all,
   preparedBy,
   preparing,
-  watching,
+  isWatched,
   onAct,
 }: {
   sources: DiscoverSourceResult[];
   all: boolean;
   preparedBy: Map<string, PreparedShow>;
   preparing: string[];
-  watching: string[];
+  isWatched: (hit: DiscoverHit) => boolean;
   onAct: (hit: DiscoverHit) => void;
 }) {
   // In All, a surface with nothing to show is a line, not an empty block —
@@ -664,7 +687,7 @@ export function SourceResults({
                     hit={h}
                     prepared={preparedBy.get(h.id) ?? null}
                     preparing={preparing.includes(h.id)}
-                    watching={watching.includes(`${h.surface}:${h.id}`)}
+                    watching={isWatched(h)}
                     onAct={() => onAct(h)}
                   />
                 ))}

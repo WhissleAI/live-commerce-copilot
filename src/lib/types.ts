@@ -1707,6 +1707,14 @@ export interface SurfaceRoom {
   room: string;
   /** A HUMAN turned this on. Default false, everywhere, always. */
   posting: boolean;
+  /**
+   * Whether the standing watch on this room is actually running.
+   *
+   * Optional, and ABSENT READS AS WATCHED: a room in this list is the watch,
+   * and a server from before the column existed says nothing about it. Only an
+   * explicit `false` means the room is recorded but not being read.
+   */
+  watching?: boolean;
   /** What we must say about who is talking, when we post here. */
   disclosure: string | null;
   addedAt: string;

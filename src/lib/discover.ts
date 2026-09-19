@@ -2,7 +2,8 @@
  * Discovery, as a model rather than a grid.
  *
  * The old Discover asked one question of one surface: what is live on eBay
- * right now. That was wrong twice over. It read one surface out of six because
+ * right now. That was wrong twice over. It read one of the five surfaces an
+ * operator can actually discover on, because
  * nobody checked that Twitch and Reddit have first-class public APIs — an app
  * token lists Helix streams with no user sign-in, and `oauth.reddit.com`
  * answers subreddit and thread search. And a grid of what is live is a phone
@@ -27,17 +28,27 @@ import type {
   DiscoveryReason,
   HomeView,
   SurfaceId,
+  SurfaceRoom,
   WhyWhere,
 } from "./types";
 
 /**
  * The surfaces Discover asks, in the order they are drawn.
  *
- * `dm` and `simulated` are absent and that is not the same omission the old
- * screen made: a follow-up inbox and a scripted rehearsal are not places to
- * find something. Every surface an operator could actually discover on is
- * here, including the ones with no key set — a chip that disappears when a key
- * is missing is exactly how Twitch and Reddit stayed invisible for a year.
+ * Five, which is the seven REGISTERED ADAPTERS minus `dm` and `simulated`: a
+ * follow-up inbox and a scripted rehearsal are not places to find something.
+ * Every surface an operator could actually discover on is here, including the
+ * ones with no key set — a chip that disappears when a key is missing is
+ * exactly how Twitch and Reddit stayed invisible while both had public APIs
+ * waiting to be asked.
+ *
+ * `youtubelive` is NOT here, and its absence is the opposite of that omission.
+ * It has a `SURFACE_CAPABILITIES` row and no adapter directory and no
+ * registration, which is why Home's surface table draws six rows and not
+ * seven. Nothing attaches to it and nothing can discover on it, so a chip for
+ * it would promise a surface that does not exist — the same class of error as
+ * the capability mirror claiming we can mark a price down on Whatnot. A chip
+ * is only honest for a surface that is merely missing a key.
  */
 export const DISCOVER_SURFACES: SurfaceId[] = [
   "ebaylive",
@@ -45,7 +56,6 @@ export const DISCOVER_SURFACES: SurfaceId[] = [
   "reddit",
   "whatnot",
   "tiktoklive",
-  "youtubelive",
 ];
 
 export function isDiscoverSurface(id: unknown): id is SurfaceId {
@@ -332,6 +342,65 @@ export function actionHint(hit: DiscoverHit): string {
     default:
       return "Opens it where it lives.";
   }
+}
+
+// ── the standing watch ──────────────────────────────────────────────────────
+
+/**
+ * One room, as a key both sides can be compared on.
+ *
+ * The room a surface records in its watch list and the id a discovery hit
+ * carries are not guaranteed to be spelled identically — `r/mechmarket` and
+ * `mechmarket` are one subreddit, not two. Case and that one prefix are the
+ * only things normalised away; nothing else is inferred, and the backend's
+ * actual id format replaces this the moment it is pinned down.
+ */
+export function roomKey(v: string): string {
+  return v
+    .trim()
+    .toLowerCase()
+    .replace(/^\/?r\//, "");
+}
+
+/**
+ * Is this hit's room already on the operator's standing watch?
+ *
+ * Read from the server's own list rather than remembered on the page, because
+ * a page-local memory is forgotten by a reload — which offers the button
+ * again, lets the same subreddit be added twice, and gives the operator no way
+ * to tell from this screen whether the first one took.
+ *
+ * An absent `watching` reads as watched: the room being in the list IS the
+ * watch. Only an explicit `false` says otherwise.
+ */
+export function isWatched(
+  rooms: readonly SurfaceRoom[],
+  hit: Pick<DiscoverHit, "surface" | "id">,
+): boolean {
+  const key = roomKey(hit.id);
+  return rooms.some(
+    (r) => r.surface === hit.surface && roomKey(r.room) === key && r.watching !== false,
+  );
+}
+
+/** One surface's watch list, replaced wholesale by what the server just said. */
+export function mergeRooms(
+  prev: readonly SurfaceRoom[],
+  surface: SurfaceId,
+  list: readonly SurfaceRoom[],
+): SurfaceRoom[] {
+  return [...prev.filter((r) => r.surface !== surface), ...list];
+}
+
+/** Which surfaces in this answer have a room worth reading the watch list for. */
+export function roomSurfacesIn(sources: readonly DiscoverSourceResult[]): SurfaceId[] {
+  const out: SurfaceId[] = [];
+  for (const s of sources) {
+    if (s.hits.some((h) => h.action === "watch-room") && !out.includes(s.surface)) {
+      out.push(s.surface);
+    }
+  }
+  return out;
 }
 
 // ── counting, for the chips ─────────────────────────────────────────────────

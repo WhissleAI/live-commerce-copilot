@@ -15,9 +15,13 @@ const noop = () => {};
  * endpoint yet — a mock of `api.discover` would be a mock of the answer.
  */
 function backend(routes: Record<string, { status?: number; body?: unknown }>) {
-  vi.stubGlobal("fetch", (input: unknown) => {
+  vi.stubGlobal("fetch", (input: unknown, init?: { method?: string }) => {
     const path = new URL(String(input), "http://backend.test").pathname;
-    const hit = routes[path] ?? { status: 404, body: { error: "not found" } };
+    // Keyed by path, or by "METHOD path" where a route answers differently to
+    // a read and a write — the watch list does.
+    const method = (init?.method ?? "GET").toUpperCase();
+    const hit = routes[`${method} ${path}`] ??
+      routes[path] ?? { status: 404, body: { error: "not found" } };
     const text = JSON.stringify(hit.body ?? {});
     const status = hit.status ?? 200;
     return Promise.resolve({
@@ -84,6 +88,39 @@ const INDEX = {
     },
   ],
 };
+
+/** A server whose Reddit source has a room the operator could watch. */
+const ROOMS_INDEX = {
+  interests: [{ term: "GMK", origin: "own" }],
+  sources: [
+    {
+      surface: "reddit",
+      method: "Reddit /subreddits/search, then a thread search inside each — an API.",
+      hits: [
+        {
+          id: "r/mechmarket",
+          title: "r/mechmarket",
+          url: "https://reddit.com/r/mechmarket",
+          liveNow: false,
+          why: [{ term: "GMK", where: "room" }],
+          action: "watch-room",
+        },
+      ],
+      unavailable: null,
+    },
+  ],
+};
+
+const WATCHED = [
+  {
+    surface: "reddit",
+    room: "mechmarket",
+    posting: false,
+    disclosure: null,
+    addedAt: "2026-09-18T00:00:00.000Z",
+    watching: true,
+  },
+];
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -214,6 +251,65 @@ describe("Discover against a server that has the index", () => {
     expect(await screen.findByText("We do not know what you sell yet.")).toBeInTheDocument();
     expect(screen.getByText("Open Knowledge")).toBeInTheDocument();
     expect(screen.queryByText("Watch collecting, all night")).not.toBeInTheDocument();
+  });
+});
+
+// ── the standing watch ──────────────────────────────────────────────────────
+
+describe("a room the operator already watches", () => {
+  // The bug this fixes: the confirmation used to be page-local, so a reload
+  // offered the button again, the same subreddit could be added twice, and
+  // nothing on this screen said whether the first add had taken.
+  it("reads the true state from the server rather than from this page", async () => {
+    backend({
+      "/api/discover": { body: ROOMS_INDEX },
+      "/api/home": { body: HOME },
+      "/api/surfaces/reddit/rooms": { body: WATCHED },
+    });
+    await renderWithRouter(<DiscoverView onAttach={noop} />);
+
+    expect(await screen.findByText("Watching")).toBeInTheDocument();
+    expect(screen.getByText("Watching").closest("button")).toBeDisabled();
+    expect(screen.queryByText("Watch this subreddit")).not.toBeInTheDocument();
+  });
+
+  it("offers the watch when the server holds no such room", async () => {
+    backend({
+      "/api/discover": { body: ROOMS_INDEX },
+      "/api/home": { body: HOME },
+      "/api/surfaces/reddit/rooms": { body: [] },
+    });
+    await renderWithRouter(<DiscoverView onAttach={noop} />);
+
+    expect(await screen.findByText("Watch this subreddit")).toBeInTheDocument();
+  });
+
+  // The add answers with that surface's whole watch list, and THAT is what
+  // the screen draws — not an assumption that the press worked.
+  it("reconciles against what the add answered, not against the press", async () => {
+    backend({
+      "/api/discover": { body: ROOMS_INDEX },
+      "/api/home": { body: HOME },
+      "GET /api/surfaces/reddit/rooms": { body: [] },
+      "POST /api/surfaces/reddit/rooms": { body: { rooms: WATCHED } },
+    });
+    await renderWithRouter(<DiscoverView onAttach={noop} />);
+
+    fireEvent.click(await screen.findByText("Watch this subreddit"));
+    expect(await screen.findByText("Watching")).toBeInTheDocument();
+  });
+
+  // A room the server records but is not reading is not a watch, and a button
+  // that says "Watching" over it would be the same lie in the other direction.
+  it("offers the watch again when the server says the room is not being read", async () => {
+    backend({
+      "/api/discover": { body: ROOMS_INDEX },
+      "/api/home": { body: HOME },
+      "/api/surfaces/reddit/rooms": { body: [{ ...WATCHED[0], watching: false }] },
+    });
+    await renderWithRouter(<DiscoverView onAttach={noop} />);
+
+    expect(await screen.findByText("Watch this subreddit")).toBeInTheDocument();
   });
 });
 
