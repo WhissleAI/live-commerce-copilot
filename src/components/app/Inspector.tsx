@@ -41,6 +41,8 @@ const GUARD_LABEL: Record<string, string> = {
   grounding: "Grounding",
   tone: "Tone",
   pii: "PII",
+  community_rule: "Room rules",
+  sponsor: "Sponsor",
 };
 
 const SOURCE_LABEL: Record<Evidence["source"], string> = {
@@ -50,6 +52,10 @@ const SOURCE_LABEL: Record<Evidence["source"], string> = {
   qa: "prior answer",
   host: "what the host said on air",
   market: "market comp",
+  // Never grounding. A style reference says how the operator has answered a
+  // question like this before, which is a fact about their voice and not about
+  // the thing being asked.
+  persona: "how you answered this before",
 };
 
 export function Inspector({

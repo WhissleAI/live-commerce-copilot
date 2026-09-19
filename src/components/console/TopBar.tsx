@@ -19,6 +19,7 @@ import type {
   Metrics,
   SellerProfile,
   ShowState,
+  SurfaceId,
 } from "@/lib/types";
 import { Bar, ConsoleButton, Hover } from "./primitives";
 import { useNow } from "@/hooks/useNow";
@@ -287,6 +288,8 @@ export function TopBar({
   onToggleCost,
   costOpen,
   account,
+  latencyMeter = true,
+  surface,
 }: {
   show: ShowState;
   seller?: SellerProfile | null;
@@ -300,6 +303,13 @@ export function TopBar({
   onToggleCost: () => void;
   costOpen: boolean;
   account?: Account | null;
+  /** A reply written into a three-day-old thread has no two-second budget to
+   *  breach, and a meter against one invents a deadline nobody has. */
+  latencyMeter?: boolean;
+  /** Which surface this is. Named only when it is not the reference one — the
+   *  bar has never said "eBay Live" and adding it now would be noise on the
+   *  only surface where the title already tells you. */
+  surface?: { id: SurfaceId; label: string } | null;
 }) {
   const now = useNow();
   const elapsed = (now - new Date(show.startedAt).getTime()) / 1000;
@@ -325,7 +335,12 @@ export function TopBar({
           title={
             (show.readOnly
               ? "A monitored stream — the copilot drafts replies and proposes actions, but cannot write to the listing and never posts to eBay. "
-              : "") + (show.source === "ebaylive" ? "Source: eBay Live." : "")
+              : "") +
+            (surface
+              ? `Source: ${surface.label}.`
+              : show.source === "ebaylive"
+                ? "Source: eBay Live."
+                : "")
           }
           className="flex min-w-0 items-baseline gap-1.5 text-[13px] font-semibold text-text"
         >
@@ -335,6 +350,11 @@ export function TopBar({
         <span className="shrink-0 truncate text-[12px] text-text-muted">
           {seller?.name ?? show.sellerHandle}
         </span>
+        {surface && surface.id !== "ebaylive" && surface.id !== "simulated" ? (
+          <span className="hidden shrink-0 rounded-[4px] bg-elevated px-1.5 py-0.5 text-[10px] text-text-muted sm:inline">
+            {surface.label}
+          </span>
+        ) : null}
         {onEndSession && (
           <button
             type="button"
@@ -378,7 +398,7 @@ export function TopBar({
         </span>
       </div>
 
-      {metrics ? (
+      {metrics && latencyMeter ? (
         <span className="hidden lg:flex">
           <LatencyMeter metrics={metrics} />
         </span>

@@ -9,25 +9,33 @@ import {
   LineChart,
   MessageSquareQuote,
   Mic,
+  PenLine,
   ShieldAlert,
   Tag,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { GUARD_LABEL, GUARD_ORDER, formatMs, timeAgo } from "@/lib/format";
-import type { Evidence, GuardResult, ReplyProposal } from "@/lib/types";
+import { GUARD_LABEL, GUARD_MEANS, GUARD_ORDER, formatMs, timeAgo } from "@/lib/format";
+import type { Evidence, GuardName, GuardResult, ReplyProposal } from "@/lib/types";
 import { ConsoleButton, Dots, Hover, IntentBadge, Kbd, SectionHeader } from "./primitives";
 import { Badge, BadgeButton } from "@/components/ui/kit";
 
-const SOURCE_ICON = {
+const SOURCE_ICON: Record<Evidence["source"], typeof Tag> = {
   listing: Tag,
   policy: BookOpen,
   catalog: FileText,
   qa: Gavel,
   market: LineChart,
   host: Mic,
-} as const;
+  // The operator's own past sends. A pen, not a tag: it is how something was
+  // said, never what is true.
+  persona: PenLine,
+};
 
-function EvidenceChips({ evidence }: { evidence: Evidence[] }) {
+/** The facts an answer stands on, as chips. Exported because a draft on a
+ *  surface we do not post to carries exactly the same citations, and drawing
+ *  them a second way would be the copy-paste divergence `kit.tsx` exists to
+ *  stop. */
+export function EvidenceChips({ evidence }: { evidence: Evidence[] }) {
   if (evidence.length === 0)
     return (
       <span className="inline-flex items-center gap-1 rounded-[4px] border border-hairline-strong px-1.5 py-0.5 text-[11px] text-text-muted">
@@ -38,7 +46,8 @@ function EvidenceChips({ evidence }: { evidence: Evidence[] }) {
   return (
     <div className="flex flex-wrap gap-1.5">
       {evidence.map((e) => {
-        const Icon = SOURCE_ICON[e.source];
+        // A source this build has never heard of still gets a chip.
+        const Icon = SOURCE_ICON[e.source] ?? FileText;
         return (
           <Hover
             key={e.factId}
@@ -81,10 +90,18 @@ function EvidenceChips({ evidence }: { evidence: Evidence[] }) {
   );
 }
 
-function GuardStrip({ guards }: { guards: GuardResult[] }) {
+/**
+ * The guards, in order, with `–` explicitly not a failure.
+ *
+ * `order` is the surface's own list: the base six everywhere, plus the room-rule
+ * and sponsor guards only where the surface actually has them. Rendering two
+ * permanent `–` pills on every eBay Live card would be a regression dressed as
+ * a feature.
+ */
+function GuardStrip({ guards, order }: { guards: GuardResult[]; order: GuardName[] }) {
   return (
     <div className="flex flex-wrap gap-1" role="list" aria-label="Guardrail results">
-      {GUARD_ORDER.map((name) => {
+      {order.map((name) => {
         const g = guards.find((x) => x.guard === name);
         const verdict = g?.verdict ?? "n/a";
         const tone =
@@ -107,6 +124,11 @@ function GuardStrip({ guards }: { guards: GuardResult[] }) {
                   {GUARD_LABEL[name]} · {verdict}
                 </div>
                 <div>{g?.reason ?? "This guard did not apply to this reply."}</div>
+                {/* What it checks, for the operator who has not met this guard
+                    before. Below the verdict, never instead of it. */}
+                <div className="border-t border-hairline pt-1 text-[11px] text-text-muted">
+                  {GUARD_MEANS[name]}
+                </div>
                 {g?.detail ? (
                   <div className="num space-y-0.5 border-t border-hairline pt-1 text-[11px]">
                     {g.detail.expected ? (
@@ -139,6 +161,71 @@ function GuardStrip({ guards }: { guards: GuardResult[] }) {
         );
       })}
     </div>
+  );
+}
+
+/**
+ * How the operator answered this before.
+ *
+ * A style reference is never grounding — it says nothing about whether the
+ * reply is TRUE — so it is rendered muted, after the guards, and it never wears
+ * a pill. The guard row is the reply's receipt and nothing quiet is allowed to
+ * compete with it.
+ */
+export function StyleRef({ styleRef }: { styleRef: ReplyProposal["styleRef"] | undefined }) {
+  if (!styleRef?.text) return null;
+  // The server phrases the WHEN — "Your own words · March 2026". Take its
+  // wording rather than re-deriving a month from a timestamp that may not be
+  // there, and drop its prefix, because this line already says whose words
+  // these are.
+  const when =
+    styleRef.label?.replace(/^\s*your own words\s*[·:-]\s*/i, "").trim() ||
+    (styleRef.at ? new Date(styleRef.at).toLocaleDateString(undefined, { month: "long" }) : null);
+  return (
+    <Hover
+      panelClassName="w-80"
+      content={
+        <div className="space-y-1.5">
+          <div className="text-text">{styleRef.text}</div>
+          <div className="num text-[11px] text-text-muted">{styleRef.factId}</div>
+          <div className="text-[11px] text-text-muted">
+            Your own wording, used as a style reference. It grounds nothing — no claim in this reply
+            stands on it.
+          </div>
+        </div>
+      }
+    >
+      <span
+        tabIndex={0}
+        className="inline-flex items-center gap-1.5 text-[11px] text-text-faint hover:text-text-muted"
+      >
+        <PenLine className="size-3" aria-hidden />
+        written the way you answered this{when ? ` in ${when}` : " before"}
+      </span>
+    </Hover>
+  );
+}
+
+/** The one control a draft-only surface has. The clipboard can be refused (an
+ *  insecure origin, a denied permission) and the button says so rather than
+ *  looking like it worked. */
+function CopyDraft({ text }: { text: string }) {
+  const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
+  return (
+    <ConsoleButton
+      variant="primary"
+      onClick={() => {
+        void navigator.clipboard
+          ?.writeText(text)
+          .then(() => setState("copied"))
+          .catch(() => setState("failed"));
+        if (!navigator.clipboard) setState("failed");
+        window.setTimeout(() => setState("idle"), 2000);
+      }}
+      title="This surface is draft-only — the reply is yours to post"
+    >
+      {state === "copied" ? "Copied" : state === "failed" ? "Could not copy" : "Copy"}
+    </ConsoleButton>
   );
 }
 
@@ -207,6 +294,8 @@ function ProposalCard({
   focused,
   highlighted,
   editing,
+  guardOrder,
+  deliverable,
   onFocus,
   onSend,
   onEdit,
@@ -219,6 +308,10 @@ function ProposalCard({
   focused: boolean;
   highlighted: boolean;
   editing: boolean;
+  guardOrder: GuardName[];
+  /** False on a draft-only surface: the reply is the operator's to send, and a
+   *  Send button that cannot send is a lie the console must not tell. */
+  deliverable: boolean;
   onFocus: () => void;
   onSend: (text?: string) => void;
   onEdit: () => void;
@@ -401,10 +494,11 @@ function ProposalCard({
             ) : null}
 
             <EvidenceChips evidence={p.evidence} />
-            <GuardStrip guards={p.guards} />
+            <GuardStrip guards={p.guards} order={guardOrder} />
+            <StyleRef styleRef={p.styleRef} />
 
             <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-              {blocked ? null : (
+              {blocked ? null : deliverable ? (
                 <ConsoleButton
                   variant={needsReview ? "secondary" : "primary"}
                   onClick={() => onSend(editing ? value : undefined)}
@@ -420,6 +514,8 @@ function ProposalCard({
                     ⏎
                   </Kbd>
                 </ConsoleButton>
+              ) : (
+                <CopyDraft text={editing ? value : p.draft} />
               )}
               <ConsoleButton variant="secondary" onClick={editing ? onCancelEdit : onEdit}>
                 {editing ? "Cancel" : "Edit"}
@@ -457,6 +553,8 @@ export function ProposalQueue({
   onInspect,
   leading,
   trailing,
+  guardOrder = GUARD_ORDER,
+  deliverable = true,
 }: {
   live: ReplyProposal[];
   recent: ReplyProposal[];
@@ -478,6 +576,11 @@ export function ProposalQueue({
    *  over it — an absolutely-positioned button landed on the counts. */
   leading?: ReactNode;
   trailing?: ReactNode;
+  /** Which guards this surface runs, in order. The base six by default, which
+   *  is every live-commerce surface and every card rendered before surfaces. */
+  guardOrder?: GuardName[];
+  /** Can we deliver a reply here, or is the operator the sender? */
+  deliverable?: boolean;
 }) {
   const [filter, setFilter] = useState<"all" | "blocked">("all");
   // An abstention is not a suggestion. When retrieval found nothing, the draft
@@ -548,6 +651,8 @@ export function ProposalQueue({
                 focused={focusedId === p.id}
                 highlighted={highlightedId === p.id}
                 editing={editingId === p.id}
+                guardOrder={guardOrder}
+                deliverable={deliverable}
                 onFocus={() => onFocus(p.id)}
                 onSend={(text) => onSend(p.id, text)}
                 onEdit={() => onEdit(p.id)}

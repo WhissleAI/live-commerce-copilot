@@ -17,6 +17,13 @@ import {
 import { api, API_BASE, USE_MOCKS, ensureSession, tokenQuery } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useShowStream } from "@/hooks/useShowStream";
+import {
+  capabilitiesOf,
+  consoleLayout,
+  guardOrderFor,
+  surfaceLabel,
+  surfaceOf,
+} from "@/lib/surfaces";
 import type {
   Account,
   AutonomyLevel,
@@ -24,6 +31,7 @@ import type {
   ConnectionState,
   ResearchCard,
   SourceStatus,
+  SurfaceInfo,
 } from "@/lib/types";
 import { TopBar } from "./TopBar";
 import { ChatColumn } from "./ChatColumn";
@@ -33,6 +41,7 @@ import { CommandPalette } from "./CommandPalette";
 import { ShortcutsOverlay } from "./ShortcutsOverlay";
 import { LegendOverlay, legendSeen, markLegendSeen } from "./LegendOverlay";
 import { TranscriptPanel } from "./TranscriptPanel";
+import { ThreadPanel } from "./ThreadPanel";
 import { CostPanel } from "./CostPanel";
 import { Link } from "@tanstack/react-router";
 import { AppShell, type Command } from "@/components/app/AppShell";
@@ -133,6 +142,31 @@ export function Console() {
       .catch(() => setAccount(null));
   }, []);
 
+  /**
+   * What this surface can do, and therefore what this console is.
+   *
+   * The static table answers immediately — a layout that waits on a fetch
+   * flickers through the wrong shape on every reload, and the shape it would
+   * flicker through is the eBay Live one on a surface that is not eBay Live.
+   * `GET /api/surfaces` refines it when it lands, and a backend that has not
+   * shipped that endpoint yet changes nothing.
+   */
+  const [remoteSurfaces, setRemoteSurfaces] = useState<SurfaceInfo[] | null>(null);
+  useEffect(() => {
+    void api
+      .surfaces()
+      .then(setRemoteSurfaces)
+      .catch(() => setRemoteSurfaces(null));
+  }, []);
+
+  const surfaceId = surfaceOf(show);
+  const caps = useMemo(
+    () => capabilitiesOf(surfaceId, remoteSurfaces),
+    [surfaceId, remoteSurfaces],
+  );
+  const layout = useMemo(() => consoleLayout(caps), [caps]);
+  const guardOrder = useMemo(() => guardOrderFor(caps), [caps]);
+
   const [viewerDelta, setViewerDelta] = useState(0);
   const prevViewers = useRef<number | null>(null);
 
@@ -144,6 +178,14 @@ export function Console() {
   }, [show]);
 
   const decidable = useMemo(() => live.filter((p) => p.status !== "drafting"), [live]);
+
+  /** The branch above whichever proposal is focused, for the thread panel. A
+   *  proposal carries its own thread on an async surface and carries none on a
+   *  live one, which is what the panel's empty state says. */
+  const focusedThread = useMemo(
+    () => [...live, ...recent].find((p) => p.id === focusedId)?.thread ?? null,
+    [live, recent, focusedId],
+  );
 
   useEffect(() => {
     if (focusedId && decidable.some((p) => p.id === focusedId)) return;
@@ -349,7 +391,9 @@ export function Console() {
     shortcutsOpen,
   ]);
 
-  const liveSession = show?.source === "ebaylive";
+  // Detaching is for a surface we hold a connection to. The scripted show is
+  // just left where it is, so you can walk back into it.
+  const liveSession = Boolean(show) && surfaceId !== "simulated";
 
   // What ⌘K can do while you are on the console. Everything here already had a
   // single-key shortcut or a button; the command bar is the surface for the
@@ -443,8 +487,9 @@ export function Console() {
                 </Link>
               }
             >
-              Paste an eBay Live link on Home and the copilot attaches to the stream — it builds the
-              lineup from the show itself, and this console fills as buyers start asking.
+              Paste a show, a channel or a thread on Home and the copilot attaches to it — it builds
+              what it knows from the conversation itself, and this console fills as people start
+              asking.
             </EmptyState>
           </Card>
         ) : (
@@ -516,6 +561,8 @@ export function Console() {
         costOpen={costOpen}
         onToggleCost={toggleCost}
         account={account}
+        latencyMeter={layout.latencyMeter}
+        surface={{ id: surfaceId, label: surfaceLabel(surfaceId) }}
       />
 
       {/* The cost rail is a COLUMN, not an overlay: it is read against the
@@ -561,19 +608,29 @@ export function Console() {
               onAnswerDropped={answerDropped}
             />
           </div>
-          <div className="flex min-h-0 flex-[2] flex-col">
-            <TranscriptPanel
-              transcript={transcript}
-              levels={levels}
-              context={store.context}
-              listen={store.listen}
-              bridgeUrl={
-                USE_MOCKS
-                  ? null
-                  : `${API_BASE}/audio-bridge?showId=${encodeURIComponent(show.id)}&${tokenQuery()}`
-              }
-            />
-          </div>
+          {/* The lower half of the incoming rail is whatever this surface
+              actually carries: the host's voice where there is one, the branch
+              above the comment where the conversation is a tree, and nothing at
+              all where it is neither — in which case chat takes the column. */}
+          {layout.hostAudio ? (
+            <div className="flex min-h-0 flex-[2] flex-col">
+              <TranscriptPanel
+                transcript={transcript}
+                levels={levels}
+                context={store.context}
+                listen={store.listen}
+                bridgeUrl={
+                  USE_MOCKS
+                    ? null
+                    : `${API_BASE}/audio-bridge?showId=${encodeURIComponent(show.id)}&${tokenQuery()}`
+                }
+              />
+            </div>
+          ) : layout.threadPanel ? (
+            <div className="flex min-h-0 flex-[2] flex-col">
+              <ThreadPanel thread={focusedThread} room={show.room ?? null} />
+            </div>
+          ) : null}
         </div>
 
         <div className="relative flex min-h-0 flex-col overflow-hidden rounded-md bg-panel z1">
@@ -614,6 +671,8 @@ export function Console() {
             onRegenerate={(id) => void api.regenerateProposal(id).catch(failed("Not regenerated"))}
             onFlag={flagWrong}
             onInspect={(id) => openInspect({ kind: "proposal", id })}
+            guardOrder={guardOrder}
+            deliverable={layout.deliverable}
           />
           {drawerOpen ? (
             <div
@@ -675,6 +734,7 @@ export function Console() {
                 .then((l) => toasts.push({ tone: "ok", text: `Lot named · ${l.title}` }));
             }}
             onInspect={(seq) => openInspect({ kind: "audit", seq })}
+            showLots={layout.lotRail}
           />
         </div>
 

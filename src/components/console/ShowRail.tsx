@@ -355,6 +355,7 @@ export function ShowRail({
   onRollback,
   onRename,
   onInspect,
+  showLots = true,
 }: {
   pinned: Listing | null;
   queue: Listing[];
@@ -369,6 +370,10 @@ export function ShowRail({
   onRename: (id: string, title: string) => void;
   /** Opens the shell's inspector on one chain entry. */
   onInspect: (seq: number) => void;
+  /** There is no lot where there is no listing corpus. A Twitch channel has no
+   *  pinned lot, and a rail that says "No lot pinned." on one is describing an
+   *  inventory that does not exist. */
+  showLots?: boolean;
 }) {
   const now = useNow();
   const [verify, setVerify] = useState<{ ok: boolean; message: string } | null>(null);
@@ -394,12 +399,14 @@ export function ShowRail({
 
   return (
     <aside className="flex h-full min-h-0 flex-col bg-panel">
-      <PinnedLot
-        listing={pinned}
-        queue={queue}
-        flashedAt={pinned ? flashed[pinned.id] : undefined}
-        onRename={onRename}
-      />
+      {showLots ? (
+        <PinnedLot
+          listing={pinned}
+          queue={queue}
+          flashedAt={pinned ? flashed[pinned.id] : undefined}
+          onRename={onRename}
+        />
+      ) : null}
 
       <div className="flex min-h-0 flex-[1.2] flex-col">
         <SectionHeader title="Actions">

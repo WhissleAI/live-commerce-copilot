@@ -24,10 +24,13 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import {
   BarChart3,
   FileText,
+  Hash,
   MonitorPlay,
   PackageSearch,
   Search,
   SlidersHorizontal,
+  Speech,
+  SquarePen,
   Tv,
   UserRound,
   Wallet,
@@ -44,7 +47,17 @@ import { CommandBar, type Command } from "@/components/app/CommandBar";
 export type { Command };
 
 export type Section =
-  "shows" | "console" | "catalog" | "reports" | "analytics" | "cost" | "settings" | "account";
+  | "shows"
+  | "console"
+  | "drafts"
+  | "catalog"
+  | "rooms"
+  | "persona"
+  | "reports"
+  | "analytics"
+  | "cost"
+  | "settings"
+  | "account";
 
 /**
  * Six destinations became five, and one of them is conditional.
@@ -57,10 +70,22 @@ export type Section =
  *  · Reports is not a destination: every finished show on Home carries its
  *    Report button, and Analytics lists them by show.
  */
+/**
+ * Three destinations were added when a conversation stopped being only a show.
+ *
+ *  · Drafts is the console for a surface we do not post to: the reply is
+ *    written, the human is the sender, and there is nowhere else for it to be.
+ *  · Rooms is the list of places this copilot is allowed to open its mouth, and
+ *    Persona is who it sounds like when it does. Both are always-true
+ *    destinations, so neither is conditional the way Console is.
+ */
 const RAIL: { id: Section; label: string; to: string; icon: typeof Tv }[] = [
   { id: "shows", label: "Home", to: "/", icon: Tv },
   { id: "console", label: "Console", to: "/console", icon: MonitorPlay },
+  { id: "drafts", label: "Drafts", to: "/drafts", icon: SquarePen },
   { id: "catalog", label: "Catalog", to: "/catalog", icon: PackageSearch },
+  { id: "rooms", label: "Rooms", to: "/rooms", icon: Hash },
+  { id: "persona", label: "Persona", to: "/persona", icon: Speech },
   { id: "analytics", label: "Analytics", to: "/analytics", icon: BarChart3 },
   { id: "cost", label: "Cost", to: "/cost", icon: Wallet },
   { id: "settings", label: "Settings", to: "/settings", icon: SlidersHorizontal },

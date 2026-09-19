@@ -13,8 +13,78 @@ export type ChatIntent =
   | "hype"
   | "other";
 
-export type GuardName = "price" | "availability" | "policy" | "claim_grounding" | "tone" | "pii";
+export type GuardName =
+  | "price"
+  | "availability"
+  | "policy"
+  | "claim_grounding"
+  | "tone"
+  | "pii"
+  // Surface-specific. Both answer `n/a` on a surface that does not use them,
+  // which is how every guard already behaves with nothing to check — so a live
+  // commerce reply's guard row reads exactly as it did before these existed.
+  | "community_rule"
+  | "sponsor";
 export type Verdict = "allow" | "revise" | "block";
+
+// ── surfaces ────────────────────────────────────────────────────────────────
+//
+// A surface is WHERE a conversation happens. Mirrors `src/surfaces/types.ts`
+// and `src/retrieval/corpus.ts` in the backend.
+//
+// The console reads capabilities rather than asking "is this eBay Live?",
+// because every question it used to answer by naming the surface — is there a
+// lot rail, is there a latency meter, can a reply be sent at all — is really a
+// question about what the surface can DO.
+
+export type SurfaceId =
+  "simulated" | "ebaylive" | "whatnot" | "tiktoklive" | "twitch" | "youtubelive" | "reddit" | "dm";
+
+export type Tempo = "live" | "async";
+
+/** What KIND of ground truth a fact came out of. */
+export type CorpusKind =
+  "listing" | "policy" | "schedule" | "sponsor" | "product" | "community" | "qa";
+
+/** What a surface can do, so the UI and the guards stop guessing. */
+export interface SurfaceCapabilities {
+  tempo: Tempo;
+  /** Can a reply be delivered by us, or only drafted for a human to send? */
+  delivery: "api" | "draft-only";
+  /** Does this surface carry the operator's audio / video? */
+  perception: { audio: boolean; video: boolean };
+  /** Which action kinds exist here at all. */
+  actions: readonly ActionKind[];
+  /** Which corpora ground a reply here. */
+  corpora: readonly CorpusKind[];
+  /** Rules the COMMUNITY imposes, retrieved per room / subreddit / channel. */
+  communityRules: boolean;
+}
+
+/**
+ * One row of `GET /api/surfaces`.
+ *
+ * `available` and `missing` are the honest half: an adapter ships whether or
+ * not its keys do, and "Twitch needs TWITCH_CLIENT_ID" is a different fact from
+ * "Twitch is not a thing". Both optional — a backend that has not shipped them
+ * yet reads as available, which is what every surface was before keys existed.
+ */
+export interface SurfaceInfo {
+  id: SurfaceId;
+  label: string;
+  capabilities: SurfaceCapabilities;
+  /**
+   * Wired in this build AND with something to open — which is not the same as
+   * "this surface exists". The follow-up inbox is the case that separates them:
+   * it is built out of a show that has already ended, so it has no `open()` and
+   * putting it in the paste box would hand the operator a 409.
+   */
+  attachable?: boolean;
+  /** False when a key is missing. Absent means "the server did not say". */
+  available?: boolean;
+  /** The environment variable that would fix it. */
+  missing?: string | null;
+}
 
 export interface ShowState {
   id: string;
@@ -26,13 +96,19 @@ export interface ShowState {
   lotQueue: string[];
   autonomyLevel: AutonomyLevel;
   undoWindowS: number;
-  /** Where buyer chat comes from. */
-  source?: "simulated" | "ebaylive";
-  /** The eBay Live event id, when source is "ebaylive". */
+  /** Which surface this conversation is on. Named `source` since the first
+   *  migration, when the only answers were the scripted show and eBay Live. */
+  source?: SurfaceId;
+  /** The same axis under its newer name. Present from migration 018; absent on
+   *  a backend that has not shipped it, where `source` is the answer. */
+  surface?: SurfaceId;
+  /** The id within the surface: an eBay Live event, a channel, a thread. */
   externalId?: string | null;
   /** A monitored stream we do not own: every write action is refused. */
   readOnly?: boolean;
   status?: "live" | "ended";
+  /** The room this show is in — a subreddit, a channel — when it has one. */
+  room?: string | null;
 }
 
 /** Who is selling, from the catalog chosen at setup. */
@@ -74,7 +150,9 @@ export interface ShowSummary {
   catalogId?: string | null;
   title: string;
   sellerHandle: string;
-  source: "simulated" | "ebaylive";
+  source: SurfaceId;
+  /** The surface column, when the backend has it. Falls back to `source`. */
+  surface?: SurfaceId;
   externalId: string | null;
   readOnly: boolean;
   /** Where approved writes actually land. Shown, never inferred. */
@@ -190,9 +268,25 @@ export interface ChatMessage {
   proposalId?: string;
 }
 
+export type EvidenceSource =
+  | "listing"
+  | "policy"
+  | "catalog"
+  | "qa"
+  | "market"
+  | "host"
+  /** The operator's own past sends, learned into the voice corpus. Never
+   *  grounding for a claim — see `ReplyProposal.styleRef`. */
+  | "persona";
+
 export interface Evidence {
   factId: string;
-  source: "listing" | "policy" | "catalog" | "qa" | "market" | "host";
+  source: EvidenceSource;
+  /** WHICH ground truth this came out of. The console renders a community rule
+   *  differently from a price, because one is a constraint on the reply and the
+   *  other is an answer in it. Absent on anything recorded before corpora
+   *  existed, which was all listing. */
+  corpus?: CorpusKind;
   label: string;
   text: string;
   score: number;
@@ -241,10 +335,31 @@ export interface ReplyProposal {
   spans: SpanBreakdown;
   createdAt: string;
   sentText?: string;
+  /** One of the operator's own past answers, cited as a STYLE reference and
+   *  never as grounding. Rendered muted, below the guards it must not compete
+   *  with: "written the way you answered this in March". */
+  styleRef?: StyleRef | null;
+  /** The thread this reply is for, on an async surface. */
+  thread?: ThreadContext | null;
 }
 
 export type ActionKind =
-  "push_listing" | "swap_pinned" | "markdown_price" | "adjust_stock" | "end_listing";
+  // live commerce
+  | "push_listing"
+  | "swap_pinned"
+  | "markdown_price"
+  | "adjust_stock"
+  | "end_listing"
+  // creator surfaces
+  | "create_clip"
+  | "mark_highlight"
+  | "run_poll"
+  | "shoutout"
+  | "pin_message"
+  // async surfaces
+  | "post_reply"
+  | "send_dm"
+  | "flag_for_human";
 
 export interface PreflightCheck {
   name: string;
@@ -1257,4 +1372,181 @@ export interface DryRunResult {
   confidence: number;
   abstained: boolean;
   latencyMs: number;
+}
+
+// ── the thread, the drafts, the persona and the rooms ───────────────────────
+//
+// Everything below belongs to surfaces where a conversation is not a live show.
+// It is additive: a live-commerce console never asks for any of it, and every
+// screen that does degrades to an empty state rather than to a crash when the
+// backend has not shipped the endpoint yet.
+
+/**
+ * The branch a reply is being written into.
+ *
+ * `ShowContextEngine` answers "what is happening right now", which is exactly
+ * right for a live show and empty for a three-day-old subreddit thread. Here
+ * the context is the opening post and the path down to the comment being
+ * answered — plus the rules in force, which are a CONSTRAINT on the reply and
+ * never a fact to answer from.
+ */
+export interface ThreadContext {
+  threadId: string;
+  /** The opening post, then the branch above the message, oldest first. */
+  ancestors: { author: string; text: string; at: string }[];
+  /** The room: a subreddit, a channel, a conversation. */
+  room: string;
+  /** Rules in force here, as facts (`corpus: "community"`). */
+  rules: Evidence[];
+  /** What the room is asking for, summarised. Null when it was not asked. */
+  summary: string | null;
+}
+
+/** One community rule, and what it did to this draft. */
+export interface AppliedRule {
+  factId: string;
+  label: string;
+  text: string;
+  /** `blocked` means this rule is the reason the draft cannot be posted;
+   *  `would_block` is the rule an earlier draft tripped and this one clears. */
+  effect: "applied" | "would_block" | "blocked";
+  /** Why, in the guard's own words. */
+  reason?: string | null;
+}
+
+/**
+ * A reply we wrote and will not send.
+ *
+ * On a `draft-only` surface the human IS the sender — that is the whole point
+ * of the destination — so a draft carries everything the person needs to decide
+ * with: the thread above it, what it is standing on, and which rule of the room
+ * would have stopped it.
+ */
+export interface SurfaceDraft {
+  id: string;
+  surface: SurfaceId;
+  /** The subreddit, channel or show this came out of. */
+  room: string;
+  /** The comment or post being answered. */
+  question: { author: string; text: string; at: string; url?: string | null };
+  draft: string;
+  createdAt: string;
+  /**
+   * Everything below is optional on purpose.
+   *
+   * The follow-up inbox stores a draft the guards ALREADY cleared and keeps no
+   * evidence row for it, because a blocked follow-up is never written at all;
+   * a Reddit draft carries its thread, its citations and the rules of the room.
+   * One card renders both, and a field that is not there is not drawn — not
+   * drawn as a zero, which is what "confidence 0.00" would have been.
+   */
+  thread?: ThreadContext | null;
+  evidence?: Evidence[];
+  guards?: GuardResult[];
+  verdict?: Verdict;
+  confidence?: number;
+  rules?: AppliedRule[];
+  styleRef?: StyleRef | null;
+  /** Set by the operator when they have pasted it in themselves. */
+  sentAt?: string | null;
+  status?: "open" | "sent" | "dismissed";
+}
+
+// ── persona ─────────────────────────────────────────────────────────────────
+
+/**
+ * One past answer, cited for its MANNER.
+ *
+ * `label` is the server's own phrasing of when it was written — "Your own words
+ * · March 2026" — and it is what the console renders beside the draft. It is
+ * never grounding: no claim in a reply stands on it, and it is deliberately
+ * kept out of the fact list the model cites from.
+ */
+export interface StyleRef {
+  factId: string;
+  text: string;
+  label?: string;
+  /** Older payloads carried the timestamp rather than a phrase. */
+  at?: string | null;
+}
+
+export interface PersonaBoundaries {
+  never_claim: string[];
+  never_discuss: string[];
+  must_disclose: string[];
+}
+
+export interface PersonaRegister {
+  length: "short" | "medium";
+  /** 1 is a chat message, 5 is a support ticket. */
+  formality: number;
+  emoji: boolean;
+  notes: string;
+}
+
+/** One of the operator's own past sends, learned into the voice corpus. */
+export interface VoiceCorpusDoc {
+  factId: string;
+  /** What they were asked. The corpus is indexed on this as well as the answer:
+   *  a past reply about shipping resembles a shipping question through the
+   *  question it answered, often sharing no vocabulary with it at all. */
+  question: string;
+  text: string;
+  /** Learned from a send we watched, or pasted in by the operator. */
+  origin: "sent" | "pasted" | string;
+  showId: string | null;
+  showTitle: string | null;
+  at: string | null;
+}
+
+export interface Persona {
+  id?: string;
+  name: string;
+  about: string;
+  voice: string;
+  boundaries: PersonaBoundaries;
+  /** What we must say about who is talking, when we post. */
+  disclosure: string | null;
+  /** How to sound, per surface. A surface with no entry uses the voice above. */
+  registers: Partial<Record<SurfaceId, PersonaRegister>>;
+  /** Reserved server-side. Empty means the whole voice corpus. */
+  corpusDocIds?: string[];
+  updatedAt?: string | null;
+}
+
+/**
+ * What `GET /api/persona` answers.
+ *
+ * The corpus is NOT a field on the persona: it is learned rather than edited,
+ * it is large, and a form that could PUT it back would let this page overwrite
+ * an index it never read. Kept beside the persona for exactly that reason.
+ */
+export interface PersonaView {
+  persona: Persona | null;
+  voice: { total: number; docs: VoiceCorpusDoc[] };
+}
+
+/** What `POST /api/persona/learn` answers, alongside the view. */
+export interface LearnReport {
+  /** How many the corpus holds afterwards. */
+  total: number;
+  /** How many this call wrote. Re-learning the same history writes the same
+   *  rows, so a second press reports the same number, not double. */
+  indexed: number;
+  /** Which shows the operator's own words came out of. */
+  shows: { showId: string; title: string; count: number }[];
+  pasted: number;
+}
+
+// ── rooms ───────────────────────────────────────────────────────────────────
+
+/** A subreddit, a channel, a conversation — and whether we may speak in it. */
+export interface SurfaceRoom {
+  surface: SurfaceId;
+  room: string;
+  /** A HUMAN turned this on. Default false, everywhere, always. */
+  posting: boolean;
+  /** What we must say about who is talking, when we post here. */
+  disclosure: string | null;
+  addedAt: string;
 }

@@ -1,0 +1,435 @@
+/**
+ * Drafts — the one place in this product where a human is the sender.
+ *
+ * Everywhere else the copilot can deliver: a proposal on the console has a Send
+ * button and pressing it posts to eBay. On a `draft-only` surface it cannot,
+ * and that is not a configuration or a missing key — Reddit is draft-only in
+ * the backend's code, because a copilot that can post to a subreddit on its own
+ * is one bug away from being the vendor spam every subreddit has a rule
+ * against.
+ *
+ * Which changes what this screen has to be. A queue of Send buttons is useless
+ * here; what the operator needs is everything required to DECIDE, in one place,
+ * because the next thing they do is paste it into someone else's website under
+ * their own name:
+ *
+ *   · the thread — the opening post and the branch above the comment, because a
+ *     reply that answers the words and not the conversation reads as a bot;
+ *   · the draft and its citations, so they know what it is standing on;
+ *   · which rules of the room applied, and — the one that matters most — which
+ *     rule WOULD have blocked it, because that is the sentence that gets an
+ *     account banned and it is invisible everywhere else;
+ *   · Copy, and Mark sent.
+ *
+ * "Mark sent" is recorded and never inferred. We cannot see the subreddit, so
+ * the only honest source for "this went out" is the person who pasted it.
+ */
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  AlertTriangle,
+  Check,
+  ChevronRight,
+  MessageSquareQuote,
+  Scale,
+  SquarePen,
+} from "lucide-react";
+import { api } from "@/lib/api";
+import { cn } from "@/lib/utils";
+import { GUARD_LABEL, timeAgo } from "@/lib/format";
+import { capabilitiesOf, guardOrderFor, surfaceLabel } from "@/lib/surfaces";
+import type { AppliedRule, SurfaceDraft, SurfaceId } from "@/lib/types";
+import { AppShell, type Tab } from "@/components/app/AppShell";
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  GuardPill,
+  SectionHeading,
+  Skeleton,
+} from "@/components/ui/kit";
+import { EvidenceChips, StyleRef } from "@/components/console/ProposalQueue";
+
+export function DraftsPage() {
+  const [drafts, setDrafts] = useState<SurfaceDraft[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [surface, setSurface] = useState<SurfaceId | "all">("all");
+
+  const load = useCallback(async () => {
+    try {
+      setDrafts(await api.drafts());
+      setError(null);
+    } catch (e) {
+      // An endpoint that is not there yet and an endpoint that refused are
+      // different facts. Neither of them is "you have no drafts".
+      setError((e as Error).message);
+      setDrafts([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const open = useMemo(
+    () => (drafts ?? []).filter((d) => (d.status ?? "open") === "open"),
+    [drafts],
+  );
+  const sent = useMemo(() => (drafts ?? []).filter((d) => d.status === "sent"), [drafts]);
+
+  const surfaces = useMemo(() => [...new Set(open.map((d) => d.surface))].sort(), [open]);
+  const shown = surface === "all" ? open : open.filter((d) => d.surface === surface);
+
+  // One tab per surface that actually has drafts. A tab for a surface with
+  // nothing in it is a promise of somewhere to go.
+  const tabs: Tab[] =
+    surfaces.length > 1
+      ? [
+          {
+            label: "All",
+            count: open.length,
+            active: surface === "all",
+            onClick: () => setSurface("all"),
+          },
+          ...surfaces.map((s) => ({
+            label: surfaceLabel(s),
+            count: open.filter((d) => d.surface === s).length,
+            active: surface === s,
+            onClick: () => setSurface(s),
+          })),
+        ]
+      : [];
+
+  const mark = async (d: SurfaceDraft, what: "sent" | "dismissed") => {
+    const id = d.id;
+    // Optimistic: the row moves the moment it is clicked and comes back if the
+    // server disagrees. A list that does not move after "Mark sent" is a list
+    // the operator marks twice.
+    setDrafts((prev) =>
+      (prev ?? []).map((d) =>
+        d.id === id
+          ? {
+              ...d,
+              status: what === "sent" ? "sent" : "dismissed",
+              sentAt: new Date().toISOString(),
+            }
+          : d,
+      ),
+    );
+    try {
+      if (what === "sent") await api.markDraftSent(id, d.surface);
+      else await api.dismissDraft(id, d.surface);
+    } catch (e) {
+      setError((e as Error).message);
+      await load();
+    }
+  };
+
+  return (
+    <AppShell
+      section="drafts"
+      title="Drafts"
+      subtitle={
+        drafts === null
+          ? "reading your drafts…"
+          : `${open.length} waiting · nothing here is ever posted by us`
+      }
+      tabs={tabs}
+    >
+      <SectionHeading hint="These are the surfaces the copilot writes for and does not post to. It reads the thread, drafts a reply against the same guards a live show uses, and stops. You are the sender: copy it, post it under your own name, and mark it sent so the next draft knows this question is answered.">
+        Written for you to send
+      </SectionHeading>
+
+      {error ? (
+        <Card tone="warn" className="mt-3 flex items-start gap-2 px-3 py-2.5">
+          <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-warn" aria-hidden />
+          <span className="text-[12.5px]">{error}</span>
+        </Card>
+      ) : null}
+
+      <div className="mt-3 flex flex-col gap-2.5">
+        {drafts === null ? (
+          <>
+            <Skeleton className="h-[160px]" />
+            <Skeleton className="h-[160px]" />
+          </>
+        ) : shown.length === 0 ? (
+          <Card>
+            <EmptyState
+              icon={<SquarePen className="size-5" aria-hidden />}
+              title="Nothing to send."
+            >
+              A draft appears here when the copilot has read a thread in a room you watch and
+              written a reply for it. Add a subreddit or a channel on Rooms, and note that Reddit
+              drafts are never posted by us — not as a setting, in the code.
+            </EmptyState>
+          </Card>
+        ) : (
+          shown.map((d) => (
+            <DraftCard
+              key={d.id}
+              d={d}
+              onSent={() => void mark(d, "sent")}
+              onDismiss={() => void mark(d, "dismissed")}
+            />
+          ))
+        )}
+      </div>
+
+      {sent.length ? (
+        <div className="mt-8 mb-10">
+          <SectionHeading hint="Marked by you, because nobody else can see it happen. This is what stops the copilot drafting the same answer again.">
+            Sent
+          </SectionHeading>
+          <ul className="mt-3 flex flex-col gap-1.5">
+            {sent.slice(0, 20).map((d) => (
+              <li key={d.id}>
+                <Card className="flex items-center gap-3 px-3 py-2.5">
+                  <Check className="size-3.5 shrink-0 text-ok" aria-hidden />
+                  <span className="num shrink-0 text-[11.5px] text-text-muted">{d.room}</span>
+                  <span className="min-w-0 flex-1 truncate text-[12.5px] text-text-secondary">
+                    {d.draft}
+                  </span>
+                  <span className="num shrink-0 text-[11px] text-text-faint">
+                    {d.sentAt ? timeAgo(d.sentAt) : ""}
+                  </span>
+                </Card>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </AppShell>
+  );
+}
+
+/** Exported so a spec can drive one card without standing up the shell. */
+export function DraftCard({
+  d,
+  onSent,
+  onDismiss,
+}: {
+  d: SurfaceDraft;
+  onSent: () => void;
+  onDismiss: () => void;
+}) {
+  const [copied, setCopied] = useState<"idle" | "ok" | "failed">("idle");
+  const [openThread, setOpenThread] = useState(false);
+  const caps = capabilitiesOf(d.surface);
+  const order = guardOrderFor(caps);
+  const ancestors = d.thread?.ancestors ?? [];
+  const rules = d.rules ?? [];
+  const evidence = d.evidence ?? [];
+  const guards = d.guards ?? [];
+  const blocking = rules.find((r) => r.effect === "blocked");
+  const wouldBlock = rules.filter((r) => r.effect === "would_block");
+  const applied = rules.filter((r) => r.effect === "applied");
+
+  const copy = () => {
+    if (!navigator.clipboard) {
+      setCopied("failed");
+      return;
+    }
+    void navigator.clipboard
+      .writeText(d.draft)
+      .then(() => setCopied("ok"))
+      .catch(() => setCopied("failed"));
+    window.setTimeout(() => setCopied("idle"), 2000);
+  };
+
+  return (
+    <Card {...(blocking ? { tone: "warn" as const } : {})} className="overflow-hidden">
+      <div className="flex flex-wrap items-center gap-2 px-3 py-2 shadow-[0_1px_0_var(--hairline)]">
+        <Badge>{surfaceLabel(d.surface)}</Badge>
+        <span className="num truncate text-[12px] text-text-secondary">{d.room}</span>
+        <span className="num ml-auto shrink-0 text-[11px] text-text-muted">
+          {timeAgo(d.createdAt)}
+        </span>
+        {/* A follow-up carries no confidence figure — it was written from a
+            draft the guards had already cleared. Drawing a 0.00 there would be
+            a measurement nobody made. */}
+        {d.confidence != null ? (
+          <span className="num shrink-0 text-[11px] text-text-muted">
+            conf {d.confidence.toFixed(2)}
+          </span>
+        ) : null}
+      </div>
+
+      <div className="space-y-2.5 p-3">
+        {/* The comment being answered. */}
+        <blockquote className="border-l-2 border-hairline-strong pl-2.5">
+          <span className="flex items-center gap-1 text-[11px] text-text-muted">
+            <MessageSquareQuote className="size-3" aria-hidden />
+            {d.question.author}
+            {d.question.url ? (
+              <a
+                href={d.question.url}
+                target="_blank"
+                rel="noreferrer"
+                className="ml-1 text-accent hover:underline"
+              >
+                open
+              </a>
+            ) : null}
+          </span>
+          <p className="text-[12.5px] leading-snug text-text-secondary">{d.question.text}</p>
+        </blockquote>
+
+        {/* The thread above it. Collapsed by default and never hidden: it is
+            the difference between answering the words and answering the
+            conversation, and it is also the longest thing on the card. */}
+        {ancestors.length ? (
+          <div>
+            <button
+              type="button"
+              onClick={() => setOpenThread((v) => !v)}
+              aria-expanded={openThread}
+              className="flex items-center gap-1 text-[11.5px] text-text-muted hover:text-text"
+            >
+              <ChevronRight
+                className={cn("size-3 transition-transform", openThread && "rotate-90")}
+                aria-hidden
+              />
+              {openThread
+                ? "Hide the thread"
+                : `The thread — opening post and ${ancestors.length - 1} above`}
+            </button>
+            {openThread ? (
+              <ol className="anim-in mt-1.5 flex flex-col gap-1.5 rounded-sm bg-elevated p-2.5">
+                {ancestors.map((a, i) => (
+                  <li
+                    key={`${a.author}-${a.at}-${i}`}
+                    className={cn(
+                      "border-l-2 pl-2.5",
+                      i === 0 ? "border-accent/50" : "border-hairline-strong",
+                    )}
+                  >
+                    <span className="flex items-center gap-1.5 text-[11px] text-text-muted">
+                      {a.author}
+                      {i === 0 ? <span className="text-text-faint">opening post</span> : null}
+                      <span className="num ml-auto text-text-faint">
+                        {a.at ? timeAgo(a.at) : ""}
+                      </span>
+                    </span>
+                    <p className="mt-0.5 text-[12px] leading-snug whitespace-pre-wrap text-text-secondary">
+                      {a.text}
+                    </p>
+                  </li>
+                ))}
+              </ol>
+            ) : null}
+          </div>
+        ) : d.thread ? (
+          <p className="text-[11.5px] text-text-muted">
+            This is the opening post — nothing above it.
+          </p>
+        ) : null}
+
+        <p
+          className={cn(
+            "text-[14px] leading-snug",
+            blocking ? "text-text-muted line-through" : "text-text",
+          )}
+        >
+          {d.draft}
+        </p>
+
+        {/* The citations and the guard row exist where the surface recorded
+            them. Where it did not — the follow-up inbox stores only a draft the
+            chain had already cleared — the card says that in one line rather
+            than drawing six grey pills that would read as "nothing ran". */}
+        {d.evidence ? <EvidenceChips evidence={evidence} /> : null}
+
+        {d.guards ? (
+          <div className="flex flex-wrap gap-1" role="list" aria-label="Guardrail results">
+            {order.map((g) => (
+              <GuardPill
+                key={g}
+                guard={g}
+                verdict={guards.find((x) => x.guard === g)?.verdict ?? "n/a"}
+              />
+            ))}
+          </div>
+        ) : (
+          <p className="text-[11.5px] text-text-muted">
+            Written through the same guard chain a live reply passes, against the catalog as it
+            stands now. A draft the guards held is never stored here at all.
+          </p>
+        )}
+
+        <StyleRef styleRef={d.styleRef} />
+
+        <Rules blocking={blocking ?? null} wouldBlock={wouldBlock} applied={applied} />
+
+        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+          <Button variant="primary" onClick={copy}>
+            {copied === "ok" ? "Copied" : copied === "failed" ? "Could not copy" : "Copy"}
+          </Button>
+          <Button variant="secondary" onClick={onSent}>
+            <Check className="size-3" aria-hidden /> Mark sent
+          </Button>
+          <Button variant="ghost" onClick={onDismiss}>
+            Dismiss
+          </Button>
+          <span className="ml-auto text-[11px] text-text-muted">We never post this. You do.</span>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+/**
+ * What the room's rules did to this draft.
+ *
+ * The three states are deliberately not drawn alike. A rule that BLOCKED is the
+ * reason there is nothing to send. A rule that WOULD have blocked is the more
+ * valuable one and the one no other screen shows: it is the sentence the copilot
+ * did not write, and the sentence the operator would otherwise have written
+ * themselves.
+ */
+function Rules({
+  blocking,
+  wouldBlock,
+  applied,
+}: {
+  blocking: AppliedRule | null;
+  wouldBlock: AppliedRule[];
+  applied: AppliedRule[];
+}) {
+  if (!blocking && wouldBlock.length === 0 && applied.length === 0) return null;
+  return (
+    <div className="rounded-sm bg-elevated px-2.5 py-2">
+      <div className="section-header flex items-center gap-1.5">
+        <Scale className="size-3" aria-hidden />
+        rules of the room
+      </div>
+
+      {blocking ? (
+        <p className="mt-1.5 text-[12px] leading-snug text-warn">
+          <span className="font-medium">Held — {blocking.label}.</span>{" "}
+          {blocking.reason ?? blocking.text}{" "}
+          <span className="num text-[11px] text-text-muted">{blocking.factId}</span>
+        </p>
+      ) : null}
+
+      {wouldBlock.map((r) => (
+        <p key={r.factId} className="mt-1.5 text-[12px] leading-snug text-text-secondary">
+          <span className="font-medium">Would have blocked it — {r.label}.</span>{" "}
+          {r.reason ?? r.text}
+        </p>
+      ))}
+
+      {applied.length ? (
+        <p className="mt-1.5 text-[11.5px] leading-snug text-text-muted">
+          Also in force: {applied.map((r) => r.label).join(" · ")}. These are constraints on the
+          reply, never facts it answers from.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+/** Exported for the spec: the guard row a draft renders is the surface's own. */
+export const draftGuardLabels = (surface: SurfaceId): string[] =>
+  guardOrderFor(capabilitiesOf(surface)).map((g) => GUARD_LABEL[g]);

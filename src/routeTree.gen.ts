@@ -15,9 +15,12 @@ import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as CatalogRouteImport } from './routes/catalog'
 import { Route as ConsoleRouteImport } from './routes/console'
 import { Route as CostRouteImport } from './routes/cost'
+import { Route as DraftsRouteImport } from './routes/drafts'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as PersonaRouteImport } from './routes/persona'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as RoomsRouteImport } from './routes/rooms'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SetupRouteImport } from './routes/setup'
 import { Route as ShowsRouteImport } from './routes/shows'
@@ -55,9 +58,19 @@ const CostRoute = CostRouteImport.update({
   path: '/cost',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DraftsRoute = DraftsRouteImport.update({
+  id: '/drafts',
+  path: '/drafts',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PersonaRoute = PersonaRouteImport.update({
+  id: '/persona',
+  path: '/persona',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyRoute = PrivacyRouteImport.update({
@@ -68,6 +81,11 @@ const PrivacyRoute = PrivacyRouteImport.update({
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RoomsRoute = RoomsRouteImport.update({
+  id: '/rooms',
+  path: '/rooms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -108,9 +126,12 @@ export interface FileRoutesByFullPath {
   '/catalog': typeof CatalogRoute
   '/console': typeof ConsoleRoute
   '/cost': typeof CostRoute
+  '/drafts': typeof DraftsRoute
   '/login': typeof LoginRoute
+  '/persona': typeof PersonaRoute
   '/privacy': typeof PrivacyRoute
   '/register': typeof RegisterRoute
+  '/rooms': typeof RoomsRoute
   '/settings': typeof SettingsRoute
   '/setup': typeof SetupRoute
   '/shows': typeof ShowsRoute
@@ -125,9 +146,12 @@ export interface FileRoutesByTo {
   '/catalog': typeof CatalogRoute
   '/console': typeof ConsoleRoute
   '/cost': typeof CostRoute
+  '/drafts': typeof DraftsRoute
   '/login': typeof LoginRoute
+  '/persona': typeof PersonaRoute
   '/privacy': typeof PrivacyRoute
   '/register': typeof RegisterRoute
+  '/rooms': typeof RoomsRoute
   '/settings': typeof SettingsRoute
   '/setup': typeof SetupRoute
   '/shows': typeof ShowsRoute
@@ -143,9 +167,12 @@ export interface FileRoutesById {
   '/catalog': typeof CatalogRoute
   '/console': typeof ConsoleRoute
   '/cost': typeof CostRoute
+  '/drafts': typeof DraftsRoute
   '/login': typeof LoginRoute
+  '/persona': typeof PersonaRoute
   '/privacy': typeof PrivacyRoute
   '/register': typeof RegisterRoute
+  '/rooms': typeof RoomsRoute
   '/settings': typeof SettingsRoute
   '/setup': typeof SetupRoute
   '/shows': typeof ShowsRoute
@@ -162,9 +189,12 @@ export interface FileRouteTypes {
     | '/catalog'
     | '/console'
     | '/cost'
+    | '/drafts'
     | '/login'
+    | '/persona'
     | '/privacy'
     | '/register'
+    | '/rooms'
     | '/settings'
     | '/setup'
     | '/shows'
@@ -179,9 +209,12 @@ export interface FileRouteTypes {
     | '/catalog'
     | '/console'
     | '/cost'
+    | '/drafts'
     | '/login'
+    | '/persona'
     | '/privacy'
     | '/register'
+    | '/rooms'
     | '/settings'
     | '/setup'
     | '/shows'
@@ -196,9 +229,12 @@ export interface FileRouteTypes {
     | '/catalog'
     | '/console'
     | '/cost'
+    | '/drafts'
     | '/login'
+    | '/persona'
     | '/privacy'
     | '/register'
+    | '/rooms'
     | '/settings'
     | '/setup'
     | '/shows'
@@ -214,9 +250,12 @@ export interface RootRouteChildren {
   CatalogRoute: typeof CatalogRoute
   ConsoleRoute: typeof ConsoleRoute
   CostRoute: typeof CostRoute
+  DraftsRoute: typeof DraftsRoute
   LoginRoute: typeof LoginRoute
+  PersonaRoute: typeof PersonaRoute
   PrivacyRoute: typeof PrivacyRoute
   RegisterRoute: typeof RegisterRoute
+  RoomsRoute: typeof RoomsRoute
   SettingsRoute: typeof SettingsRoute
   SetupRoute: typeof SetupRoute
   ShowsRoute: typeof ShowsRoute
@@ -269,11 +308,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CostRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/drafts': {
+      id: '/drafts'
+      path: '/drafts'
+      fullPath: '/drafts'
+      preLoaderRoute: typeof DraftsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/persona': {
+      id: '/persona'
+      path: '/persona'
+      fullPath: '/persona'
+      preLoaderRoute: typeof PersonaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy': {
@@ -288,6 +341,13 @@ declare module '@tanstack/react-router' {
       path: '/register'
       fullPath: '/register'
       preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/rooms': {
+      id: '/rooms'
+      path: '/rooms'
+      fullPath: '/rooms'
+      preLoaderRoute: typeof RoomsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -342,9 +402,12 @@ const rootRouteChildren: RootRouteChildren = {
   CatalogRoute: CatalogRoute,
   ConsoleRoute: ConsoleRoute,
   CostRoute: CostRoute,
+  DraftsRoute: DraftsRoute,
   LoginRoute: LoginRoute,
+  PersonaRoute: PersonaRoute,
   PrivacyRoute: PrivacyRoute,
   RegisterRoute: RegisterRoute,
+  RoomsRoute: RoomsRoute,
   SettingsRoute: SettingsRoute,
   SetupRoute: SetupRoute,
   ShowsRoute: ShowsRoute,
