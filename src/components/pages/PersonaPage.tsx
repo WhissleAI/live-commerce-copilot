@@ -2,7 +2,7 @@
  * Persona — who the copilot is speaking as, and what it will not say.
  *
  * The seller profile answered this for one surface by accident: `about` and
- * `voice` came out of the catalog, and every reply was for a show, so nobody
+ * `voice` came out of the catalog, and every reply was for a session, so nobody
  * had to ask whether a reply on Reddit should sound like a reply on air. It
  * should not. The same person writes shorter and flatter in a subreddit than
  * they talk on a live auction, and a copilot that does not know that is
@@ -356,7 +356,7 @@ export function PersonaPage() {
               icon={<PenLine className="size-5" aria-hidden />}
               title="Nothing learned yet."
             >
-              Learn reads the replies you have actually sent — from your shows, and from drafts you
+              Learn reads the replies you have actually sent — from your sessions, and from drafts you
               marked sent — and keeps them as examples of how you write. Nothing is invented and
               nothing is sent anywhere.
             </EmptyState>

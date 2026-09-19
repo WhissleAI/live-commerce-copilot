@@ -33,7 +33,7 @@ import { AppShell } from "@/components/app/AppShell";
 import { Section } from "./PageShell";
 import { Badge, Button, Card, EmptyState, Skeleton } from "@/components/ui/kit";
 
-/** Which surfaces have rooms to watch at all. A live show is attached by link
+/** Which surfaces have rooms to watch at all. A live session is attached by link
  *  and is not a standing room, so it is not listed here. */
 export function roomSurfaces(infos: SurfaceInfo[] | null): SurfaceInfo[] {
   const rows =

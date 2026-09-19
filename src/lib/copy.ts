@@ -165,3 +165,63 @@ export function streamTitle(e: unknown): string {
   }
   return "The session stream stopped";
 }
+
+// ── one name, one description, one verb ────────────────────────────────────
+//
+// CONTENT-30. The page a session is attached from is called "Home" in the rail
+// and in body copy and "Today" in its own header. The box on it is described
+// three ways ("paste a session link, a channel, or a thread" · "Paste a
+// session, a channel or a thread on Home" · "Paste a link on Home to begin")
+// and the button that acts on it is called four ("Start monitoring" ·
+// "Monitor a session" · "Monitor" · "Monitor a session"). One object, decided
+// per screen.
+
+/** What the page is called, wherever it is referred to from somewhere else. */
+export const HOME = "Home";
+
+/** What the paste box takes. Said once; every page that points at it points here. */
+export const ATTACH_INPUT = "a session link, a channel, or a thread";
+
+/** The verb. One word, so it is the same word on a button and in a sentence. */
+export const ATTACH_VERB = "Monitor";
+
+/** "Paste a session link, a channel, or a thread on Home." */
+export const ATTACH_HINT = `Paste ${ATTACH_INPUT} on ${HOME} and the copilot attaches to it.`;
+
+// ── refusals that name a shell command ──────────────────────────────────────
+//
+// CONTENT-21. The blocking step of the primary Before workflow — Discover with
+// no eBay Live session, which is the default state for every new operator —
+// was answered with "Run `npm run ebay:signin` in the server repo", in two
+// different wordings depending on which code path answered: `lib/discover.ts`
+// wrote one and the backend's discover source wrote another. The backend's own
+// readiness module states the principle at `src/shows/readiness.ts:185-190`:
+// "Product language. A seller does not run npm scripts."
+//
+// There is no sign-in affordance in the product and this file may not invent
+// one. What it can do is say the true thing: the session lives on the server
+// and creating one needs someone with access to that machine — and say the
+// same true thing whichever side produced the refusal.
+
+/** Said once. The operator's half is the second sentence; there is no first. */
+export const EBAY_SIGNIN_REFUSAL =
+  "eBay Live streams its grid only to a signed-in browser, and this server holds no session — creating one takes somebody with access to the machine it runs on, because nobody types a credential for you. Pasting a link to a session still attaches and monitors it from here.";
+
+export const EBAY_SIGNIN_STALE =
+  "The eBay session this server holds has expired, and renewing it takes somebody with access to the machine it runs on. Pasting a link to a session still attaches and monitors it from here.";
+
+/**
+ * A refusal from the server, as a sentence for an operator.
+ *
+ * Narrow on purpose: it rewrites the one class of message that tells a seller
+ * to run a shell command in a repository they do not have, and passes
+ * everything else through untouched. A refusal the backend wrote for an
+ * operator is better than anything this file would substitute.
+ */
+export function operatorRefusal(text: string | null | undefined): string | null {
+  if (!text) return null;
+  if (/npm run ebay:signin/i.test(text)) {
+    return /stale|old enough|expired/i.test(text) ? EBAY_SIGNIN_STALE : EBAY_SIGNIN_REFUSAL;
+  }
+  return text;
+}

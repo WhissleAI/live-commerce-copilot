@@ -13,7 +13,7 @@
  *
  * Market data used to exist only inside the research palette: one lot, only
  * when someone asked, gone when the palette closed. That is the wrong shape for
- * the job it serves. A seller prepares before a show — they want the whole
+ * the job it serves. A seller prepares before a session — they want the whole
  * lineup, with the market beside it, while there is still time to change a
  * price.
  *
@@ -176,7 +176,7 @@ export function KnowledgePage({ initialId }: { initialId?: string | undefined } 
             icon={<PackageSearch className="size-5" aria-hidden />}
             title="No catalogs yet."
           >
-            Import your listings on Settings › eBay, or prepare a show on Discover — either one
+            Import your listings on Settings › eBay, or prepare a session on Discover — either one
             becomes a catalog here, priced against the market.
           </EmptyState>
         </Card>
@@ -266,7 +266,7 @@ export function KnowledgePage({ initialId }: { initialId?: string | undefined } 
                   icon={<PackageSearch className="size-5" aria-hidden />}
                   title="This catalog has no items."
                 >
-                  Import your eBay listings from Settings → eBay, or add a catalog file.
+                  Import your eBay listings from Settings › eBay, or prepare a session on Discover. Those are the two places a catalog is made.
                 </EmptyState>
               ) : (
                 <div className="scroll-thin overflow-x-auto">
@@ -389,7 +389,7 @@ function catalogLabel(c: CatalogSummary): string {
   const who = c.seller?.handle ? ` · @${c.seller.handle.replace(/^@+/, "")}` : "";
   const kind =
     c.origin?.kind === "prepared"
-      ? " · prepared show"
+      ? " · prepared session"
       : c.origin?.kind === "imported"
         ? " · your listings"
         : c.origin?.kind === "seed"
@@ -400,8 +400,8 @@ function catalogLabel(c: CatalogSummary): string {
 
 /**
  * Where this lineup came from, and the way back. A catalog named after an
- * event id told nobody which show it was; this says the show, the host, when
- * it was prepared, and links to the show on Discover.
+ * event id told nobody which session it was; this says the session, the host, when
+ * it was prepared, and links to the session on Discover.
  */
 function Provenance({ catalog }: { catalog: CatalogSummary }) {
   const o = catalog.origin;
@@ -410,7 +410,7 @@ function Provenance({ catalog }: { catalog: CatalogSummary }) {
     const who = o.sellerHandle ? `@${o.sellerHandle.replace(/^@+/, "")}` : o.host;
     return (
       <p className="mb-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-text-secondary">
-        <Badge tone="neutral">prepared show</Badge>
+        <Badge tone="neutral">prepared session</Badge>
         <span>
           Lineup of <span className="font-medium text-text">{o.showTitle}</span>
           {who ? <> by {who}</> : null}

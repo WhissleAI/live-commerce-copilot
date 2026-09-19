@@ -209,11 +209,20 @@ export function StyleRef({ styleRef }: { styleRef: ReplyProposal["styleRef"] | u
 /** The one control a draft-only surface has. The clipboard can be refused (an
  *  insecure origin, a denied permission) and the button says so rather than
  *  looking like it worked. */
-function CopyDraft({ text }: { text: string }) {
+/**
+ * CONTENT-19: this rendered only on draft-only surfaces, so eBay Live — the
+ * one surface the landing page says by name "hands an approved reply back to
+ * you to paste" — had a button labelled Send, a status that read `sent`, and
+ * nowhere to copy from. Nothing is actually delivered anywhere (`send()` marks
+ * the proposal and appends an audit entry; there is no platform call on any
+ * path), so the copy is the operator's real next step on every surface. It is
+ * the primary action where there is nothing else, and secondary beside Send.
+ */
+function CopyDraft({ text, variant = "primary" }: { text: string; variant?: "primary" | "secondary" }) {
   const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
   return (
     <ConsoleButton
-      variant="primary"
+      variant={variant}
       onClick={() => {
         void navigator.clipboard
           ?.writeText(text)
@@ -222,7 +231,7 @@ function CopyDraft({ text }: { text: string }) {
         if (!navigator.clipboard) setState("failed");
         window.setTimeout(() => setState("idle"), 2000);
       }}
-      title="This surface is draft-only — the reply is yours to post"
+      title="The reply is yours to post — nothing is delivered for you"
     >
       {state === "copied" ? "Copied" : state === "failed" ? "Could not copy" : "Copy"}
     </ConsoleButton>
@@ -522,8 +531,12 @@ function ProposalCard({
                     ⏎
                   </Kbd>
                 </ConsoleButton>
-              ) : (
-                <CopyDraft text={editing ? value : p.draft} />
+              ) : null}
+              {blocked ? null : (
+                <CopyDraft
+                  text={editing ? value : p.draft}
+                  variant={deliverable ? "secondary" : "primary"}
+                />
               )}
               <ConsoleButton variant="secondary" onClick={editing ? onCancelEdit : onEdit}>
                 {editing ? "Cancel" : "Edit"}

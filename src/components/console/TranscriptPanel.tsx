@@ -63,7 +63,7 @@ export function TranscriptPanel({
   const wrap = useRef<HTMLDivElement | null>(null);
 
   // The LATEST utterance, always. A hover-to-scrub affordance was here and it
-  // was the wrong trade for this rail: during a show the operator wants the
+  // was the wrong trade for this rail: during a session the operator wants the
   // thing that was just said, and scrubbing back is a thing they do afterwards,
   // in the report, where there is room for it.
   const shown = transcript[transcript.length - 1];
@@ -220,7 +220,7 @@ export function TranscriptPanel({
         )}
 
         {/* What the copilot can SEE, and how the host is presenting. Kept with
-            the audio because they describe the same moment of the show. */}
+            the audio because they describe the same moment of the session. */}
         {(context?.onScreen || context?.tone || context?.voice || context?.style) && (
           <div className="mt-2 space-y-1.5 border-t border-hairline pt-2">
             {context.onScreen && (

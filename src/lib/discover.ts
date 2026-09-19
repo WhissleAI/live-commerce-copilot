@@ -18,6 +18,7 @@
  */
 
 import { SURFACE_LABEL, SURFACE_ROOM_NOUN, isSurfaceId, surfaceLabel } from "./surfaces";
+import { EBAY_SIGNIN_REFUSAL, EBAY_SIGNIN_STALE } from "./copy";
 import type {
   DiscoverAction,
   DiscoverHit,
@@ -268,14 +269,17 @@ export function ebayReasonLine(reason: DiscoveryReason | undefined): string | nu
   switch (reason) {
     case "pending":
       return "The server has a session and has not read the grid yet. The first read after a restart takes about a minute; this refreshes itself.";
+    // One sentence each, shared with whatever the server sends for the same
+    // state — see `operatorRefusal` in `lib/copy`. These used to name an npm
+    // script, in a repository the seller does not have.
     case "no-session":
-      return "eBay Live shows nothing at all to a signed-out visitor — not a short list, nothing. Run `npm run ebay:signin` in the server repo: a browser opens, you sign in yourself, and the session is saved. Nothing types a credential for you.";
+      return EBAY_SIGNIN_REFUSAL;
     case "stale-session":
-      return "The eBay session has gone stale. Run `npm run ebay:signin` in the server repo to sign in again.";
+      return EBAY_SIGNIN_STALE;
     case "signed-out":
       return "eBay has signed this session out — it ends a session it sees from a new address. Sign in from the address the server will use, and keep using it.";
     case "blocked":
-      return "eBay refused the live grid from this network. Pasting a show link still attaches and monitors from here.";
+      return "eBay refused the live grid from this network. Pasting a session link still attaches and monitors from here.";
     case "stale":
       return "This is the last grid we managed to read; eBay has not answered since.";
     default:
@@ -354,7 +358,7 @@ export function actionLabel(hit: DiscoverHit): string {
 export function actionHint(hit: DiscoverHit): string {
   switch (hit.action) {
     case "prepare":
-      return "Builds this show's catalog from the seller's listings and gives it its own agent, before it starts.";
+      return "Builds this session's catalog from the seller's listings and gives it its own agent, before it starts.";
     case "attach":
       return `Opens a session on ${surfaceLabel(hit.surface)} and starts answering from your knowledge.`;
     case "watch-room":

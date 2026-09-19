@@ -1,10 +1,10 @@
 /**
- * What the pills mean — once, on the first show, and on demand after that.
+ * What the pills mean — once, on the first session, and on demand after that.
  *
  * The console is dense by design: six guard pills, a topic badge, a confidence
  * bar and a latency figure on every card. Each is legible once you know it and
  * opaque before that, and nothing in the product ever said what they were. A
- * seller's first show is the worst possible time to be guessing whether a grey
+ * seller's first session is the worst possible time to be guessing whether a grey
  * "– price" means passed, skipped or broken.
  *
  * Shown automatically once (remembered per browser), and after that it is a

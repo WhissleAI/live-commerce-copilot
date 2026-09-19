@@ -1,11 +1,11 @@
 /**
  * What home is made of, worked out once.
  *
- * Home used to be "your shows", because when it was written a session could
- * only be one thing: an eBay Live show with an eBay checklist above it. Seven
+ * Home used to be "your sessions", because when it was written a session could
+ * only be one thing: an eBay Live session with an eBay checklist above it. Seven
  * surfaces later that is the last screen in the product that still believes a
- * conversation is a show. An async surface has no session at all — Reddit is a
- * standing watch and a queue of drafts — so a list of shows cannot be the
+ * conversation is a session. An async surface has no session at all — Reddit is a
+ * standing watch and a queue of drafts — so a list of sessions cannot be the
  * spine. The spine is what needs a human NOW.
  *
  * Two jobs live here, and both are pure so the page can be reasoned about

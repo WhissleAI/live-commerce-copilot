@@ -17,7 +17,13 @@ import {
 import { api, API_BASE, USE_MOCKS, ensureSession, tokenQuery } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { isTypingIn, modalOpen, shortcutActs } from "@/lib/keys";
-import { LOAD_FAILED, operatorMessage, streamTitle } from "@/lib/copy";
+import {
+  ATTACH_HINT,
+  ATTACH_VERB,
+  LOAD_FAILED,
+  operatorMessage,
+  streamTitle,
+} from "@/lib/copy";
 import { useShowStream } from "@/hooks/useShowStream";
 import {
   capabilitiesOf,
@@ -509,14 +515,13 @@ export function Console() {
               action={
                 <Link to="/">
                   <Button variant="primary">
-                    Monitor a session <ArrowRight className="size-3.5" aria-hidden />
+                    {ATTACH_VERB} a session <ArrowRight className="size-3.5" aria-hidden />
                   </Button>
                 </Link>
               }
             >
-              Paste a session, a channel or a thread on Home and the copilot attaches to it — it
-              builds what it knows from the conversation itself, and this console fills as people
-              start asking.
+              {ATTACH_HINT} It builds what it knows from the conversation itself, and this
+              console fills as people start asking.
             </EmptyState>
           </Card>
         ) : (

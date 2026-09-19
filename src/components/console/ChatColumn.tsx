@@ -16,7 +16,7 @@ export function ChatColumn({
   onInject: (text: string) => void;
   onHoverProposal: (id: string | null) => void;
   linkedProposalIds: Set<string>;
-  /** The gate dropped it and the operator disagrees. One show dropped 1,204
+  /** The gate dropped it and the operator disagrees. One session dropped 1,204
    *  messages as reaction; the gate is right about nearly all of them and wrong
    *  about some, and without this it is unarguable rather than merely strict. */
   onAnswerDropped: (messageId: string) => void;
@@ -169,7 +169,7 @@ export function ChatColumn({
       </div>
 
       {/* The "inject a buyer message" box lived here. It is a test affordance —
-          a way to fake a comment — and on a real show it occupied permanent
+          a way to fake a comment — and on a real session it occupied permanent
           space in the narrowest column to do something the operator never wants
           to do while a stranger's buyers are actually typing. It is still on the
           API (`POST /api/chat/inject`) for demos and the walkthrough. */}

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { NO_FINISHED_SESSIONS } from "@/lib/copy";
+import { ATTACH_VERB, NO_FINISHED_SESSIONS } from "@/lib/copy";
 import { fireEvent, screen } from "@testing-library/react";
 import { renderWithRouter } from "@/test/router";
 import { BehindBand, HomePage, NowBand, RehearsalCard, SurfaceRow, SurfaceTable } from "./HomePage";
@@ -392,7 +392,9 @@ describe("home with the backend down", () => {
     fireEvent.change(box, { target: { value: "https://reddit.com/r/mechmarket" } });
     // Recognised before anything is committed: the surface, then what it is.
     expect(screen.getByText("· r/mechmarket")).toBeInTheDocument();
-    expect(screen.getByText("Start monitoring")).toBeEnabled();
+    // One verb for this action, shared with the console, Setup and Discover —
+    // it was four different words on four screens. See `lib/copy`.
+    expect(screen.getByText(ATTACH_VERB)).toBeEnabled();
   });
 });
 

@@ -13,6 +13,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { ATTACH_HINT, ATTACH_VERB } from "@/lib/copy";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { AlertTriangle, ArrowRight, Check, ExternalLink, Info, Loader2 } from "lucide-react";
 import { api, API_BASE, tokenQuery } from "@/lib/api";
@@ -68,7 +69,7 @@ export function SetupPage({ showId }: { showId?: string | undefined }) {
   return (
     <AppShell
       section="home"
-      title={show ? "Ready to answer?" : "Monitor a session"}
+      title={show ? "Ready to answer?" : `${ATTACH_VERB} a session`}
       subtitle={
         show
           ? `this ${surfaceLabel(surface)} session is attached and being read — this is what the copilot can and cannot ground before you open the console`
@@ -98,7 +99,7 @@ export function SetupPage({ showId }: { showId?: string | undefined }) {
         </div>
       ) : !show ? (
         <Card className="px-4 py-4 text-[12.5px] text-text-muted">
-          No session is attached. Paste a link on Home to begin.
+          No session is attached. {ATTACH_HINT}
         </Card>
       ) : (
         <div className="grid gap-4 lg:grid-cols-[1fr_380px] lg:items-start">

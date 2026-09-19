@@ -1,5 +1,5 @@
 /**
- * ⌘K — go somewhere, do something, find a show.
+ * ⌘K — go somewhere, do something, find a session.
  *
  * The shell advertised "Search or run a command ⌘K" in every header while ⌘K
  * opened a product-research box that only existed on the console. Two different
@@ -7,7 +7,7 @@
  * that did not exist.
  *
  * So: ⌘K is the product's command surface — every rail destination, the actions
- * of whatever screen you are on, and a search over your shows that goes to the
+ * of whatever screen you are on, and a search over your sessions that goes to the
  * console for a live one and the report for a finished one. Research keeps its
  * own palette on ⌘J, where a research box belongs.
  *
@@ -206,7 +206,7 @@ export function CommandBar({
               }
             }}
             spellCheck={false}
-            placeholder="Go to a screen, run a command, find a show…"
+            placeholder="Go to a screen, run a command, find a session…"
             aria-label="Command"
             className="h-11 min-w-0 flex-1 bg-transparent text-[13px] text-text placeholder:text-text-faint focus:outline-none"
           />

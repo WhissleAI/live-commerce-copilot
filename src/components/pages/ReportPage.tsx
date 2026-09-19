@@ -1353,7 +1353,7 @@ function GapRow({
             Answer
           </BadgeButton>
         ) : (
-          <Badge title="No catalog to write the answer into — load one in Setup and it becomes the place these answers live.">
+          <Badge title="No catalog to write the answer into. One is made by importing your listings on Settings › eBay, or by preparing a session on Discover — and it becomes the place these answers live.">
             no catalog
           </Badge>
         )}

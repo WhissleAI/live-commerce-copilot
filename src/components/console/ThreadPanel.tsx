@@ -1,7 +1,7 @@
 /**
  * The conversation a reply is being written into.
  *
- * On a live show the context is the last ninety seconds and the transcript
+ * On a live session the context is the last ninety seconds and the transcript
  * panel is the right shape for it: the host is talking, and the comment before
  * this one is its only neighbour. None of that survives the move to a
  * subreddit, where a comment lands under an opening post and a branch written
@@ -28,7 +28,7 @@ export function ThreadPanel({
   className,
 }: {
   thread: ThreadContext | null | undefined;
-  /** The room the show is in, for the header when no thread is focused yet. */
+  /** The room the session is in, for the header when no thread is focused yet. */
   room?: string | null;
   className?: string;
 }) {

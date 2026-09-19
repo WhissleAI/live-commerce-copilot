@@ -33,6 +33,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { operatorRefusal } from "@/lib/copy";
 import { Link } from "@tanstack/react-router";
 import {
   AlertTriangle,
@@ -98,7 +99,7 @@ export function DiscoverView({ onAttach }: { onAttach: (url: string) => void }) 
   const [refreshed, setRefreshed] = useState<{ at: Date; hits: number } | null>(null);
 
   const read = useCallback(async (refresh: boolean) => {
-    // Home is read either way: it carries the shows already prepared, which
+    // Home is read either way: it carries the sessions already prepared, which
     // exist whether or not the index does, and it is the fallback's payload.
     const [asked, h] = await Promise.all([
       // `null` is the endpoint answering "I am not here" — the deploy-skew
@@ -347,7 +348,7 @@ export function DiscoverView({ onAttach }: { onAttach: (url: string) => void }) 
         )}
       </div>
 
-      {/* Prepared shows that are no longer on any grid still matter: the agent
+      {/* Prepared sessions that are no longer on any grid still matter: the agent
           and the catalog exist, and they are what make attaching instant. */}
       {home?.prepared.length ? (
         <div className="mt-8">
@@ -571,7 +572,7 @@ export function SurfaceChips({
           count={s.unavailable ? null : s.hits.length}
           quiet={Boolean(s.unavailable)}
           needsKey={Boolean(s.unavailable?.missing)}
-          title={s.unavailable?.reason ?? s.method}
+          title={operatorRefusal(s.unavailable?.reason) ?? s.method}
         >
           {surfaceLabel(s.surface)}
         </Chip>
@@ -649,7 +650,7 @@ export function UnavailableNote({
         <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-text-muted" aria-hidden />
       )}
       <span className="text-[12.5px] leading-relaxed text-text-secondary">
-        {source.unavailable?.reason}
+        {operatorRefusal(source.unavailable?.reason)}
         {line ? <span className="block text-text-muted">{line}</span> : null}
         {source.unavailable?.missing ? (
           <span className="block text-text-muted">
@@ -923,13 +924,13 @@ function PreparedRow({
           type="button"
           onClick={onDrop}
           aria-label={`Drop ${p.title}`}
-          title="Deletes this show's agent and its catalog"
+          title="Deletes this session's agent and its catalog"
           className="grid size-[26px] shrink-0 place-items-center rounded-sm text-text-muted hover:bg-bad/10 hover:text-bad"
         >
           <Trash2 className="size-3.5" aria-hidden />
         </button>
       </div>
-      {/* Warnings are the honest half. A prepared show with an empty catalog
+      {/* Warnings are the honest half. A prepared session with an empty catalog
           must say why, or it looks identical to one that worked. */}
       {p.warnings.map((w) => (
         <p
@@ -943,7 +944,7 @@ function PreparedRow({
       {p.warnings.length === 0 && p.items > 0 ? (
         <p className="pl-1 text-[11.5px] text-text-muted">
           Built from {p.sellerHandle ? `@${p.sellerHandle}` : "this seller"}&apos;s active listings
-          {p.tags.length ? ` · ${p.tags.join(" · ")}` : ""}. Prices are re-read live when the show
+          {p.tags.length ? ` · ${p.tags.join(" · ")}` : ""}. Prices are re-read live when the session
           starts.
         </p>
       ) : null}

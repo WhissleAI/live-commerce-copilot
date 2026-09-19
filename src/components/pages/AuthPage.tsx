@@ -2,7 +2,7 @@
  * Sign in and create an account — one form, two verbs.
  *
  * Everything a seller does here is attributed: a sent reply, an approved
- * markdown, an eBay consent, a deleted show. The audit chain names a person,
+ * markdown, an eBay consent, a deleted session. The audit chain names a person,
  * so there is a person. No guest door: the landing page is what a visitor sees.
  */
 
@@ -49,8 +49,8 @@ export function AuthPage({ mode }: { mode: "login" | "register" }) {
         </h1>
         <p className="mt-1 text-[12.5px] text-text-muted">
           {mode === "register"
-            ? "One account, your shows. Every send and approval is recorded against it."
-            : "Welcome back. Your shows, reports and eBay connection are where you left them."}
+            ? "One account, your sessions. Every send and approval is recorded against it."
+            : "Welcome back. Your sessions, reports and eBay connection are where you left them."}
         </p>
 
         <form onSubmit={(e) => void submit(e)} className="mt-6 flex flex-col gap-3">

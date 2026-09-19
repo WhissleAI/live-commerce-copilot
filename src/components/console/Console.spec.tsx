@@ -152,7 +152,41 @@ describe("an eBay Live show renders every column it renders today", () => {
     const pills = screen.getByRole("list", { name: "Guardrail results" });
     expect(pills.textContent).toBe("–price✓stock–policy–grounding–tone–pii");
     expect(screen.getByText("Send")).toBeInTheDocument();
-    expect(screen.queryByText("Copy")).not.toBeInTheDocument();
+  });
+
+  /**
+   * CONTENT-19. The copy affordance rendered only on draft-only surfaces, so
+   * eBay Live — the surface the landing page names when it says an approved
+   * reply is "handed back to you to paste" — had a button labelled Send, a
+   * status that read `sent`, and nowhere to copy from. Nothing is delivered on
+   * any surface: `send()` re-checks the draft, marks it and appends an audit
+   * entry, and there is no platform call on any path. So the copy is the
+   * operator's real next step here too, beside Send rather than instead of it.
+   */
+  it("offers the paste affordance the product promises, on the api surface too", () => {
+    render(
+      <ProposalQueue
+        {...queueProps}
+        live={[proposal()]}
+        guardOrder={guardOrderFor(caps)}
+        deliverable={layout.deliverable}
+      />,
+    );
+    expect(layout.deliverable).toBe(true);
+    expect(screen.getByText("Copy")).toBeInTheDocument();
+  });
+
+  it("makes copy the only action on a draft-only surface", () => {
+    render(
+      <ProposalQueue
+        {...queueProps}
+        live={[proposal()]}
+        guardOrder={guardOrderFor(caps)}
+        deliverable={false}
+      />,
+    );
+    expect(screen.queryByText("Send")).not.toBeInTheDocument();
+    expect(screen.getByText("Copy")).toBeInTheDocument();
   });
 
   it("does not grow a room-rule or sponsor pill", () => {

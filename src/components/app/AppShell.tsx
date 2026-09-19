@@ -64,8 +64,8 @@ export type Section =
  *
  *  · Home is what needs the operator now, what they are preparing, what
  *    finished, and the per-surface phase table underneath. It replaced
- *    "Shows", which could only describe a product where a conversation was
- *    always a live commerce show.
+ *    "Sessions", which could only describe a product where a conversation was
+ *    always a live commerce session.
  *  · Console only exists while a session is on air. A rail button that opens
  *    "nothing is on air" is a button that lies about having somewhere to go.
  *  · Reports is not a destination: every finished session on Home carries its
