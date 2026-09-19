@@ -244,11 +244,11 @@ export function HomePage({ view = "today" }: { view?: View }) {
 
   const tabs: Tab[] = [
     { label: "Today", active: tab === "today", onClick: () => setTab("today") },
-    // Scoped on the label, not implied by silence: one surface has a grid we
-    // can read, and six do not because they have no grid — not because they
-    // are broken.
+    // No longer scoped to one platform in the label. It was scoped because
+    // eBay Live was the only grid we read — which was never a fact about the
+    // other surfaces, two of which have public APIs we had simply not asked.
     {
-      label: "Discover · eBay Live",
+      label: "Discover",
       active: tab === "discover",
       onClick: () => setTab("discover"),
     },
@@ -352,12 +352,17 @@ export function HomePage({ view = "today" }: { view?: View }) {
                   </Button>
                 </Card>
               ))}
-              {model.next.discoverable.includes("ebaylive") ? (
+              {/* How many surfaces Discover can read FOR THIS ACCOUNT right
+                  now — not which platform it is about. A keyless Twitch is
+                  not discoverable today and this number says so, where the
+                  old copy named eBay Live as the only surface that exists. */}
+              {model.next.discoverable.length > 0 ? (
                 <Card className="flex items-center gap-3 px-3 py-2.5">
                   <Plus className="size-3.5 shrink-0 text-text-muted" aria-hidden />
                   <span className="min-w-0 flex-1 text-[12.5px] text-text-secondary">
-                    eBay Live is the one surface with a grid we can read — Discover lists what is on
-                    air there and prepares a session before it starts.
+                    Discover can read {model.next.discoverable.length} surface
+                    {model.next.discoverable.length === 1 ? "" : "s"} for you right now — what is
+                    live on each that matches what you sell.
                   </span>
                   <Button size="sm" onClick={() => setTab("discover")}>
                     Discover
