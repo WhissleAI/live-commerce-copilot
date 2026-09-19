@@ -208,7 +208,7 @@ export function isDraftOnlyFamily(f: SurfaceFamily): boolean {
   return f.surfaces.every((id) => draftOnly(capabilitiesOf(id)));
 }
 
-function FamilyCard({ f }: { f: SurfaceFamily }) {
+export function FamilyCard({ f }: { f: SurfaceFamily }) {
   return (
     <div className="flex h-full flex-col rounded-lg bg-panel p-6 shadow-[0_0_0_1px_var(--hairline),0_10px_28px_-22px_rgba(0,0,0,.35)]">
       <div className="flex items-center gap-2">
