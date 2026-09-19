@@ -137,7 +137,7 @@ export function DraftsPage() {
       }
       tabs={tabs}
     >
-      <SectionHeading hint="These are the surfaces the copilot writes for and does not post to. It reads the thread, drafts a reply against the same guards a live show uses, and stops. You are the sender: copy it, post it under your own name, and mark it sent so the next draft knows this question is answered.">
+      <SectionHeading hint="These are the surfaces the copilot writes for and does not post to. It reads the thread, drafts a reply against the same guards a live session uses, and stops. You are the sender: copy it, post it under your own name, and mark it sent so the next draft knows this question is answered.">
         Written for you to send
       </SectionHeading>
 

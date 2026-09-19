@@ -558,7 +558,7 @@ export function CorpusRow({ doc }: { doc: VoiceCorpusDoc }) {
           {/* Where it came from is the whole reason this is trustworthy as a
               style reference: it is a sentence the operator actually sent. */}
           <span className="truncate">
-            {doc.origin === "pasted" ? "pasted in" : (doc.showTitle ?? "a show of yours")}
+            {doc.origin === "pasted" ? "pasted in" : (doc.showTitle ?? "a session of yours")}
           </span>
           {doc.at ? <span className="num ml-auto">{timeAgo(doc.at)}</span> : null}
         </div>

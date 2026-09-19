@@ -729,15 +729,26 @@ export const api = {
    * this lands. A failure is not an error here: it is "the server has not
    * shipped this yet", and the table is the answer.
    */
-  surfaces: async (): Promise<SurfaceInfo[]> => {
-    if (USE_MOCKS) return withRemote(null);
+  surfaces: async (): Promise<SurfaceInfo[]> => withRemote(await api.surfacesRaw()),
+
+  /**
+   * The registry's own answer, unfolded — or null when it did not answer.
+   *
+   * `surfaces()` folds the reply over the built-in table so the console always
+   * has a complete one, which is right for a layout that must not flicker and
+   * wrong for a screen that has to tell "the server did not mention this
+   * surface" from "the server is not there". The registry returns the adapters
+   * that EXIST; a surface absent from a real answer has no adapter, and
+   * rendering it with the table's optimistic defaults would draw it as ready.
+   */
+  surfacesRaw: async (): Promise<SurfaceInfo[] | null> => {
+    if (USE_MOCKS) return null;
     const raw = await get<unknown>("/api/surfaces").catch(() => null);
-    const rows = Array.isArray(raw)
-      ? raw
+    return Array.isArray(raw)
+      ? (raw as SurfaceInfo[])
       : Array.isArray((raw as { surfaces?: unknown } | null)?.surfaces)
         ? ((raw as { surfaces: unknown[] }).surfaces as SurfaceInfo[])
         : null;
-    return withRemote(rows as SurfaceInfo[] | null);
   },
 
   /** The rooms watched on one surface — a subreddit, a channel — and whether a

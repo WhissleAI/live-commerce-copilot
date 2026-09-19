@@ -63,7 +63,7 @@ export function ReportTimeline({ showId }: { showId: string }) {
   if (!t.utterances.length && !t.frames.length && !t.audio.length) {
     return (
       <Card>
-        <EmptyState icon={<Mic className="size-5" aria-hidden />} title="Nothing was kept for this show.">
+        <EmptyState icon={<Mic className="size-5" aria-hidden />} title="Nothing was kept for this session.">
           The timeline is built from host audio and camera frames, which arrive through the audio
           bridge. Open it next show and this page fills with what was said and shown.
         </EmptyState>
@@ -274,7 +274,7 @@ function Player({ t, showId, onDescribe }: { t: ShowTimeline; showId: string; on
               <Sparkles className="size-3 animate-pulse" aria-hidden /> writing frame descriptions…
             </span>
           ) : undescribed > 0 && frames.length > 0 ? (
-            <Button variant="ghost" size="sm" onClick={onDescribe} title="Ask the show's agent for a fuller reading of each frame">
+            <Button variant="ghost" size="sm" onClick={onDescribe} title="Ask the session's agent for a fuller reading of each frame">
               <Sparkles className="size-3" aria-hidden /> Describe {undescribed} frame{undescribed === 1 ? "" : "s"}
             </Button>
           ) : null}
@@ -349,7 +349,7 @@ function Player({ t, showId, onDescribe }: { t: ShowTimeline; showId: string; on
                           </span>
                           <span className="mt-0.5 line-clamp-2 block text-[11.5px] leading-snug text-text-secondary">
                             {r.f.description ??
-                              (t.describing ? "description on its way…" : "on camera · the fuller reading is written after the show")}
+                              (t.describing ? "description on its way…" : "on camera · the fuller reading is written after the session")}
                           </span>
                         </span>
                       </button>
@@ -485,7 +485,7 @@ function Scrub({
     <div
       ref={box}
       role="slider"
-      aria-label="Position in the show"
+      aria-label="Position in the session"
       aria-valuemin={0}
       aria-valuemax={end}
       aria-valuenow={pos}

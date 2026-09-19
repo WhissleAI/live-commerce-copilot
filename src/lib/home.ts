@@ -65,12 +65,22 @@ const WRITE_ACTIONS = new Set([
 /**
  * What this surface does DURING a conversation.
  *
- * Three answers, and the difference between them is the whole product: we can
- * act, we can answer but not act, or a human is the sender and we only ever
- * write the draft.
+ * Three answers, and the difference between them is the whole product:
+ *
+ *  · "answers and acts" — we can deliver the reply AND change something a
+ *    buyer sees, because we hold credentials for this marketplace.
+ *  · "answers, you send" — there is a live room and an answer for it, and a
+ *    human is the one who puts it in the chat. Whatnot and TikTok Live are
+ *    read through a browser; we hold nothing that could post there.
+ *  · "drafts only" — no room to be in. A queue of replies, and you send them.
+ *
+ * Tempo is what separates the last two: a live draft-only surface is answering
+ * a room in real time, and calling that "drafts only" would read as an inbox.
  */
 export function duringLabel(caps: SurfaceCapabilities): string {
-  if (caps.delivery === "draft-only") return "drafts only";
+  if (caps.delivery === "draft-only") {
+    return caps.tempo === "async" ? "drafts only" : "answers, you send";
+  }
   return caps.actions.some((a) => WRITE_ACTIONS.has(a)) ? "answers and acts" : "answers, you send";
 }
 
@@ -84,11 +94,22 @@ export function afterLabel(caps: SurfaceCapabilities): string {
  *
  * A missing key is not an error — nobody has broken anything by not having a
  * Twitch app. It is an invitation with the answer already in it, which is why
- * the variable name is repeated verbatim rather than summarised.
+ * whatever the server named is repeated verbatim rather than summarised.
+ *
+ * The server sends two kinds of thing in this field and both are plain text:
+ * an environment variable (`TWITCH_CLIENT_ID`) and, where the missing piece is
+ * a person's decision, prose ("a connected eBay account"). Neither is ever
+ * looked up in a map here — the string IS the answer — but an env var earns
+ * the extra clause that says where it goes, and prose would read as nonsense
+ * with it ("needs a connected eBay account on the server").
  */
+const ENV_VAR = /^[A-Z][A-Z0-9_]*$/;
+
 export function missingLine(row: { label: string; missing: string | null }): string | null {
   if (!row.missing) return null;
-  return `${row.label} needs ${row.missing} on the server. The adapter is here; the key is not.`;
+  return ENV_VAR.test(row.missing)
+    ? `${row.label} needs ${row.missing} on the server. The adapter is here; the key is not.`
+    : `${row.label} needs ${row.missing}.`;
 }
 
 // ── the surface table ───────────────────────────────────────────────────────
@@ -253,16 +274,20 @@ export function deriveSurfaces(
   ctx: DerivedContext,
 ): HomeSurfaceRow[] {
   const infos = withRemote(surfaces);
-  // `withRemote(null)` marks everything unattachable, which is right when the
-  // server answered and did not mention a surface and wrong when it never
-  // answered at all. One is distinguishable from the other: a server that
-  // answered says SOMETHING about at least one surface.
-  const serverSpoke = infos.some((s) => s.attachable || s.missing || s.available === false);
+  // Did the server answer at all? `surfaces` is the RAW list, so a surface it
+  // did not mention is distinguishable from a server that never spoke — and
+  // the two mean opposite things. The registry returns the adapters that
+  // exist; a surface missing from it (YouTube Live today) is not connected and
+  // is not attachable, and inheriting the table's optimistic defaults for it
+  // would draw it as ready to use.
+  const serverSpoke = Array.isArray(surfaces) && surfaces.length > 0;
+  const named = new Set((surfaces ?? []).map((s) => s.id));
 
   return infos
     .filter((s) => !HIDDEN_SURFACES.includes(s.id))
     .map((info) => {
       const caps = info.capabilities;
+      const unnamed = serverSpoke && !named.has(info.id);
       const row: HomeSurfaceRow = {
         id: info.id,
         label: info.label,
@@ -272,9 +297,11 @@ export function deriveSurfaces(
         attachable: serverSpoke ? info.attachable === true : info.id !== "dm",
         tempo: caps.tempo,
         delivery: caps.delivery,
-        connected: connectedFallback(info.id, info, ctx),
+        connected: unnamed ? false : connectedFallback(info.id, info, ctx),
         missing: info.missing ?? null,
-        before: stepsFor(info.id, info, ctx),
+        before: unnamed
+          ? [{ label: "No adapter in this build yet", done: false }]
+          : stepsFor(info.id, info, ctx),
         during: duringLabel(caps),
         after: afterLabel(caps),
       };

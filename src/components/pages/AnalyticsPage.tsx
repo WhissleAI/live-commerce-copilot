@@ -83,7 +83,7 @@ export function AnalyticsPage() {
     { label: "Topics", active: view === "topics", onClick: () => setView("topics") },
     { label: "Autonomy", active: view === "autonomy", onClick: () => setView("autonomy") },
     ...(o?.liveShowId
-      ? [{ label: "Live show", active: view === "live", onClick: () => setView("live") }]
+      ? [{ label: "Live session", active: view === "live", onClick: () => setView("live") }]
       : []),
   ];
 
@@ -94,7 +94,7 @@ export function AnalyticsPage() {
       subtitle={
         o
           ? `${o.shows.finished} shows that finished in the last ${o.window.days} days · ${o.shows.hoursOnAir}h on air`
-          : "reading your shows…"
+          : "reading your sessions…"
       }
       tabs={tabs}
       actions={
@@ -164,7 +164,7 @@ function Overview({ o }: { o: AnalyticsOverview | null }) {
 
   return (
     <>
-      <SectionHeading hint="Across every finished show in the window. Answered means a drafted reply you actually sent; a question nothing could ground is a gap in the reports, never an answer.">
+      <SectionHeading hint="Across every finished session in the window. Answered means a drafted reply you actually sent; a question nothing could ground is a gap in the reports, never an answer.">
         Did it help
       </SectionHeading>
       <div className="mt-3 grid gap-3 sm:grid-cols-4">
@@ -183,7 +183,7 @@ function Overview({ o }: { o: AnalyticsOverview | null }) {
           hint={
             e.medianOfMediansMs
               ? `median of per-show medians ${ms(e.medianOfMediansMs)}`
-              : "no per-show medians recorded yet"
+              : "no per-session medians recorded yet"
           }
         />
         <StatTile
@@ -225,7 +225,7 @@ function Overview({ o }: { o: AnalyticsOverview | null }) {
             label="Audit chains intact"
             value={`${s.chainsIntact}/${o.shows.finished - o.shows.withoutReport}`}
             tone={s.chainsIntact === o.shows.finished - o.shows.withoutReport ? "ok" : "bad"}
-            hint="hash-verified end to end, per show"
+            hint="hash-verified end to end, per session"
           />
         </div>
 
@@ -253,7 +253,7 @@ function Overview({ o }: { o: AnalyticsOverview | null }) {
       </div>
 
       <div className="mt-8">
-        <SectionHeading hint="Hammer value of everything that closed while a show was on air, booked from lot-state transitions the copilot observed. Shows recorded before PRD metrics existed carry no GMV and are counted, not zeroed.">
+        <SectionHeading hint="Hammer value of everything that closed while a session was on air, booked from lot-state transitions the copilot observed. Sessions recorded before PRD metrics existed carry no GMV and are counted, not zeroed.">
           What it was worth
         </SectionHeading>
         <div className="mt-3 grid gap-3 sm:grid-cols-4">
@@ -263,7 +263,7 @@ function Overview({ o }: { o: AnalyticsOverview | null }) {
             hint={`${o.gmv.lotsSold} lots closed across ${o.gmv.showsWithGmv} shows`}
           />
           <StatTile
-            label="Per show hour"
+            label="Per session hour"
             value={
               o.shows.hoursOnAir
                 ? formatMoney(Math.round(o.gmv.grossCents / o.shows.hoursOnAir))
@@ -291,7 +291,7 @@ function Overview({ o }: { o: AnalyticsOverview | null }) {
       </div>
 
       <div className="mt-8">
-        <SectionHeading hint="Newest first. A show without a report is listed — that is the one to open.">
+        <SectionHeading hint="Newest first. A session without a report is listed — that is the one to open.">
           By show
         </SectionHeading>
         <Card className="mt-3 overflow-hidden">
@@ -391,7 +391,7 @@ function Topics({ o }: { o: AnalyticsOverview | null }) {
   const worstAbstain = [...o.byIntent].sort((a, b) => b.abstainedRate - a.abstainedRate)[0];
   return (
     <>
-      <SectionHeading hint="By topic, across every finished show in the window. The last column is what the ladder allows to auto-send at L3; the columns before it are the evidence that allow-list should be argued from.">
+      <SectionHeading hint="By topic, across every finished session in the window. The last column is what the ladder allows to auto-send at L3; the columns before it are the evidence that allow-list should be argued from.">
         Where it is strong, and where it is not
       </SectionHeading>
       <Card className="mt-3 overflow-hidden">
@@ -428,7 +428,7 @@ function Topics({ o }: { o: AnalyticsOverview | null }) {
                     {r.autoReply === "allow-listed" ? (
                       <Badge tone="ok">allow-listed</Badge>
                     ) : (
-                      <Badge title="Price and discount move during a show; a wrong answer there costs real money. Other topics are not on the list yet.">
+                      <Badge title="Price and discount move during a session; a wrong answer there costs real money. Other topics are not on the list yet.">
                         never
                       </Badge>
                     )}
@@ -471,7 +471,7 @@ function Autonomy({ r, loaded }: { r: PromotionReadiness | null; loaded: boolean
   }
   return (
     <>
-      <SectionHeading hint="Each rung unlocks from your own finished shows, on the criteria below. Nothing here is a switch: a rung you have not earned is locked, and the reason is a number.">
+      <SectionHeading hint="Each rung unlocks from your own finished sessions, on the criteria below. Nothing here is a switch: a rung you have not earned is locked, and the reason is a number.">
         The autonomy ladder
       </SectionHeading>
       <div className="mt-3 flex flex-col gap-3">
@@ -482,7 +482,7 @@ function Autonomy({ r, loaded }: { r: PromotionReadiness | null; loaded: boolean
               ? r.ready
                 ? `Eligible for ${r.next} — switch it on from the console's show bar.`
                 : `Not yet eligible for ${r.next}. Every criterion below has to be met on your own finished shows.`
-              : "At the top of what can be unlocked. L4 unlocks when a show writes to eBay (Settings · eBay) and the rollback criterion holds."}
+              : "At the top of what can be unlocked. L4 unlocks when a session writes to eBay (Settings · eBay) and the rollback criterion holds."}
           </span>
           {r.ready ? (
             <Unlock className="ml-auto size-4 shrink-0 text-ok" aria-hidden />
@@ -495,7 +495,7 @@ function Autonomy({ r, loaded }: { r: PromotionReadiness | null; loaded: boolean
             const met = c.state === "met";
             const unknown = c.state === "unknown";
             // Evidence first: a criterion cannot be met on too few shows, and
-            // "0 of 3 shows" is a more useful reason than "not met".
+            // "0 of 3 sessions" is a more useful reason than "not met".
             const evidence = Math.min(1, c.showsRequired ? c.showsSeen / c.showsRequired : 1);
             return (
               <div key={`${c.to}-${c.label}`} className="flex items-start gap-3 px-4 py-3">

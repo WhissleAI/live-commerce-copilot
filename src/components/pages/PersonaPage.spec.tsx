@@ -142,7 +142,7 @@ describe("CorpusRow", () => {
     expect(screen.getByText("Tuesday denim drop")).toBeInTheDocument();
   });
 
-  it("degrades to a plain line when the show it came from is gone", () => {
+  it("degrades to a plain line when the session it came from is gone", () => {
     render(
       <CorpusRow
         doc={{
@@ -156,7 +156,7 @@ describe("CorpusRow", () => {
         }}
       />,
     );
-    expect(screen.getByText("a show of yours")).toBeInTheDocument();
+    expect(screen.getByText("a session of yours")).toBeInTheDocument();
   });
 
   it("says when the operator pasted it in themselves", () => {

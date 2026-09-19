@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, screen } from "@testing-library/react";
 import { renderWithRouter } from "@/test/router";
-import { BehindBand, NowBand, SurfaceRow, SurfaceTable } from "./HomePage";
+import { BehindBand, HomePage, NowBand, SurfaceRow, SurfaceTable } from "./HomePage";
 import { deriveSurfaces } from "@/lib/home";
 import { SURFACE_CAPABILITIES } from "@/lib/surfaces";
 import type { HomeLiveSession, HomeReport, HomeSurfaceRow, SurfaceInfo } from "@/lib/types";
@@ -146,7 +146,7 @@ describe("the NOW band", () => {
       <NowBand live={[]} drafts={{ total: 0, bySurface: [] }} surfaces={derived} onOpen={noop} />,
     );
     expect(screen.getByText(/Nothing needs you this minute\./)).toBeInTheDocument();
-    expect(screen.getByText(/surfaces watching/)).toBeInTheDocument();
+    expect(screen.getByText(/surfaces? watching/)).toBeInTheDocument();
   });
 
   it("is still a band, with its phase and what the phase means", async () => {
@@ -334,5 +334,47 @@ describe("a session whose report never generated", () => {
     expect(screen.getByText("Friday drop")).toBeInTheDocument();
     expect(screen.getByText("no report")).toBeInTheDocument();
     expect(screen.queryByText("Report")).not.toBeInTheDocument();
+  });
+});
+
+// ── the whole page, with nothing behind it ──────────────────────────────────
+
+describe("home with the backend down", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    localStorage.clear();
+  });
+
+  // The strongest statement of the degrade rule: every read fails, and the
+  // operator still gets the four bands and a surface table they can act on —
+  // not a blank screen, and not a stack trace inside a render.
+  it("still draws all four bands and the surface table", async () => {
+    localStorage.setItem("sidestage.token", "t");
+    vi.stubGlobal("fetch", () => Promise.reject(new Error("down")));
+
+    await renderWithRouter(<HomePage />);
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(await screen.findByText("What needs you this minute")).toBeInTheDocument();
+    expect(screen.getByText("What you are preparing")).toBeInTheDocument();
+    expect(screen.getByText("What finished")).toBeInTheDocument();
+    expect(screen.getByText("Where the copilot can work")).toBeInTheDocument();
+    // And the table is the built-in one rather than an empty list.
+    expect(screen.getByText("eBay Live")).toBeInTheDocument();
+    expect(screen.getByText("Reddit")).toBeInTheDocument();
+  });
+
+  it("keeps the paste box usable, because pasting a link never needed home", async () => {
+    localStorage.setItem("sidestage.token", "t");
+    vi.stubGlobal("fetch", () => Promise.reject(new Error("down")));
+
+    await renderWithRouter(<HomePage />);
+    await new Promise((r) => setTimeout(r, 50));
+
+    const box = screen.getByLabelText("A session, a channel, or a thread");
+    fireEvent.change(box, { target: { value: "https://reddit.com/r/mechmarket" } });
+    // Recognised before anything is committed: the surface, then what it is.
+    expect(screen.getByText("· r/mechmarket")).toBeInTheDocument();
+    expect(screen.getByText("Start monitoring")).toBeEnabled();
   });
 });

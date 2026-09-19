@@ -52,7 +52,7 @@ export function AccountPage() {
     void (async () => {
       const [home, surfaces, catalogs] = await Promise.all([
         api.home().catch(() => null as HomeView | null),
-        api.surfaces().catch(() => null as SurfaceInfo[] | null),
+        api.surfacesRaw().catch(() => null as SurfaceInfo[] | null),
         api.catalogs().catch(() => null as CatalogSummary[] | null),
       ]);
       const status = await api.ebayStatus().catch(() => null);

@@ -37,11 +37,43 @@ export const EBAYLIVE_CAPABILITIES: SurfaceCapabilities = {
   communityRules: false,
 };
 
+/**
+ * The scripted show. Identical to eBay Live by design: the simulated source
+ * exists to exercise the live-commerce path, so a capability that differed
+ * would make the demo test something production does not do.
+ */
+export const SIMULATED_CAPABILITIES: SurfaceCapabilities = { ...EBAYLIVE_CAPABILITIES };
+
+/**
+ * Whatnot and TikTok Live: live commerce read through a browser, nothing more.
+ *
+ * These were mirrored as copies of eBay Live, which was wrong in the way that
+ * matters most: it claimed we can PUSH A LISTING and MARK A PRICE DOWN on a
+ * platform we hold no seller credentials for. The backend has always had them
+ * as their own shape; this file had not caught up, and the table is what
+ * renders before `GET /api/surfaces` answers — so home's During column said
+ * "answers and acts" on two surfaces where nothing can be sent at all.
+ *
+ * · `delivery: "draft-only"` — neither platform exposes a way for us to post
+ *   into a room's chat, so the reply is written for a human to send.
+ * · `perception: false` — we read the DOM, not the stream: no host audio.
+ * · The five listing writes are gone. What is left writes only to records we
+ *   own: marking a moment, and handing a question to a human.
+ */
+export const SCRAPED_LIVE_CAPABILITIES: SurfaceCapabilities = {
+  tempo: "live",
+  delivery: "draft-only",
+  perception: { audio: false, video: false },
+  actions: ["mark_highlight", "flag_for_human"],
+  corpora: ["listing", "policy", "qa"],
+  communityRules: false,
+};
+
 export const SURFACE_CAPABILITIES: Record<SurfaceId, SurfaceCapabilities> = {
-  simulated: { ...EBAYLIVE_CAPABILITIES },
+  simulated: SIMULATED_CAPABILITIES,
   ebaylive: EBAYLIVE_CAPABILITIES,
-  whatnot: { ...EBAYLIVE_CAPABILITIES },
-  tiktoklive: { ...EBAYLIVE_CAPABILITIES },
+  whatnot: SCRAPED_LIVE_CAPABILITIES,
+  tiktoklive: SCRAPED_LIVE_CAPABILITIES,
   twitch: {
     tempo: "live",
     delivery: "api",
@@ -62,7 +94,13 @@ export const SURFACE_CAPABILITIES: Record<SurfaceId, SurfaceCapabilities> = {
     tempo: "async",
     delivery: "draft-only",
     perception: { audio: false, video: false },
-    actions: ["post_reply", "flag_for_human"],
+    // `post_reply` is absent deliberately, and its absence is a second lock on
+    // the same door the backend keeps: `delivery` already refuses it, and an
+    // action a surface does not declare is refused by preflight before
+    // delivery is even read. Undisclosed automation replying as a person
+    // breaks Reddit's own rules, so the only thing this surface hands a human
+    // is a draft.
+    actions: ["flag_for_human"],
     corpora: ["product", "policy", "qa", "community"],
     communityRules: true,
   },

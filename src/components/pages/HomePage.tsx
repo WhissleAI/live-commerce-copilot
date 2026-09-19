@@ -88,7 +88,7 @@ export function HomePage({ view = "today" }: { view?: View }) {
   const load = useCallback(async () => {
     const [h, s, r, d] = await Promise.all([
       api.home().catch(() => null),
-      api.surfaces().catch(() => null),
+      api.surfacesRaw().catch(() => null),
       api.reports(50).catch(() => null),
       api.drafts().catch(() => null),
     ]);

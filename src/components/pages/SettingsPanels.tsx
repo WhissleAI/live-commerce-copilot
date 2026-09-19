@@ -129,7 +129,7 @@ export function IngestionPanel({ p, set }: { p: SellerGuardrailPolicy; set: Patc
         />
         <Toggle
           label="Host audio, with emotion and intent"
-          hint="Off means it never hears “last one in this waist” — the lot facts you say out loud and never typed. On, the audio is kept in chunks beside its transcript so the show can be played back."
+          hint="Off means it never hears “last one in this waist” — the lot facts you say out loud and never typed. On, the audio is kept in chunks beside its transcript so the session can be played back."
           on={ing.hostAudio}
           onChange={(v) => set("ingest", { ...ing, hostAudio: v })}
         />
@@ -146,8 +146,8 @@ export function IngestionPanel({ p, set }: { p: SellerGuardrailPolicy; set: Patc
           onChange={(v) => set("ingest", { ...ing, webResearch: v })}
         />
         <Toggle
-          label="Prior shows' answered questions"
-          hint="Reuses what you already answered well. Off if you would rather each show start clean."
+          label="Prior sessions' answered questions"
+          hint="Reuses what you already answered well. Off if you would rather each session start clean."
           on={ing.priorAnswers}
           onChange={(v) => set("ingest", { ...ing, priorAnswers: v })}
         />
@@ -166,7 +166,7 @@ export function AutomationPanel({ p, set }: { p: SellerGuardrailPolicy; set: Pat
   ];
   return (
     <>
-      <SectionHeading hint="Where a new show starts, and the bounds any rung above it must respect. Price and discount are excluded from auto-reply at every rung and cannot be added — they move during a show, and that is where a wrong answer costs real money.">
+      <SectionHeading hint="Where a new session starts, and the bounds any rung above it must respect. Price and discount are excluded from auto-reply at every rung and cannot be added — they move during a session, and that is where a wrong answer costs real money.">
         Automation defaults
       </SectionHeading>
 
@@ -182,7 +182,7 @@ export function AutomationPanel({ p, set }: { p: SellerGuardrailPolicy; set: Pat
               {r.label}
             </BadgeButton>
           ))}
-          <Badge title="Bounded auto-acting needs a show that writes to eBay (Settings · eBay) and a rollback rate under 10% across five shows. Until both hold it stays locked.">
+          <Badge title="Bounded auto-acting needs a session that writes to eBay (Settings · eBay) and a rollback rate under 10% across five sessions. Until both hold it stays locked.">
             L4 Auto-act · locked until a show writes to eBay
           </Badge>
         </div>
@@ -212,7 +212,7 @@ export function AutomationPanel({ p, set }: { p: SellerGuardrailPolicy; set: Pat
           onChange={(v) => set("automation", { ...a, undoWindowS: v })}
         />
         <NumberField
-          label="Action budget per show"
+          label="Action budget per session"
           suffix="writes"
           hint="Spent, preflight refuses the next one."
           value={a.actionBudget}
@@ -223,7 +223,7 @@ export function AutomationPanel({ p, set }: { p: SellerGuardrailPolicy; set: Pat
         <NumberField
           label="Warn me when the balance falls below"
           suffix="USD"
-          hint="Shown mid-show, in the one banner slot."
+          hint="Shown mid-session, in the one banner slot."
           value={a.warnBalanceUsd}
           min={0}
           max={1000}
@@ -256,7 +256,7 @@ export function AutomationPanel({ p, set }: { p: SellerGuardrailPolicy; set: Pat
                 onChange={(e) =>
                   set("automation", { ...a, perShowCapUsd: Math.max(0.25, Number(e.target.value)) })
                 }
-                aria-label="Per-show spend cap in USD"
+                aria-label="Per-session spend cap in USD"
                 className="num w-24 rounded-sm bg-canvas px-2 py-1.5 text-[12.5px] focus:outline-none focus:ring-[1.5px] focus:ring-accent"
               />
               <span className="text-[11.5px] text-text-muted">USD</span>
@@ -307,7 +307,7 @@ export function DryRunPanel() {
 
   return (
     <>
-      <SectionHeading hint="Ask what the copilot would say, against the catalog exactly as it stands, without a show running and without sending anything. The same pipeline and the same six guards — which is how a guardrail change gets tested between shows rather than on a buyer.">
+      <SectionHeading hint="Ask what the copilot would say, against the catalog exactly as it stands, without a session running and without sending anything. The same pipeline and the same six guards — which is how a guardrail change gets tested between sessions rather than on a buyer.">
         Dry run
       </SectionHeading>
 
@@ -385,7 +385,7 @@ export function AgentsPanel({
   const preparedOnly = prepared.filter((p) => p.agentId && !sessionAgents.has(p.agentId));
   return (
     <>
-      <SectionHeading hint="Every stream gets its own Whissle agent, built from the same template and tuned to that show's lineup — the enrichment differs per show, and a shared agent would answer one show's question out of another show's stock. Deleting a session deletes its agent and its knowledge base with it.">
+      <SectionHeading hint="Every stream gets its own Whissle agent, built from the same template and tuned to that session's lineup — the enrichment differs per session, and a shared agent would answer one session's question out of another session's stock. Deleting a session deletes its agent and its knowledge base with it.">
         Stream agents
       </SectionHeading>
       <Card className="mt-3 overflow-hidden">

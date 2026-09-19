@@ -192,7 +192,7 @@ export function ReportPage({ showId }: { showId: string }) {
         <Card>
           <EmptyState
             icon={<AlertTriangle className="size-5 text-warn" aria-hidden />}
-            title="No report for this show"
+            title="No report for this session"
             action={
               <Link to="/">
                 <BadgeButton>Back to Home</BadgeButton>
@@ -244,7 +244,7 @@ export function ReportPage({ showId }: { showId: string }) {
       actions={
         <>
           <BadgeButton
-            title="Everything about this show as one JSON file — report, every reply, action and audit entry, and the timeline"
+            title="Everything about this session as one JSON file — report, every reply, action and audit entry, and the timeline"
             onClick={() => void exportJson()}
             disabled={exporting}
           >
@@ -326,12 +326,12 @@ export function ReportPage({ showId }: { showId: string }) {
               </SectionHeading>
               <div className="mt-3 grid gap-3 sm:grid-cols-4">
                 <StatTile
-                  label="Gross this show"
+                  label="Gross this session"
                   value={formatMoney(prd.gmv.grossCents)}
                   hint={`${prd.gmv.lotsSold} lots closed`}
                 />
                 <StatTile
-                  label="Per show hour"
+                  label="Per session hour"
                   value={
                     prd.gmv.perShowHourCents == null ? "—" : formatMoney(prd.gmv.perShowHourCents)
                   }
@@ -501,7 +501,7 @@ export function ReportPage({ showId }: { showId: string }) {
 
           {/* fix before the next show — the short form; the tab has the list --- */}
           <div className="mt-8">
-            <SectionHeading hint="The part worth acting on. The gaps tab has every question and a place to answer it; this is the rung the show counted toward.">
+            <SectionHeading hint="The part worth acting on. The gaps tab has every question and a place to answer it; this is the rung the session counted toward.">
               Fix before the next show
             </SectionHeading>
             <div className="mt-3 grid gap-3 lg:grid-cols-[1fr_1fr]">
@@ -528,7 +528,7 @@ export function ReportPage({ showId }: { showId: string }) {
       {view === "audit" || printing ? <Audit record={record} /> : null}
       {view === "timeline" || printing ? (
         <>
-          <SectionHeading hint="Every signal the show produced, on one clock: what the host said with the emotion and intent measured on it, what the camera showed and what the agent read from it, and the audio to play it back.">
+          <SectionHeading hint="Every signal the session produced, on one clock: what the host said with the emotion and intent measured on it, what the camera showed and what the agent read from it, and the audio to play it back.">
             The show, played back
           </SectionHeading>
           <div className="mt-3">
@@ -603,7 +603,7 @@ function HostSection({
 }) {
   return (
     <div className="mt-8">
-      <SectionHeading hint="The seller's delivery, measured from their own speech through the audio bridge — energy and the kind of speech act, utterance by utterance. These describe how the show was hosted, not what buyers felt.">
+      <SectionHeading hint="The seller's delivery, measured from their own speech through the audio bridge — energy and the kind of speech act, utterance by utterance. These describe how the session was hosted, not what buyers felt.">
         How the host worked the show
       </SectionHeading>
       {!host ? (
@@ -612,7 +612,7 @@ function HostSection({
           <p className="text-[12px] leading-relaxed text-text-secondary">
             {host === undefined
               ? "This report was written before host signals were kept, and a report is never regenerated."
-              : "Host audio was not captured for this show, so there is nothing to say about how it was hosted. Open the audio bridge next show and this section fills in — pace, delivery, and the moments chat reacted to."}
+              : "Host audio was not captured for this session, so there is nothing to say about how it was hosted. Open the audio bridge next session and this section fills in — pace, delivery, and the moments chat reacted to."}
           </p>
         </Card>
       ) : (
@@ -656,7 +656,7 @@ function HostSection({
             <StatTile
               label="Delivery shifts"
               value={String(host.emotionFlips)}
-              hint="utterances whose measured energy state changed — many on a short show is a host pulled around by chat"
+              hint="utterances whose measured energy state changed — many on a short session is a host pulled around by chat"
             />
             <StatTile
               label="Loudest moment"
@@ -898,7 +898,7 @@ const KIND_LABEL: Record<Conclusion["nextActions"][number]["kind"], string> = {
 function ConclusionSection({ c }: { c: Conclusion | null | undefined }) {
   return (
     <div className="mt-8">
-      <SectionHeading hint="Written by the show's own agent at the end, from the numbers on this page and the persisted signals — nothing it could not point at. Next actions are typed so they can be sorted and checked off; 'hosting' is the one only the host's audio can produce.">
+      <SectionHeading hint="Written by the session's own agent at the end, from the numbers on this page and the persisted signals — nothing it could not point at. Next actions are typed so they can be sorted and checked off; 'hosting' is the one only the host's audio can produce.">
         What the agent concluded
       </SectionHeading>
       {!c ? (
@@ -907,7 +907,7 @@ function ConclusionSection({ c }: { c: Conclusion | null | undefined }) {
           <p className="text-[12px] leading-relaxed text-text-secondary">
             {c === undefined
               ? "This report was written before the agent was asked to conclude, and a report is never regenerated."
-              : "The agent did not answer when asked to conclude this show — the gateway was unreachable or the show had no agent. The counts above stand on their own."}
+              : "The agent did not answer when asked to conclude this session — the gateway was unreachable or the session had no agent. The counts above stand on their own."}
           </p>
         </Card>
       ) : (
@@ -994,7 +994,7 @@ function NextRung({ r }: { r: PromotionReadiness | null }) {
             <span className="font-medium">Next rung · {r.next}</span>
             <span className="block text-[11.5px] text-text-muted">
               {r.ready
-                ? "earned on your own finished shows — switch it on from the console's show bar"
+                ? "earned on your own finished sessions — switch it on from the console's session bar"
                 : `${met} of ${r.criteria.length} criteria met on your own finished shows`}
             </span>
           </>
@@ -1370,7 +1370,7 @@ function GapRow({
             </Button>
             <Button onClick={() => setOpen(false)}>Cancel</Button>
             <span className="text-[11.5px] text-text-muted">
-              {error ?? "Grounds the next show — and this one, if it is still on air."}
+              {error ?? "Grounds the next session — and this one, if it is still on air."}
             </span>
           </div>
         </div>

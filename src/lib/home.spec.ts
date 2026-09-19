@@ -190,9 +190,18 @@ describe("what a surface does during and after", () => {
   it("separates acting from answering from drafting", () => {
     expect(duringLabel(SURFACE_CAPABILITIES.ebaylive)).toBe("answers and acts");
     expect(duringLabel(SURFACE_CAPABILITIES.twitch)).toBe("answers and acts");
-    // Reddit is draft-only: we never post, whatever the action list says.
+    // Reddit is draft-only AND has no room to be in: a queue, and you send it.
     expect(duringLabel(SURFACE_CAPABILITIES.reddit)).toBe("drafts only");
     expect(duringLabel(SURFACE_CAPABILITIES.dm)).toBe("drafts only");
+  });
+
+  // The bug this replaced: Whatnot and TikTok were mirrored as copies of eBay
+  // Live, so the table claimed we can mark a price down on a platform we hold
+  // no seller credentials for. There is a live room and an answer for it, and
+  // a human is the one who puts it in the chat.
+  it("says a scraped live surface answers and YOU send, never that it acts", () => {
+    expect(duringLabel(SURFACE_CAPABILITIES.whatnot)).toBe("answers, you send");
+    expect(duringLabel(SURFACE_CAPABILITIES.tiktoklive)).toBe("answers, you send");
   });
 
   it("gives an async surface a digest, not a report it never has a session for", () => {
@@ -208,6 +217,16 @@ describe("the line a surface with no key gets", () => {
     const line = missingLine({ label: "Twitch", missing: "TWITCH_CLIENT_ID" });
     expect(line).toBe(
       "Twitch needs TWITCH_CLIENT_ID on the server. The adapter is here; the key is not.",
+    );
+  });
+
+  // The server sends prose where the missing piece is a person's decision
+  // rather than a key. It is plain text either way and never looked up in a
+  // map — but "needs a connected eBay account on the server" is nonsense, so
+  // the extra clause is only earned by something shaped like a variable.
+  it("reads back prose as prose", () => {
+    expect(missingLine({ label: "eBay Live", missing: "a connected eBay account" })).toBe(
+      "eBay Live needs a connected eBay account.",
     );
   });
 
@@ -245,6 +264,26 @@ describe("the surface table, derived", () => {
       rooms: {},
     });
     expect(rows.map((r) => r.id)).not.toContain("simulated");
+  });
+
+  // The registry returns the adapters that EXIST. YouTube Live is declared in
+  // the capability table and has no adapter, so a real answer simply does not
+  // mention it — and inheriting the table's optimistic defaults would draw it
+  // as connected and ready to paste a link into.
+  it("does not draw a surface the registry never mentioned as connected", () => {
+    const withoutYouTube = remoteSurfaces.filter((s) => s.id !== "youtubelive");
+    const rows = deriveSurfaces(withoutYouTube, {
+      ebay: null,
+      catalogs: null,
+      home: null,
+      reports: null,
+      drafts: null,
+      rooms: {},
+    });
+    const yt = rows.find((r) => r.id === "youtubelive")!;
+    expect(yt.connected).toBe(false);
+    expect(yt.attachable).toBe(false);
+    expect(yt.before).toEqual([{ label: "No adapter in this build yet", done: false }]);
   });
 
   it("trusts the attachable flag rather than a list of ids", () => {

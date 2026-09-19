@@ -201,3 +201,116 @@ describe("surfaceLabel", () => {
     expect(surfaceLabel(null)).toBe("unknown");
   });
 });
+
+/**
+ * The mirror, pinned against the backend.
+ *
+ * This table is a copy of `SURFACE_CAPABILITIES` in the backend's
+ * `src/surfaces/types.ts`, and it is the answer the whole UI renders from
+ * before `GET /api/surfaces` has said anything. It drifted once already, in
+ * the way that costs the most: Whatnot and TikTok Live were spread from eBay
+ * Live, which claimed the five listing writes on two platforms we hold no
+ * seller credentials for, and made home's During column say "answers and acts"
+ * where nothing can be sent at all.
+ *
+ * So every field of every one of the eight is written out here by hand. A
+ * backend change that is not mirrored fails this file rather than shipping a
+ * screen that lies quietly.
+ */
+describe("the capability mirror matches the backend, field for field", () => {
+  const BACKEND: Record<string, SurfaceCapabilities> = {
+    simulated: {
+      tempo: "live",
+      delivery: "api",
+      perception: { audio: true, video: true },
+      actions: ["push_listing", "swap_pinned", "markdown_price", "adjust_stock", "end_listing"],
+      corpora: ["listing", "policy", "qa", "community"],
+      communityRules: false,
+    },
+    ebaylive: {
+      tempo: "live",
+      delivery: "api",
+      perception: { audio: true, video: true },
+      actions: ["push_listing", "swap_pinned", "markdown_price", "adjust_stock", "end_listing"],
+      corpora: ["listing", "policy", "qa", "community"],
+      communityRules: false,
+    },
+    // Read through a browser: no credentials, no stream, no listing writes.
+    whatnot: {
+      tempo: "live",
+      delivery: "draft-only",
+      perception: { audio: false, video: false },
+      actions: ["mark_highlight", "flag_for_human"],
+      corpora: ["listing", "policy", "qa"],
+      communityRules: false,
+    },
+    tiktoklive: {
+      tempo: "live",
+      delivery: "draft-only",
+      perception: { audio: false, video: false },
+      actions: ["mark_highlight", "flag_for_human"],
+      corpora: ["listing", "policy", "qa"],
+      communityRules: false,
+    },
+    twitch: {
+      tempo: "live",
+      delivery: "api",
+      perception: { audio: true, video: true },
+      actions: [
+        "create_clip",
+        "mark_highlight",
+        "run_poll",
+        "shoutout",
+        "pin_message",
+        "post_reply",
+      ],
+      corpora: ["schedule", "sponsor", "product", "qa", "community"],
+      communityRules: true,
+    },
+    youtubelive: {
+      tempo: "live",
+      delivery: "api",
+      perception: { audio: true, video: true },
+      actions: ["mark_highlight", "pin_message", "post_reply"],
+      corpora: ["schedule", "sponsor", "product", "qa", "community"],
+      communityRules: true,
+    },
+    // `post_reply` is absent on purpose — a second lock on the same door.
+    reddit: {
+      tempo: "async",
+      delivery: "draft-only",
+      perception: { audio: false, video: false },
+      actions: ["flag_for_human"],
+      corpora: ["product", "policy", "qa", "community"],
+      communityRules: true,
+    },
+    dm: {
+      tempo: "async",
+      delivery: "draft-only",
+      perception: { audio: false, video: false },
+      actions: ["send_dm", "flag_for_human"],
+      corpora: ["listing", "policy", "product", "qa"],
+      communityRules: false,
+    },
+  };
+
+  it("covers every id and nothing else", () => {
+    expect(Object.keys(SURFACE_CAPABILITIES).sort()).toEqual(Object.keys(BACKEND).sort());
+  });
+
+  for (const [id, caps] of Object.entries(BACKEND)) {
+    it(`${id} matches`, () => {
+      expect(SURFACE_CAPABILITIES[id as keyof typeof SURFACE_CAPABILITIES]).toEqual(caps);
+    });
+  }
+
+  it("does not claim a listing write on a surface we hold no credentials for", () => {
+    for (const id of ["whatnot", "tiktoklive"] as const) {
+      const actions = SURFACE_CAPABILITIES[id].actions;
+      expect(actions).not.toContain("markdown_price");
+      expect(actions).not.toContain("push_listing");
+      expect(actions).not.toContain("end_listing");
+      expect(SURFACE_CAPABILITIES[id].delivery).toBe("draft-only");
+    }
+  });
+});
