@@ -1784,21 +1784,43 @@ export interface DiscoverSourceResult {
  * A term the operator sells around.
  *
  * Derived from their catalogs, then owned: what they sell next month is not in
- * last month's catalog, and a derived term they delete stays deleted. `origin`
- * is what lets the chip say where it came from.
+ * last month's catalog, and a derived term they delete stays deleted.
+ *
+ * There is no catalog on this object and there cannot be one. Interests are
+ * derived from ALL of an account's catalogs at once and belong to none of
+ * them, so a chip that named one would be naming a source it does not have.
  */
 export interface DiscoverInterest {
+  /** The match identity, and the stable key. */
+  slug: string;
+  /** The display form, with the operator's or the catalog's own spelling and
+   *  accents intact. Never the thing to compare on. */
   term: string;
   origin: "derived" | "own";
-  /** How many listings carry it. Null when the server did not count. */
-  listings: number | null;
-  /** The catalog it was derived from, named for the operator. */
-  catalog: string | null;
   pinned: boolean;
+  /** How many of the account's listings carry the term — the whole of a
+   *  derived chip's provenance. `0` for a term the operator typed. */
+  weight: number;
+}
+
+/** `GET` and `PUT /api/discover/interests` — the set, and why it is that size. */
+export interface DiscoverInterests {
+  interests: DiscoverInterest[];
+  /**
+   * How many catalogs the account has.
+   *
+   * The empty state branches on this and not on the interests alone: no
+   * catalogs is "we do not know what you sell", which is a door to Knowledge,
+   * and catalogs with no terms is "you removed them all", which is not.
+   */
+  catalogs: number;
 }
 
 /** `GET /api/discover` — the interests it asked with, and one result per source. */
 export interface DiscoverView {
   interests: DiscoverInterest[];
+  /** Null when this answer did not carry the count; the interests endpoint
+   *  always does. */
+  catalogs: number | null;
   sources: DiscoverSourceResult[];
 }

@@ -59,6 +59,7 @@ import {
   actionLabel,
   hitsFor,
   interestOrigin,
+  interestSlug,
   isWatched,
   legacyDiscover,
   mergeRooms,
@@ -119,6 +120,14 @@ export function DiscoverView({ onAttach }: { onAttach: (url: string) => void }) 
     // Only the surfaces that actually offered a room to watch, and only after
     // we know which those are — reading every surface's watch list to draw a
     // grid of eBay shows would be four requests for nothing.
+    // The empty state needs to tell "no listings yet" from "you removed every
+    // term", and only the interests endpoint carries that count. Asked for
+    // once, and only when the answer is both empty and silent about it.
+    if (asked.view && asked.view.catalogs == null && asked.view.interests.length === 0) {
+      const set = await api.interests().catch(() => null);
+      if (set) setPayload((p) => (p ? { ...p, catalogs: set.catalogs } : p));
+    }
+
     const needed = roomSurfacesIn(next.sources);
     if (needed.length === 0) {
       setRooms([]);
@@ -171,7 +180,7 @@ export function DiscoverView({ onAttach }: { onAttach: (url: string) => void }) 
       setError(null);
       try {
         const saved = await api.saveInterests(next);
-        setPayload((p) => (p ? { ...p, interests: saved } : p));
+        setPayload((p) => (p ? { ...p, ...saved } : p));
         await read(false);
       } catch (e) {
         setPayload((p) => (p ? { ...p, interests: before } : p));
@@ -185,17 +194,23 @@ export function DiscoverView({ onAttach }: { onAttach: (url: string) => void }) 
     (term: string) => {
       const t = term.trim();
       if (!t) return;
-      if (interests.some((i) => i.term.toLowerCase() === t.toLowerCase())) return;
+      // The slug is the identity, so it is what an add is checked against:
+      // "Pokémon" and "pokémon" are one term, not two chips.
+      const slug = interestSlug(t);
+      if (interests.some((i) => i.slug === slug)) return;
+      // A provisional slug, replaced by the server's own when the write
+      // answers. `weight: 0` is honest — nothing they typed has been counted
+      // against their listings yet.
       void writeInterests([
         ...interests,
-        { term: t, origin: "own", listings: null, catalog: null, pinned: false },
+        { slug, term: t, origin: "own", pinned: false, weight: 0 },
       ]);
     },
     [interests, writeInterests],
   );
 
   const removeInterest = useCallback(
-    (term: string) => void writeInterests(interests.filter((i) => i.term !== term)),
+    (slug: string) => void writeInterests(interests.filter((i) => i.slug !== slug)),
     [interests, writeInterests],
   );
 
@@ -299,9 +314,14 @@ export function DiscoverView({ onAttach }: { onAttach: (url: string) => void }) 
       <SurfaceChips sources={sources} selected={filter} onSelect={setFilter} total={total} />
 
       {/* A surface that needs a key says what it needs HERE, where it was
-          selected — the same sentence the surface table on Today uses, because
-          it is the same fact and an operator should not have to learn it
-          twice. Nothing about it is red: an unset key is not a fault. */}
+          selected, and nothing about it is red: an unset key is not a fault.
+          It borrows the SHAPE of the sentence Today's surface table uses and
+          not its content, which is a different fact — Discover's gate is
+          whatever it takes to READ a surface, and the table's is whatever it
+          takes to attach to one. Twitch is the case that proves they must not
+          be reconciled: app credentials let an operator browse it, and a
+          connected account is what lets them attach, so both sentences are
+          true at once and each belongs where it is. */}
       {selected?.unavailable ? (
         <UnavailableNote surface={selected.surface} source={selected} />
       ) : null}
@@ -314,7 +334,7 @@ export function DiscoverView({ onAttach }: { onAttach: (url: string) => void }) 
             <Skeleton className="h-[150px]" />
           </div>
         ) : noInterests ? (
-          <NoInterests />
+          <NoInterests catalogs={payload?.catalogs ?? null} />
         ) : (
           <SourceResults
             sources={shown}
@@ -393,7 +413,8 @@ export function InterestRail({
 }: {
   interests: DiscoverInterest[];
   onAdd: (term: string) => void;
-  onRemove: (term: string) => void;
+  /** By slug: the identity, not the spelling. */
+  onRemove: (slug: string) => void;
   disabled?: boolean;
 }) {
   const [draft, setDraft] = useState("");
@@ -412,19 +433,20 @@ export function InterestRail({
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
         {interests.map((i) => (
           <span
-            key={i.term}
+            key={i.slug}
             title={interestOrigin(i)}
             className="inline-flex items-center gap-1.5 rounded-sm bg-elevated py-[3px] pr-1 pl-2 text-[12px] leading-[14px] font-medium"
           >
             {i.term}
-            {/* The count IS the provenance, visibly. Null means the server did
-                not count, and an invented zero would read as a dead term. */}
-            {i.origin === "derived" && i.listings != null ? (
-              <span className="num text-[11px] text-text-muted">{i.listings}</span>
+            {/* The weight IS the provenance, visibly: how many of their own
+                listings carry the term. A term they typed weighs nothing yet,
+                and a drawn zero would read as a term that found nothing. */}
+            {i.origin === "derived" && i.weight > 0 ? (
+              <span className="num text-[11px] text-text-muted">{i.weight}</span>
             ) : null}
             <button
               type="button"
-              onClick={() => onRemove(i.term)}
+              onClick={() => onRemove(i.slug)}
               disabled={disabled}
               aria-label={`Remove ${i.term}`}
               className="grid size-[18px] place-items-center rounded-xs text-text-muted hover:bg-hairline hover:text-text focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent disabled:opacity-45"
@@ -460,7 +482,7 @@ export function InterestRail({
             listings carry the term. The rest you added.{" "}
           </>
         ) : interests.length > 0 ? (
-          <>These are terms you added; none were derived from a catalog yet. </>
+          <>These are terms you added; none were derived from your listings yet. </>
         ) : null}
         Removing a derived term keeps it removed: the next catalog import will not bring it back.
       </p>
@@ -468,25 +490,46 @@ export function InterestRail({
   );
 }
 
-/** No catalog, so no interests — and therefore nothing honest to discover. */
-export function NoInterests() {
+/**
+ * No interests, and therefore no honest question to ask any surface.
+ *
+ * Two different facts live here and they want different things from the
+ * operator. No catalogs at all is "we do not know what you sell", and the
+ * answer is Knowledge. Catalogs with no terms means every derived term was
+ * removed — which is allowed, and stays removed — and the answer is the add
+ * box, not another trip to a page that is already full.
+ */
+export function NoInterests({ catalogs }: { catalogs: number | null }) {
+  const emptied = catalogs != null && catalogs > 0;
   return (
     <Card className="border-dashed">
       <EmptyState
         icon={<Sparkles className="size-5" aria-hidden />}
-        title="We do not know what you sell yet."
+        title={emptied ? "Every term has been removed." : "We do not know what you sell yet."}
         action={
-          <Link to="/knowledge">
-            <Button variant="primary">
-              Open Knowledge <ArrowRight className="size-3" aria-hidden />
-            </Button>
-          </Link>
+          emptied ? null : (
+            <Link to="/knowledge">
+              <Button variant="primary">
+                Open Knowledge <ArrowRight className="size-3" aria-hidden />
+              </Button>
+            </Link>
+          )
         }
       >
-        Discovery asks every surface one question — given what you sell, what is worth your
-        attention right now — and the terms come from your catalogs. Load your listings, or add a
-        term above, and this fills in. A grid of whatever happens to be live would not be worth your
-        attention.
+        {emptied ? (
+          <>
+            Your {catalogs} catalog{catalogs === 1 ? "" : "s"} are loaded, and every term derived
+            from them has been removed — which sticks: importing again will not bring them back. Add
+            one above and Discover has a question to ask again.
+          </>
+        ) : (
+          <>
+            Discovery asks every surface one question — given what you sell, what is worth your
+            attention right now — and the terms come from your listings. Load a catalog, or add a
+            term above, and this fills in. A grid of whatever happens to be live would not be worth
+            your attention.
+          </>
+        )}
       </EmptyState>
     </Card>
   );
@@ -608,6 +651,12 @@ export function UnavailableNote({
       <span className="text-[12.5px] leading-relaxed text-text-secondary">
         {source.unavailable?.reason}
         {line ? <span className="block text-text-muted">{line}</span> : null}
+        {source.unavailable?.missing ? (
+          <span className="block text-text-muted">
+            That is what Discover needs to READ this surface. Attaching a session to one can need
+            more — the surface table on Today carries that gate.
+          </span>
+        ) : null}
       </span>
     </Card>
   );
@@ -685,9 +734,13 @@ export function SourceResults({
                   <HitCard
                     key={`${h.surface}:${h.id}`}
                     hit={h}
-                    prepared={preparedBy.get(h.id) ?? null}
-                    preparing={preparing.includes(h.id)}
-                    watching={isWatched(h)}
+                    // Both of these are read ONLY for the action that owns
+                    // them. A Reddit thread and an eBay event can collide on
+                    // an id, and asking "is this room watched" about a thread
+                    // is asking the wrong table about the wrong thing.
+                    prepared={h.action === "prepare" ? (preparedBy.get(h.id) ?? null) : null}
+                    preparing={h.action === "prepare" && preparing.includes(h.id)}
+                    watching={h.action === "watch-room" && isWatched(h)}
                     onAct={() => onAct(h)}
                   />
                 ))}
@@ -748,7 +801,15 @@ export function HitCard({
   onAct: () => void;
 }) {
   const empty = prepared && prepared.items === 0;
-  const done = hit.action === "prepare" ? Boolean(prepared) : watching;
+  // What "already done" means is a property of the ACTION, not of the surface.
+  // An `open` hit is a link: it is never done, and a card that said "Watching"
+  // over a Reddit thread would be claiming a watch nothing is holding.
+  const done =
+    hit.action === "prepare"
+      ? Boolean(prepared)
+      : hit.action === "watch-room"
+        ? Boolean(watching)
+        : false;
 
   return (
     <Card className="flex flex-col gap-2 p-3">

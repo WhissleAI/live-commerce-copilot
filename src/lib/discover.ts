@@ -22,6 +22,7 @@ import type {
   DiscoverAction,
   DiscoverHit,
   DiscoverInterest,
+  DiscoverInterests,
   DiscoverSourceResult,
   DiscoverView,
   DiscoveredShow,
@@ -99,7 +100,13 @@ export function normalizeHit(raw: unknown, surface: SurfaceId): DiscoverHit | nu
   const id = str(o["id"]);
   const title = str(o["title"]);
   if (!id || !title) return null;
-  const action = ACTIONS.find((a) => a === o["action"]) ?? defaultAction(surface);
+  // An action the server did not name is a LINK, and never inferred from the
+  // surface. Reddit answers with rooms AND with threads — `r/mechmarket` is a
+  // room to watch, `t3_1abc2de` is a thread to open — so "reddit means
+  // watch-room" would offer "Watch this subreddit" over a thread and post a
+  // thread id into the rooms table. Every other action writes something; a
+  // link is the only fallback that cannot.
+  const action = ACTIONS.find((a) => a === o["action"]) ?? "open";
   return {
     surface: isSurfaceId(o["surface"]) ? (o["surface"] as SurfaceId) : surface,
     id,
@@ -176,31 +183,38 @@ export function foldSources(raw: unknown): DiscoverSourceResult[] {
 // ── interests ───────────────────────────────────────────────────────────────
 
 /**
- * What the server called an interest, read as one.
+ * The identity a term matches on, when we are the ones inventing it.
  *
- * Tolerant on purpose: this file and the endpoint behind it are being written
- * in parallel, and the difference between `count` and `listings` is not worth
- * a blank screen. A bare string is accepted too — that is what a PUT body
- * round-trips to on a server that stores only the term.
+ * Only for the optimistic add: the operator types a term, the chip appears
+ * before the round trip, and the server's own slug replaces this the moment
+ * the write answers. It is never sent anywhere.
+ */
+export function interestSlug(term: string): string {
+  return term.trim().toLowerCase();
+}
+
+/**
+ * One interest, exactly as the server sends it: five fields and no others.
+ *
+ * This was tolerant of three spellings of the count and three of the origin
+ * while the endpoint was being written beside it. It is not any more — the
+ * shape is pinned, and a reader that still accepts `listings` or `catalogName`
+ * is a reader that would go on silently working against a payload nobody
+ * sends, which is how a guess outlives the guessing.
  */
 export function normalizeInterest(raw: unknown): DiscoverInterest | null {
-  if (typeof raw === "string") {
-    const term = raw.trim();
-    return term ? { term, origin: "own", listings: null, catalog: null, pinned: false } : null;
-  }
   if (!raw || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
-  const term = str(o["term"]) ?? str(o["name"]);
+  const term = str(o["term"]);
   if (!term) return null;
-  const origin = o["origin"] ?? o["kind"] ?? o["source"];
   return {
+    slug: str(o["slug"]) ?? interestSlug(term),
     term,
     // Owned unless the server says it derived it. A term the operator typed is
-    // the one thing we must never claim came out of their catalog.
-    origin: origin === "derived" || origin === "catalog" ? "derived" : "own",
-    listings: count(o["listings"]) ?? count(o["count"]),
-    catalog: str(o["catalog"]) ?? str(o["catalogName"]) ?? str(o["catalogId"]),
+    // the one thing we must never claim came out of their catalogs.
+    origin: o["origin"] === "derived" ? "derived" : "own",
     pinned: o["pinned"] === true,
+    weight: count(o["weight"]) ?? 0,
   };
 }
 
@@ -213,21 +227,31 @@ export function normalizeInterests(raw: unknown): DiscoverInterest[] {
   const seen = new Set<string>();
   return list.flatMap((r) => {
     const i = normalizeInterest(r);
-    if (!i) return [];
-    const key = i.term.toLowerCase();
-    if (seen.has(key)) return [];
-    seen.add(key);
+    // The slug is the identity, so it is what deduplicates: two spellings of
+    // one term are one interest.
+    if (!i || seen.has(i.slug)) return [];
+    seen.add(i.slug);
     return [i];
   });
 }
 
-/** Where a chip came from, in the words the chip itself can carry. */
+/** The interests endpoint's answer: the set, and why it is that size. */
+export function normalizeInterestSet(raw: unknown): DiscoverInterests {
+  const o = (raw ?? {}) as Record<string, unknown>;
+  return { interests: normalizeInterests(raw), catalogs: count(o["catalogs"]) ?? 0 };
+}
+
+/**
+ * Where a chip came from, in the words the chip itself can carry.
+ *
+ * It names no catalog, because interests derive from all of an account's
+ * catalogs at once and belong to none of them — the weight is the provenance.
+ */
 export function interestOrigin(i: DiscoverInterest): string {
   if (i.origin !== "derived") return "You added this term.";
-  const where = i.catalog ? ` of ${i.catalog}` : "";
-  return i.listings == null
-    ? `Derived from your catalog${where ? ` — ${i.catalog}` : ""}.`
-    : `Derived from ${i.listings} listing${i.listings === 1 ? "" : "s"}${where}.`;
+  return i.weight > 0
+    ? `Derived from ${i.weight} of your listings.`
+    : "Derived from your catalogs.";
 }
 
 // ── the fallback ────────────────────────────────────────────────────────────
@@ -277,6 +301,9 @@ export function legacyDiscover(home: HomeView | null): DiscoverView {
   const reason = ebayReasonLine(home?.discovery.reason);
   return {
     interests: [],
+    // Not zero: an older server was never asked how many catalogs there are,
+    // and answering for it would be inventing a measurement.
+    catalogs: null,
     sources: foldSources([
       {
         surface: "ebaylive",
@@ -308,13 +335,6 @@ export function hitFromShow(s: DiscoveredShow): DiscoverHit {
 }
 
 // ── what a card can do ──────────────────────────────────────────────────────
-
-export function defaultAction(surface: SurfaceId): DiscoverAction {
-  if (surface === "ebaylive") return "prepare";
-  if (surface === "reddit") return "watch-room";
-  if (surface === "twitch" || surface === "youtubelive") return "attach";
-  return "open";
-}
 
 /** The one action this surface supports, in this surface's own words. */
 export function actionLabel(hit: DiscoverHit): string {
@@ -349,17 +369,14 @@ export function actionHint(hit: DiscoverHit): string {
 /**
  * One room, as a key both sides can be compared on.
  *
- * The room a surface records in its watch list and the id a discovery hit
- * carries are not guaranteed to be spelled identically — `r/mechmarket` and
- * `mechmarket` are one subreddit, not two. Case and that one prefix are the
- * only things normalised away; nothing else is inferred, and the backend's
- * actual id format replaces this the moment it is pinned down.
+ * A Reddit room id carries its prefix — `r/mechmarket`, verbatim what the
+ * rooms endpoint accepts — so the shape no longer needs tolerating, and the
+ * prefix-stripping that stood in for not knowing it is gone. Case is all that
+ * is left, and it earns its place: Reddit treats a subreddit name
+ * case-insensitively, so `r/MechMarket` is the same room.
  */
 export function roomKey(v: string): string {
-  return v
-    .trim()
-    .toLowerCase()
-    .replace(/^\/?r\//, "");
+  return v.trim().toLowerCase();
 }
 
 /**

@@ -56,9 +56,16 @@ const HOME = {
 /** A server that has the index, with one surface keyed and one not. */
 const INDEX = {
   interests: [
-    { term: "Omega Seamaster", origin: "derived", listings: 12, catalog: "Watch vault" },
-    { term: "GMK", origin: "own" },
+    {
+      slug: "omega-seamaster",
+      term: "Omega Seamaster",
+      origin: "derived",
+      pinned: false,
+      weight: 12,
+    },
+    { slug: "gmk", term: "GMK", origin: "own", pinned: false, weight: 0 },
   ],
+  catalogs: 2,
   sources: [
     {
       surface: "twitch",
@@ -91,7 +98,8 @@ const INDEX = {
 
 /** A server whose Reddit source has a room the operator could watch. */
 const ROOMS_INDEX = {
-  interests: [{ term: "GMK", origin: "own" }],
+  interests: [{ slug: "gmk", term: "GMK", origin: "own", pinned: false, weight: 0 }],
+  catalogs: 1,
   sources: [
     {
       surface: "reddit",
@@ -114,7 +122,8 @@ const ROOMS_INDEX = {
 const WATCHED = [
   {
     surface: "reddit",
-    room: "mechmarket",
+    // The prefix is part of the id, verbatim what the rooms endpoint takes.
+    room: "r/mechmarket",
     posting: false,
     disclosure: null,
     addedAt: "2026-09-18T00:00:00.000Z",
@@ -209,14 +218,17 @@ describe("Discover against a server that has the index", () => {
     expect(await screen.findByText(/Helix GET \/streams with an app access token/)).toBeVisible();
   });
 
-  it("carries the derived count on the chip, and nothing on one you added", async () => {
+  // The weight is the provenance, and it names no catalog: interests derive
+  // from ALL of an account's catalogs at once and belong to none of them.
+  it("carries the derived weight on the chip, and nothing on one you added", async () => {
     backend({ "/api/discover": { body: INDEX }, "/api/home": { body: HOME } });
     await renderWithRouter(<DiscoverView onAttach={noop} />);
 
     const chip = (await screen.findAllByText("Omega Seamaster")).find((n) =>
       n.title.startsWith("Derived"),
     );
-    expect(chip).toHaveAttribute("title", "Derived from 12 listings of Watch vault.");
+    expect(chip).toHaveAttribute("title", "Derived from 12 of your listings.");
+    expect(screen.getByText("12")).toBeInTheDocument();
     expect(screen.getByText("GMK").title).toBe("You added this term.");
   });
 
@@ -243,7 +255,7 @@ describe("Discover against a server that has the index", () => {
   // surface — so a door to Knowledge rather than a grid of strangers.
   it("points at Knowledge when there are no interests, and draws no grid", async () => {
     backend({
-      "/api/discover": { body: { interests: [], sources: INDEX.sources } },
+      "/api/discover": { body: { interests: [], catalogs: 0, sources: INDEX.sources } },
       "/api/home": { body: HOME },
     });
     await renderWithRouter(<DiscoverView onAttach={noop} />);
@@ -251,6 +263,34 @@ describe("Discover against a server that has the index", () => {
     expect(await screen.findByText("We do not know what you sell yet.")).toBeInTheDocument();
     expect(screen.getByText("Open Knowledge")).toBeInTheDocument();
     expect(screen.queryByText("Watch collecting, all night")).not.toBeInTheDocument();
+  });
+
+  // Two different facts wanting two different things. Catalogs with no terms
+  // is not "we do not know what you sell" — it is "you removed them all", and
+  // the answer is the add box, not another trip to a page already full.
+  it("tells an emptied set apart from an account with no listings", async () => {
+    backend({
+      "/api/discover": { body: { interests: [], catalogs: 3, sources: INDEX.sources } },
+      "/api/home": { body: HOME },
+    });
+    await renderWithRouter(<DiscoverView onAttach={noop} />);
+
+    expect(await screen.findByText("Every term has been removed.")).toBeInTheDocument();
+    expect(screen.getByText(/3 catalogs are loaded/)).toBeInTheDocument();
+    expect(screen.queryByText("Open Knowledge")).not.toBeInTheDocument();
+  });
+
+  // A server that answered the sources without the count still has to land on
+  // the right empty state, so the number is asked for where it lives.
+  it("asks the interests endpoint for the catalog count when the index omitted it", async () => {
+    backend({
+      "/api/discover": { body: { interests: [], sources: INDEX.sources } },
+      "/api/discover/interests": { body: { interests: [], catalogs: 4 } },
+      "/api/home": { body: HOME },
+    });
+    await renderWithRouter(<DiscoverView onAttach={noop} />);
+
+    expect(await screen.findByText("Every term has been removed.")).toBeInTheDocument();
   });
 });
 
@@ -310,6 +350,103 @@ describe("a room the operator already watches", () => {
     await renderWithRouter(<DiscoverView onAttach={noop} />);
 
     expect(await screen.findByText("Watch this subreddit")).toBeInTheDocument();
+  });
+});
+
+/**
+ * A Reddit source answers with BOTH, and they are not the same thing.
+ *
+ * `r/mechmarket` is a room to watch; `t3_1abc2de` is a thread to open. Gating
+ * on the surface rather than on the action would offer "Watch this subreddit"
+ * over a thread and post a thread id into the rooms table.
+ */
+describe("a Reddit thread, which is a link and not a room", () => {
+  const MIXED = {
+    interests: [{ slug: "gmk", term: "GMK", origin: "own", pinned: false, weight: 0 }],
+    catalogs: 1,
+    sources: [
+      {
+        surface: "reddit",
+        method: "Reddit /subreddits/search, then a thread search inside each — an API.",
+        hits: [
+          {
+            id: "r/mechmarket",
+            title: "r/mechmarket",
+            url: "https://reddit.com/r/mechmarket",
+            liveNow: false,
+            why: [{ term: "GMK", where: "room" }],
+            action: "watch-room",
+          },
+          {
+            id: "t3_1abc2de",
+            title: "WTS GMK Olivia, barely used",
+            url: "https://reddit.com/r/mechmarket/comments/1abc2de/wts_gmk_olivia/",
+            liveNow: false,
+            why: [{ term: "GMK", where: "title" }],
+            action: "open",
+          },
+        ],
+        unavailable: null,
+      },
+    ],
+  };
+
+  it("offers the thread as a link and the room as a watch, on the same surface", async () => {
+    backend({
+      "/api/discover": { body: MIXED },
+      "/api/home": { body: HOME },
+      "/api/surfaces/reddit/rooms": { body: [] },
+    });
+    await renderWithRouter(<DiscoverView onAttach={noop} />);
+
+    expect(await screen.findByText("WTS GMK Olivia, barely used")).toBeInTheDocument();
+    expect(screen.getByText("Open")).toBeInTheDocument();
+    // Exactly one watch control, and it belongs to the room.
+    expect(screen.getAllByText("Watch this subreddit")).toHaveLength(1);
+  });
+
+  // The write that must not happen: opening a thread posts nothing anywhere.
+  it("never posts a thread id into the rooms table", async () => {
+    const posted: string[] = [];
+    backend({
+      "/api/discover": { body: MIXED },
+      "/api/home": { body: HOME },
+      "GET /api/surfaces/reddit/rooms": { body: [] },
+      "POST /api/surfaces/reddit/rooms": { body: [] },
+    });
+    const real = globalThis.fetch as (i: unknown, init?: { method?: string }) => unknown;
+    vi.stubGlobal("fetch", (i: unknown, init?: { method?: string }) => {
+      if ((init?.method ?? "GET").toUpperCase() === "POST") posted.push(String(i));
+      return real(i, init);
+    });
+    vi.stubGlobal("open", () => null);
+
+    await renderWithRouter(<DiscoverView onAttach={noop} />);
+    fireEvent.click(await screen.findByText("Open"));
+    await new Promise((r) => setTimeout(r, 20));
+    expect(posted).toEqual([]);
+
+    // And the same press on the ROOM does post — so the assertion above is a
+    // statement about the thread, not about a harness that captures nothing.
+    fireEvent.click(screen.getByText("Watch this subreddit"));
+    await new Promise((r) => setTimeout(r, 20));
+    expect(posted).toEqual(["http://backend.test/api/surfaces/reddit/rooms"]);
+  });
+
+  // And the room's own watch state never leaks onto the thread beside it.
+  it("does not mark a thread as watched because its subreddit is", async () => {
+    backend({
+      "/api/discover": { body: MIXED },
+      "/api/home": { body: HOME },
+      "/api/surfaces/reddit/rooms": { body: WATCHED },
+    });
+    await renderWithRouter(<DiscoverView onAttach={noop} />);
+
+    expect(await screen.findByText("Watching")).toBeInTheDocument();
+    // The thread keeps its own control: one "Watching" for the room, one
+    // "Open" for the thread, and no second watch.
+    expect(screen.getAllByText("Watching")).toHaveLength(1);
+    expect(screen.getByText("Open")).toBeInTheDocument();
   });
 });
 
@@ -423,8 +560,8 @@ describe("the surface chips", () => {
 
 describe("the interest rail", () => {
   const interests = [
-    { term: "Omega", origin: "derived" as const, listings: 12, catalog: "Watches", pinned: false },
-    { term: "GMK", origin: "own" as const, listings: null, catalog: null, pinned: false },
+    { slug: "omega", term: "Omega", origin: "derived" as const, pinned: false, weight: 12 },
+    { slug: "gmk", term: "GMK", origin: "own" as const, pinned: false, weight: 0 },
   ];
 
   it("adds a term on Enter and clears the box", async () => {
@@ -445,7 +582,8 @@ describe("the interest rail", () => {
       <InterestRail interests={interests} onAdd={noop} onRemove={(t) => removed.push(t)} />,
     );
     fireEvent.click(screen.getByLabelText("Remove Omega"));
-    expect(removed).toEqual(["Omega"]);
+    // By slug: the identity the server matches on, not the spelling shown.
+    expect(removed).toEqual(["omega"]);
   });
 
   it("says that removing a derived term keeps it removed", async () => {
@@ -455,8 +593,23 @@ describe("the interest rail", () => {
 });
 
 describe("the no-interests state", () => {
-  it("sends the operator to Knowledge rather than to a grid", async () => {
-    await renderWithRouter(<NoInterests />);
+  it("sends an account with no listings to Knowledge rather than to a grid", async () => {
+    await renderWithRouter(<NoInterests catalogs={0} />);
     expect(screen.getByText("Open Knowledge").closest("a")).toHaveAttribute("href", "/knowledge");
+  });
+
+  // A server that did not say how many catalogs there are gets the safe half
+  // of the branch: Knowledge is where an operator with nothing must go, and
+  // offering it to one who has already been is a smaller error than the
+  // reverse.
+  it("falls back to Knowledge when the count is unknown", async () => {
+    await renderWithRouter(<NoInterests catalogs={null} />);
+    expect(screen.getByText("We do not know what you sell yet.")).toBeInTheDocument();
+  });
+
+  it("does not send an operator whose catalogs are loaded back to Knowledge", async () => {
+    await renderWithRouter(<NoInterests catalogs={2} />);
+    expect(screen.getByText("Every term has been removed.")).toBeInTheDocument();
+    expect(screen.queryByText("Open Knowledge")).not.toBeInTheDocument();
   });
 });

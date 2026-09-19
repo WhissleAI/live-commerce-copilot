@@ -5,7 +5,7 @@
  */
 import { getMockDriver } from "./mockStream";
 import { withRemote } from "./surfaces";
-import { foldSources, normalizeInterests } from "./discover";
+import { foldSources, normalizeInterestSet, normalizeInterests } from "./discover";
 import type {
   DraftsQueue,
   DraftStatus,
@@ -49,6 +49,7 @@ import type {
   DiscoveredShow,
   DiscoveryReason,
   DiscoverInterest,
+  DiscoverInterests,
   DiscoverView,
   HomeView,
   EbayImportResult,
@@ -252,9 +253,15 @@ function absent(e: unknown): boolean {
  */
 function asDiscover(raw: unknown): DiscoverView | null {
   if (!raw || typeof raw !== "object") return null;
-  const o = raw as { interests?: unknown; sources?: unknown };
+  const o = raw as { interests?: unknown; sources?: unknown; catalogs?: unknown };
   if (!Array.isArray(o.sources)) return null;
-  return { interests: normalizeInterests(o.interests), sources: foldSources(o.sources) };
+  return {
+    interests: normalizeInterests(o.interests),
+    // Null, not zero: "this answer did not carry the count" and "this account
+    // has no catalogs" are different facts and the empty state branches on it.
+    catalogs: typeof o.catalogs === "number" && Number.isFinite(o.catalogs) ? o.catalogs : null,
+    sources: foldSources(o.sources),
+  };
 }
 
 async function post<T>(path: string, body?: unknown): Promise<T> {
@@ -709,20 +716,30 @@ export const api = {
     return asDiscover(raw);
   },
 
-  /** The operator's own set of interest terms. */
-  interests: async (): Promise<DiscoverInterest[] | null> => {
+  /** The operator's own set of interest terms, and how many catalogs it came
+   *  out of — which is what says whether an empty set means "no listings yet"
+   *  or "you removed them all". */
+  interests: async (): Promise<DiscoverInterests | null> => {
     if (USE_MOCKS) return null;
     const raw = await get<unknown>("/api/discover/interests").catch((e) => {
       if (absent(e)) return null;
       throw e;
     });
-    return raw == null ? null : normalizeInterests(raw);
+    return raw == null ? null : normalizeInterestSet(raw);
   },
 
-  /** Writes the whole set: a derived term the operator removed must come back
-   *  as removed, and a PATCH of additions could never say that. */
-  saveInterests: (interests: DiscoverInterest[]): Promise<DiscoverInterest[]> =>
-    put<unknown>("/api/discover/interests", { interests }).then(normalizeInterests),
+  /**
+   * Writes the whole set: a derived term the operator removed must come back
+   * as removed, and a PATCH of additions could never say that.
+   *
+   * Only `term` and `pinned` are sent. `slug` is the server's to mint, and
+   * `weight` and `origin` are its measurements — echoing them back would be
+   * the client telling the server what the server told it.
+   */
+  saveInterests: (interests: DiscoverInterest[]): Promise<DiscoverInterests> =>
+    put<unknown>("/api/discover/interests", {
+      interests: interests.map((i) => ({ term: i.term, pinned: i.pinned })),
+    }).then(normalizeInterestSet),
 
   /** One seller's eBay Live page — live now plus what they have scheduled. */
   sellerShows: (

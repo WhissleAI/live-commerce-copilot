@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   DISCOVER_SURFACES,
   actionLabel,
+  interestSlug,
   isWatched,
   mergeRooms,
+  normalizeInterestSet,
   roomKey,
   roomSurfacesIn,
   ebayReasonLine,
@@ -123,11 +125,38 @@ describe("normalizeHit", () => {
     expect(normalizeHit({ id: "a" }, "twitch")).toBeNull();
   });
 
-  it("falls back to the action this surface actually supports", () => {
-    expect(normalizeHit({ id: "a", title: "t" }, "ebaylive")?.action).toBe("prepare");
-    expect(normalizeHit({ id: "a", title: "t" }, "reddit")?.action).toBe("watch-room");
-    expect(normalizeHit({ id: "a", title: "t" }, "twitch")?.action).toBe("attach");
-    expect(normalizeHit({ id: "a", title: "t", action: "open" }, "twitch")?.action).toBe("open");
+  it("takes the action the server named", () => {
+    expect(normalizeHit({ id: "a", title: "t", action: "prepare" }, "ebaylive")?.action).toBe(
+      "prepare",
+    );
+    expect(normalizeHit({ id: "r/x", title: "t", action: "watch-room" }, "reddit")?.action).toBe(
+      "watch-room",
+    );
+    expect(normalizeHit({ id: "a", title: "t", action: "attach" }, "twitch")?.action).toBe(
+      "attach",
+    );
+  });
+
+  /**
+   * The gating rule, at the only place it could be broken quietly.
+   *
+   * Reddit answers with rooms AND with threads: `r/mechmarket` is a room to
+   * watch, `t3_1abc2de` is a thread to open. Inferring the action from the
+   * surface would offer "Watch this subreddit" over a thread and post a
+   * thread id into the rooms table. An unnamed action is a LINK — every other
+   * action writes something, and a link is the only fallback that cannot.
+   */
+  it("never infers an action from the surface", () => {
+    expect(normalizeHit({ id: "t3_1abc2de", title: "WTS GMK Olivia" }, "reddit")?.action).toBe(
+      "open",
+    );
+    expect(normalizeHit({ id: "r/mechmarket", title: "r/mechmarket" }, "reddit")?.action).toBe(
+      "open",
+    );
+    expect(normalizeHit({ id: "a", title: "t" }, "ebaylive")?.action).toBe("open");
+    expect(normalizeHit({ id: "a", title: "t", action: "nonsense" }, "twitch")?.action).toBe(
+      "open",
+    );
   });
 
   it("drops a why entry with no term and defaults an unknown where to the title", () => {
@@ -147,59 +176,88 @@ describe("normalizeSource", () => {
 });
 
 describe("interests", () => {
-  it("reads a bare string as a term the operator owns", () => {
-    expect(normalizeInterests(["Pokémon"])).toEqual([
-      { term: "Pokémon", origin: "own", listings: null, catalog: null, pinned: false },
+  const derived = {
+    slug: "omega-seamaster",
+    term: "Omega Seamaster",
+    origin: "derived",
+    pinned: false,
+    weight: 12,
+  };
+
+  it("reads the five fields the server sends and nothing else", () => {
+    expect(normalizeInterests([derived])).toEqual([
+      {
+        slug: "omega-seamaster",
+        term: "Omega Seamaster",
+        origin: "derived",
+        pinned: false,
+        weight: 12,
+      },
     ]);
   });
 
-  it("accepts either spelling of the count and of the origin", () => {
-    const [a, b] = normalizeInterests([
-      { term: "Omega", origin: "derived", listings: 12, catalog: "Watches" },
+  // The shape is pinned now. A reader that still took `listings` or
+  // `catalogName` would go on silently working against a payload nobody
+  // sends, which is how a guess outlives the guessing.
+  it("no longer accepts the field names it was guessing at", () => {
+    const [i] = normalizeInterests([
       { name: "GMK", kind: "catalog", count: 4, catalogName: "Keys" },
     ]);
-    expect(a).toMatchObject({ term: "Omega", origin: "derived", listings: 12, catalog: "Watches" });
-    expect(b).toMatchObject({ term: "GMK", origin: "derived", listings: 4, catalog: "Keys" });
+    // `name` is not a term, so there is no interest here at all.
+    expect(i).toBeUndefined();
+    const [j] = normalizeInterests([{ term: "GMK", listings: 4, catalogName: "Keys" }]);
+    expect(j).toEqual({ slug: "gmk", term: "GMK", origin: "own", pinned: false, weight: 0 });
+  });
+
+  it("weighs a term the operator typed at nothing", () => {
+    expect(normalizeInterests([{ term: "Pokémon", origin: "own" }])[0]?.weight).toBe(0);
   });
 
   // A term the operator typed must never be claimed as derived from their
-  // catalog: the chip's provenance is the one thing it is for.
+  // listings: the chip's provenance is the one thing it is for.
   it("treats anything it cannot prove as the operator's own", () => {
     expect(normalizeInterests([{ term: "Pokémon" }])[0]?.origin).toBe("own");
   });
 
-  it("drops duplicates and anything with no term at all", () => {
-    expect(normalizeInterests(["a", "A", { term: " " }, {}, null]).map((i) => i.term)).toEqual([
-      "a",
-    ]);
+  // The slug is the identity, so it is what deduplicates: two spellings of
+  // one term are one interest.
+  it("drops duplicates by slug, and anything with no term at all", () => {
+    expect(
+      normalizeInterests([
+        { term: "GMK", slug: "gmk" },
+        { term: "gmk", slug: "gmk" },
+        { term: " " },
+        {},
+        null,
+        "a bare string is not an interest",
+      ]).map((i) => i.term),
+    ).toEqual(["GMK"]);
   });
 
-  it("reads the wrapped shape the endpoint answers with", () => {
-    expect(normalizeInterests({ interests: ["a", "b"] })).toHaveLength(2);
+  it("falls back to the term as its own identity when no slug came", () => {
+    expect(normalizeInterests([{ term: "Omega Seamaster" }])[0]?.slug).toBe("omega seamaster");
+    expect(interestSlug("  Pokémon ")).toBe("pokémon");
   });
 
-  it("says where a chip came from, and never counts what the server did not", () => {
-    expect(
-      interestOrigin({
-        term: "Omega",
-        origin: "derived",
-        listings: 1,
-        catalog: "Watches",
-        pinned: false,
-      }),
-    ).toBe("Derived from 1 listing of Watches.");
-    expect(
-      interestOrigin({
-        term: "Omega",
-        origin: "derived",
-        listings: null,
-        catalog: null,
-        pinned: false,
-      }),
-    ).toBe("Derived from your catalog.");
-    expect(
-      interestOrigin({ term: "GMK", origin: "own", listings: null, catalog: null, pinned: false }),
-    ).toBe("You added this term.");
+  it("reads the wrapped shape the endpoint answers with, and its catalog count", () => {
+    const set = normalizeInterestSet({ interests: [derived], catalogs: 3 });
+    expect(set.interests).toHaveLength(1);
+    expect(set.catalogs).toBe(3);
+    // No count means none, on an endpoint that always sends one.
+    expect(normalizeInterestSet({ interests: [] }).catalogs).toBe(0);
+  });
+
+  // The weight is the whole of a derived chip's provenance, and no catalog is
+  // named because interests derive from all of an account's catalogs at once
+  // and belong to none of them.
+  it("says where a chip came from without naming a catalog it does not have", () => {
+    expect(interestOrigin({ ...derived, weight: 1, origin: "derived" })).toBe(
+      "Derived from 1 of your listings.",
+    );
+    expect(interestOrigin({ ...derived, weight: 0, origin: "derived" })).toBe(
+      "Derived from your catalogs.",
+    );
+    expect(interestOrigin({ ...derived, origin: "own", weight: 0 })).toBe("You added this term.");
   });
 });
 
@@ -345,17 +403,27 @@ describe("whether a room is already watched", () => {
     addedAt: "2026-09-18T00:00:00.000Z",
     ...over,
   });
-  const hit = { surface: "reddit" as const, id: "mechmarket" };
+  // A Reddit room id carries its prefix — verbatim what the rooms endpoint
+  // accepts — so both sides are spelled the same and nothing is stripped.
+  const hit = { surface: "reddit" as const, id: "r/mechmarket" };
 
-  // `r/mechmarket` and `mechmarket` are one subreddit. Comparing them raw is
-  // how the same room gets added twice.
-  it("reads the room and the hit id as the same room", () => {
-    expect(roomKey("r/MechMarket")).toBe(roomKey("mechmarket"));
+  it("matches the room the hit is offering", () => {
     expect(isWatched([room()], hit)).toBe(true);
+  });
+
+  // Reddit treats a subreddit name case-insensitively, so this is one room.
+  it("matches it whatever case either side was written in", () => {
+    expect(roomKey("r/MechMarket")).toBe(roomKey("r/mechmarket"));
+    expect(isWatched([room({ room: "R/MechMarket" })], hit)).toBe(true);
   });
 
   it("does not match a room of the same name on another surface", () => {
     expect(isWatched([room({ surface: "twitch" })], hit)).toBe(false);
+  });
+
+  // A thread is not a room. `t3_1abc2de` must never find one.
+  it("does not match a thread id against the rooms table", () => {
+    expect(isWatched([room()], { surface: "reddit", id: "t3_1abc2de" })).toBe(false);
   });
 
   // Absent reads as watched — the room being in the list IS the watch, and a
