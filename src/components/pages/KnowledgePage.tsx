@@ -1,5 +1,15 @@
 /**
- * Catalog — what you are selling, priced against what it is actually worth.
+ * Knowledge — what the copilot is allowed to answer from.
+ *
+ * This page was called Catalog, and a catalog is one of seven kinds of ground
+ * truth: listings, policies, schedule, sponsor briefs, product docs, community
+ * rules and prior answers. Naming the page after one of them made the other
+ * six invisible, and made it look as though a surface with no listings — a
+ * Twitch channel, a subreddit — had nothing to ground a reply in at all.
+ *
+ * So the page opens with the seven kinds and which surfaces each one grounds,
+ * and the lineup below is the listing corpus: what you are selling, priced
+ * against what it is actually worth.
  *
  * Market data used to exist only inside the research palette: one lot, only
  * when someone asked, gone when the palette closed. That is the wrong shape for
@@ -21,6 +31,7 @@ import {
   AlertTriangle,
   ArrowRight,
   ExternalLink,
+  Library,
   Loader2,
   PackageSearch,
   RefreshCw,
@@ -29,7 +40,14 @@ import {
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { formatMoney } from "@/lib/format";
-import type { CatalogMarket, CatalogSummary, EbayResult, MarketRow } from "@/lib/types";
+import type { CatalogMarket, CatalogSummary, CorpusKind, EbayResult, MarketRow } from "@/lib/types";
+import {
+  CORPUS_BLURB,
+  CORPUS_LABEL,
+  CORPUS_ORDER,
+  surfaceLabel,
+  surfacesForCorpus,
+} from "@/lib/surfaces";
 import { AppShell, type Tab } from "@/components/app/AppShell";
 import {
   Badge,
@@ -41,9 +59,9 @@ import {
   StatTile,
 } from "@/components/ui/kit";
 
-type View = "lineup" | "search";
+type View = "lineup" | "corpora" | "search";
 
-export function CatalogPage({ initialId }: { initialId?: string | undefined } = {}) {
+export function KnowledgePage({ initialId }: { initialId?: string | undefined } = {}) {
   const [catalogs, setCatalogs] = useState<CatalogSummary[] | null>(null);
   const [chosen, setChosen] = useState<string | null>(initialId ?? null);
   const [market, setMarket] = useState<CatalogMarket | null>(null);
@@ -96,18 +114,24 @@ export function CatalogPage({ initialId }: { initialId?: string | undefined } = 
 
   const tabs: Tab[] = [
     {
-      label: "Lineup",
+      label: "Listings",
       count: rows.length,
       active: view === "lineup",
       onClick: () => setView("lineup"),
+    },
+    {
+      label: "Corpora",
+      count: CORPUS_ORDER.length,
+      active: view === "corpora",
+      onClick: () => setView("corpora"),
     },
     { label: "Search eBay", active: view === "search", onClick: () => setView("search") },
   ];
 
   return (
     <AppShell
-      section="catalog"
-      title="Catalog"
+      section="knowledge"
+      title="Knowledge"
       subtitle={
         market === null
           ? "reading your inventory…"
@@ -144,6 +168,7 @@ export function CatalogPage({ initialId }: { initialId?: string | undefined } = 
       }
     >
       {view === "search" ? <EbaySearch /> : null}
+      {view === "corpora" ? <CorpusGrid catalogs={catalogs} /> : null}
       {view === "lineup" && catalogs && catalogs.length === 0 ? (
         <Card className="mt-2">
           <EmptyState
@@ -169,6 +194,21 @@ export function CatalogPage({ initialId }: { initialId?: string | undefined } = 
 
       {view === "lineup" ? (
         <>
+          {/* The listings are one corpus of seven. A page that opened straight
+              onto them taught that a surface with no listings — a channel, a
+              subreddit — had nothing to answer from. */}
+          <Card className="mb-3 flex items-center gap-3 px-3 py-2.5">
+            <Library className="size-3.5 shrink-0 text-text-muted" aria-hidden />
+            <span className="min-w-0 flex-1 text-[12px] text-text-secondary">
+              Listings are one of seven kinds of ground truth. The others — policies, schedule,
+              sponsor briefs, product docs, community rules, prior answers — ground the surfaces
+              that have no lots.
+            </span>
+            <Button size="sm" onClick={() => setView("corpora")}>
+              See all seven
+            </Button>
+          </Card>
+
           <div className="grid gap-3 sm:grid-cols-4">
             <StatTile
               label="Lots"
@@ -568,5 +608,98 @@ function EbaySearch() {
         </Card>
       ) : null}
     </>
+  );
+}
+
+// ── the seven kinds ─────────────────────────────────────────────────────────
+
+/**
+ * What grounds a reply, by kind, and which surfaces each kind serves.
+ *
+ * The honest half is the state column. Two of the seven are stored today —
+ * the listings and the policies that come with a catalog — and the rest are
+ * declared in the capability table but have nowhere to be loaded from yet.
+ * Drawing all seven as though they were filled would be the same lie the
+ * page told when it called itself Catalog: it would imply a Twitch channel
+ * has a sponsor brief because the guard for one exists.
+ */
+export function CorpusGrid({ catalogs }: { catalogs: CatalogSummary[] | null }) {
+  const own = (catalogs ?? []).filter((c) =>
+    c.origin ? c.origin.kind !== "seed" : !["kicksbyrae", "curated-cards"].includes(c.id),
+  );
+  const items = own.reduce((a, c) => a + c.itemCount, 0);
+  const policies = own.reduce((a, c) => a + c.policyCount, 0);
+
+  const state: Record<CorpusKind, { has: boolean; line: string }> = {
+    listing: {
+      has: items > 0,
+      line: items
+        ? `${items} lots across ${own.length} catalog${own.length === 1 ? "" : "s"}`
+        : "nothing loaded — import your listings on Settings › eBay, or prepare a session",
+    },
+    policy: {
+      has: policies > 0,
+      line: policies
+        ? `${policies} policies the copilot can cite verbatim`
+        : "nothing loaded — a catalog carries your shipping, returns and authenticity wording",
+    },
+    qa: {
+      has: false,
+      line: "written as sessions end: an approved answer becomes the ground for the next one",
+    },
+    community: {
+      has: false,
+      line: "retrieved per room when a reply is drafted — add rooms on Rooms",
+    },
+    product: { has: false, line: "no store for these yet — nothing here grounds a reply" },
+    schedule: { has: false, line: "no store for these yet — nothing here grounds a reply" },
+    sponsor: { has: false, line: "no store for these yet — nothing here grounds a reply" },
+  };
+
+  return (
+    <div>
+      <SectionHeading hint="A reply is grounded in a corpus, and the seven kinds are not interchangeable: a listing answers “is it still there”, a community rule decides whether we may answer at all. Each row says which surfaces it grounds, so loading one is a decision with a visible consequence.">
+        Seven kinds of ground truth
+      </SectionHeading>
+
+      <Card className="mt-3 overflow-hidden">
+        <div className="scroll-thin overflow-x-auto">
+          <table className="w-full min-w-[640px] text-[12.5px]">
+            <thead>
+              <tr className="text-left text-[11px] text-text-muted">
+                <th className="px-4 py-2 font-medium">Corpus</th>
+                <th className="px-3 py-2 font-medium">What you have</th>
+                <th className="px-4 py-2 font-medium">Grounds</th>
+              </tr>
+            </thead>
+            <tbody>
+              {CORPUS_ORDER.map((kind) => (
+                <tr key={kind} className="shadow-[0_1px_0_var(--hairline)] last:shadow-none">
+                  <td className="px-4 py-2.5 align-top">
+                    <div className="font-medium">{CORPUS_LABEL[kind]}</div>
+                    <div className="mt-0.5 max-w-[320px] text-[11.5px] leading-snug text-text-muted">
+                      {CORPUS_BLURB[kind]}
+                    </div>
+                  </td>
+                  <td className="px-3 py-2.5 align-top">
+                    <Badge tone={state[kind].has ? "ok" : "neutral"}>
+                      {state[kind].has ? "loaded" : "empty"}
+                    </Badge>
+                    <div className="mt-1 max-w-[260px] text-[11.5px] leading-snug text-text-muted">
+                      {state[kind].line}
+                    </div>
+                  </td>
+                  <td className="px-4 py-2.5 align-top text-text-secondary">
+                    {surfacesForCorpus(kind)
+                      .map((id) => surfaceLabel(id))
+                      .join(", ")}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
   );
 }

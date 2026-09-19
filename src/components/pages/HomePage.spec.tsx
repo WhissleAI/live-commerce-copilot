@@ -1,0 +1,476 @@
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, screen } from "@testing-library/react";
+import { renderWithRouter } from "@/test/router";
+import { BehindBand, HomePage, NowBand, RehearsalCard, SurfaceRow, SurfaceTable } from "./HomePage";
+import { deriveSurfaces } from "@/lib/home";
+import { SURFACE_CAPABILITIES } from "@/lib/surfaces";
+import type { HomeLiveSession, HomeReport, HomeSurfaceRow, SurfaceInfo } from "@/lib/types";
+
+const noop = () => {};
+
+const live = (over: Partial<HomeLiveSession> = {}): HomeLiveSession => ({
+  showId: "s_1",
+  surface: "ebaylive",
+  title: "Denim Vault",
+  host: "kicksbyrae",
+  startedAt: new Date(Date.now() - 65_000).toISOString(),
+  awaiting: 2,
+  blocked: 1,
+  readOnly: false,
+  ...over,
+});
+
+const row = (over: Partial<HomeSurfaceRow> = {}): HomeSurfaceRow => ({
+  id: "twitch",
+  label: "Twitch",
+  attachable: true,
+  tempo: "live",
+  delivery: "api",
+  connected: false,
+  missing: "TWITCH_CLIENT_ID",
+  before: [
+    { label: "Keys on the server — TWITCH_CLIENT_ID", done: false, href: "/settings" },
+    { label: "Choose channels", done: false, href: "/rooms", cta: "Open Rooms" },
+  ],
+  during: "answers and acts",
+  after: "report and follow-ups",
+  rooms: 0,
+  ...over,
+});
+
+const report: HomeReport = {
+  showId: "s_old",
+  surface: "ebaylive",
+  title: "Friday drop",
+  endedAt: "2026-09-12T20:00:00.000Z",
+  answered: 39,
+  blocked: 3,
+  topGap: "does it ship to Canada",
+};
+
+const surfaces: SurfaceInfo[] = [
+  {
+    id: "ebaylive",
+    label: "eBay Live",
+    capabilities: SURFACE_CAPABILITIES.ebaylive,
+    attachable: true,
+    available: true,
+    missing: null,
+  },
+  {
+    id: "reddit",
+    label: "Reddit",
+    capabilities: SURFACE_CAPABILITIES.reddit,
+    attachable: true,
+    available: true,
+    missing: null,
+  },
+];
+
+const derived = deriveSurfaces(surfaces, {
+  ebay: null,
+  catalogs: null,
+  home: null,
+  reports: null,
+  drafts: null,
+  rooms: {},
+});
+
+// ── NOW ─────────────────────────────────────────────────────────────────────
+
+describe("the NOW band", () => {
+  it("names the surface a session is on, not just its title", async () => {
+    await renderWithRouter(
+      <NowBand
+        live={[live({ surface: "twitch", title: "Friday build", host: "raebuilds" })]}
+        drafts={{ total: 0, bySurface: [] }}
+        surfaces={derived}
+        onOpen={noop}
+      />,
+    );
+    expect(screen.getByText("Friday build")).toBeInTheDocument();
+    expect(screen.getByText(/Twitch · raebuilds/)).toBeInTheDocument();
+    expect(screen.getByText("LIVE")).toBeInTheDocument();
+  });
+
+  it("carries the queue depth and the blocked count into the row", async () => {
+    await renderWithRouter(
+      <NowBand
+        live={[live()]}
+        drafts={{ total: 0, bySurface: [] }}
+        surfaces={derived}
+        onOpen={noop}
+      />,
+    );
+    expect(screen.getByText("2 awaiting · 1 blocked")).toBeInTheDocument();
+  });
+
+  it("opens the console for the session that was pressed", async () => {
+    const opened: string[] = [];
+    await renderWithRouter(
+      <NowBand
+        live={[live({ showId: "s_9" })]}
+        drafts={{ total: 0, bySurface: [] }}
+        surfaces={derived}
+        onOpen={(id) => opened.push(id)}
+      />,
+    );
+    fireEvent.click(screen.getByText("Open console"));
+    expect(opened).toEqual(["s_9"]);
+  });
+
+  it("counts the drafts waiting and says which surfaces they came from", async () => {
+    await renderWithRouter(
+      <NowBand
+        live={[]}
+        drafts={{
+          total: 9,
+          bySurface: [
+            { surface: "reddit", count: 7 },
+            { surface: "dm", count: 2 },
+          ],
+        }}
+        surfaces={derived}
+        onOpen={noop}
+      />,
+    );
+    expect(screen.getByText(/9 drafts waiting for you to send/)).toBeInTheDocument();
+    expect(screen.getByText("7 Reddit · 2 Follow-ups")).toBeInTheDocument();
+    expect(screen.getByText("Open Drafts").closest("a")).toHaveAttribute("href", "/drafts");
+  });
+
+  // A band that vanishes when quiet teaches that the copilot is only there
+  // when it is busy. It is watching either way, and says how widely.
+  it("stays on screen when empty and names how many surfaces are watching", async () => {
+    await renderWithRouter(
+      <NowBand live={[]} drafts={{ total: 0, bySurface: [] }} surfaces={derived} onOpen={noop} />,
+    );
+    expect(screen.getByText(/Nothing needs you this minute\./)).toBeInTheDocument();
+    expect(screen.getByText(/surfaces? watching/)).toBeInTheDocument();
+  });
+
+  it("is still a band, with its phase and what the phase means", async () => {
+    await renderWithRouter(
+      <NowBand live={[]} drafts={{ total: 0, bySurface: [] }} surfaces={derived} onOpen={noop} />,
+    );
+    expect(screen.getByText("Now")).toBeInTheDocument();
+    expect(screen.getByText("What needs you this minute")).toBeInTheDocument();
+  });
+});
+
+// ── BEHIND YOU ──────────────────────────────────────────────────────────────
+
+describe("the BEHIND YOU band", () => {
+  it("shows the one number that matters and the top gap", async () => {
+    await renderWithRouter(<BehindBand reports={[report]} followups={{ total: 12, ready: 5 }} />);
+    expect(screen.getByText("Friday drop")).toBeInTheDocument();
+    expect(screen.getByText("39 answered · 3 blocked")).toBeInTheDocument();
+    expect(screen.getByText(/top gap: “does it ship to Canada”/)).toBeInTheDocument();
+    expect(screen.getByText("Report").closest("a")).toHaveAttribute("href", "/reports/s_old");
+  });
+
+  it("draws no top gap clause when the report has none, rather than an empty quote", async () => {
+    await renderWithRouter(
+      <BehindBand reports={[{ ...report, topGap: null }]} followups={{ total: 0, ready: 0 }} />,
+    );
+    expect(screen.queryByText(/top gap/)).not.toBeInTheDocument();
+  });
+
+  it("counts the follow-ups a finished session produced", async () => {
+    await renderWithRouter(<BehindBand reports={[report]} followups={{ total: 12, ready: 5 }} />);
+    expect(
+      screen.getByText("12 follow-ups from finished sessions · 5 still to send"),
+    ).toBeInTheDocument();
+  });
+
+  it("says nothing has finished rather than drawing an empty list", async () => {
+    await renderWithRouter(<BehindBand reports={[]} followups={{ total: 0, ready: 0 }} />);
+    expect(screen.getByText(/Nothing has finished yet\./)).toBeInTheDocument();
+  });
+});
+
+// ── the surface table ───────────────────────────────────────────────────────
+
+describe("the surface table", () => {
+  it("has a row per surface with all three phases on it", async () => {
+    await renderWithRouter(<SurfaceTable rows={derived} />);
+    expect(screen.getByText("Surfaces")).toBeInTheDocument();
+    expect(screen.getByText("eBay Live")).toBeInTheDocument();
+    expect(screen.getByText("Reddit")).toBeInTheDocument();
+    // The column headers ARE the three phases.
+    expect(screen.getByRole("columnheader", { name: "Before" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "During" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "After" })).toBeInTheDocument();
+  });
+
+  it("says what an async surface does during and leaves after", async () => {
+    await renderWithRouter(<SurfaceTable rows={derived} />);
+    // Reddit and the follow-up inbox are both draft-only, and both say so.
+    expect(screen.getAllByText("drafts only")).toHaveLength(2);
+    expect(screen.getAllByText("weekly digest")).toHaveLength(2);
+  });
+
+  it("lists every surface the operator could use, not only the live ones", async () => {
+    await renderWithRouter(<SurfaceTable rows={derived} />);
+    for (const label of ["eBay Live", "Whatnot", "TikTok Live", "Twitch", "Reddit", "Follow-ups"]) {
+      expect(screen.getByText(label)).toBeInTheDocument();
+    }
+    // The scripted fixture is not a place anyone sells.
+    expect(screen.queryByText("Simulated show")).not.toBeInTheDocument();
+  });
+});
+
+describe("one surface row", () => {
+  const render1 = (r: HomeSurfaceRow, open = false) =>
+    renderWithRouter(
+      <table>
+        <tbody>
+          <SurfaceRow row={r} open={open} onToggle={noop} />
+        </tbody>
+      </table>,
+    );
+
+  it("names the variable the server named, and does not draw it as a fault", async () => {
+    await render1(row());
+    expect(screen.getByText("not connected")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Twitch needs TWITCH_CLIENT_ID on the server. The adapter is here; the key is not.",
+      ),
+    ).toBeInTheDocument();
+    // An invitation, never an error: nothing in the row is a bad-toned badge.
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("shows how far the Before has got and what the next step is", async () => {
+    await render1(
+      row({
+        before: [
+          { label: "Keys on the server", done: true },
+          { label: "Choose channels", done: false },
+        ],
+      }),
+    );
+    expect(screen.getByText("1/2 ready")).toBeInTheDocument();
+    expect(screen.getByText("Choose channels")).toBeInTheDocument();
+  });
+
+  it("says so plainly when a surface needs nothing more", async () => {
+    await render1(
+      row({
+        connected: true,
+        missing: null,
+        before: [{ label: "Keys on the server", done: true }],
+      }),
+    );
+    expect(screen.getByText("connected")).toBeInTheDocument();
+    expect(screen.getByText("everything this surface needs is in place")).toBeInTheDocument();
+  });
+
+  it("marks a surface with no adapter without pretending it is misconfigured", async () => {
+    await render1(
+      row({ id: "youtubelive", label: "YouTube Live", attachable: false, missing: null }),
+    );
+    expect(screen.getByText("no adapter yet")).toBeInTheDocument();
+  });
+
+  // The product explaining itself: the three phases with this operator's own
+  // state in each, one click from the row.
+  it("expands to Before / During / After with a working link per open step", async () => {
+    await render1(row(), true);
+    expect(screen.getByText("Before")).toBeInTheDocument();
+    expect(screen.getByText("During")).toBeInTheDocument();
+    expect(screen.getByText("After")).toBeInTheDocument();
+    expect(screen.getByText("Open Rooms").closest("a")).toHaveAttribute("href", "/rooms");
+    expect(screen.getByText(/A bounded session with a start and an end/)).toBeInTheDocument();
+  });
+
+  it("tells an async surface's story as a watch rather than a session", async () => {
+    await render1(
+      row({
+        id: "reddit",
+        label: "Reddit",
+        tempo: "async",
+        delivery: "draft-only",
+        during: "drafts only",
+        after: "weekly digest",
+        rooms: 3,
+        before: [],
+      }),
+      true,
+    );
+    expect(
+      screen.getByText(/No session — a standing watch and a queue of drafts/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/We never post here; you do\./)).toBeInTheDocument();
+    expect(screen.getByText("3 rooms watched")).toBeInTheDocument();
+    expect(screen.getByText(/Nothing to connect/)).toBeInTheDocument();
+  });
+
+  it("is a disclosure, so the phases can be reached from the keyboard", async () => {
+    const toggled: number[] = [];
+    await renderWithRouter(
+      <table>
+        <tbody>
+          <SurfaceRow row={row()} open={false} onToggle={() => toggled.push(1)} />
+        </tbody>
+      </table>,
+    );
+    const button = screen.getByRole("button", { name: /Twitch — before, during and after/ });
+    expect(button).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(button);
+    expect(toggled).toHaveLength(1);
+  });
+});
+
+describe("a session whose report never generated", () => {
+  // The old sessions list drew this as its own badge and said, in so many
+  // words, that it is the row you most want to look at. Dropping those rows
+  // from BEHIND YOU would have been the quietest possible regression.
+  it("is still a row, with nothing to open and the reason said", async () => {
+    await renderWithRouter(
+      <BehindBand reports={[{ ...report, hasReport: false }]} followups={{ total: 0, ready: 0 }} />,
+    );
+    expect(screen.getByText("Friday drop")).toBeInTheDocument();
+    expect(screen.getByText("no report")).toBeInTheDocument();
+    expect(screen.queryByText("Report")).not.toBeInTheDocument();
+  });
+});
+
+// ── the whole page, with nothing behind it ──────────────────────────────────
+
+describe("home with the backend down", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    localStorage.clear();
+  });
+
+  // The strongest statement of the degrade rule: every read fails, and the
+  // operator still gets the four bands and a surface table they can act on —
+  // not a blank screen, and not a stack trace inside a render.
+  it("still draws all four bands and the surface table", async () => {
+    localStorage.setItem("sidestage.token", "t");
+    vi.stubGlobal("fetch", () => Promise.reject(new Error("down")));
+
+    await renderWithRouter(<HomePage />);
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(await screen.findByText("What needs you this minute")).toBeInTheDocument();
+    expect(screen.getByText("What you are preparing")).toBeInTheDocument();
+    expect(screen.getByText("What finished")).toBeInTheDocument();
+    expect(screen.getByText("Where the copilot can work")).toBeInTheDocument();
+    // And the table is the built-in one rather than an empty list.
+    expect(screen.getByText("eBay Live")).toBeInTheDocument();
+    expect(screen.getByText("Reddit")).toBeInTheDocument();
+  });
+
+  // Nothing on air, nothing prepared, nothing finished, no eBay consent: the
+  // exact state a new operator signs up into, and the one surface that needs
+  // none of it is the only way to see the product answer anything.
+  it("offers the scripted rehearsal to an operator who has nothing", async () => {
+    localStorage.setItem("sidestage.token", "t");
+    vi.stubGlobal("fetch", () => Promise.reject(new Error("down")));
+
+    await renderWithRouter(<HomePage />);
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(await screen.findByText("Start the rehearsal")).toBeInTheDocument();
+    expect(screen.getByText("scripted rehearsal")).toBeInTheDocument();
+  });
+
+  it("keeps the paste box usable, because pasting a link never needed home", async () => {
+    localStorage.setItem("sidestage.token", "t");
+    vi.stubGlobal("fetch", () => Promise.reject(new Error("down")));
+
+    await renderWithRouter(<HomePage />);
+    await new Promise((r) => setTimeout(r, 50));
+
+    const box = screen.getByLabelText("A session, a channel, or a thread");
+    fireEvent.change(box, { target: { value: "https://reddit.com/r/mechmarket" } });
+    // Recognised before anything is committed: the surface, then what it is.
+    expect(screen.getByText("· r/mechmarket")).toBeInTheDocument();
+    expect(screen.getByText("Start monitoring")).toBeEnabled();
+  });
+});
+
+// ── the way in when nothing is connected ────────────────────────────────────
+
+describe("the scripted rehearsal", () => {
+  it("says plainly that it is scripted, and never calls it live", async () => {
+    await renderWithRouter(<RehearsalCard onStart={noop} />);
+    expect(screen.getByText("scripted rehearsal")).toBeInTheDocument();
+    expect(
+      screen.getByText(/a recorded show with written questions, not real buyers/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("LIVE")).not.toBeInTheDocument();
+  });
+
+  it("starts on one control", async () => {
+    let started = 0;
+    await renderWithRouter(<RehearsalCard onStart={() => (started += 1)} />);
+    fireEvent.click(screen.getByText("Start the rehearsal"));
+    expect(started).toBe(1);
+  });
+
+  it("cannot be pressed twice while an attach is in flight", async () => {
+    await renderWithRouter(<RehearsalCard starting onStart={noop} />);
+    expect(screen.getByText("Start the rehearsal").closest("button")).toBeDisabled();
+  });
+});
+
+// ── a simulated session that is genuinely on air ────────────────────────────
+
+describe("the scripted show once it is running", () => {
+  // `HIDDEN_SURFACES` keeps the simulated row out of the setup table, which is
+  // right — it is not a place to sell. Hiding a session that is ON AIR is a
+  // different and worse thing, so the band that shows running work must not
+  // inherit that filter.
+  it("is a row in NOW like any other session", async () => {
+    await renderWithRouter(
+      <NowBand
+        live={[live({ surface: "simulated", title: "Friday Night Grails — Ep. 42" })]}
+        drafts={{ total: 0, bySurface: [] }}
+        surfaces={derived}
+        onOpen={noop}
+      />,
+    );
+    expect(screen.getByText("Friday Night Grails — Ep. 42")).toBeInTheDocument();
+    expect(screen.getByText(/Simulated show/)).toBeInTheDocument();
+    expect(screen.getByText("Open console")).toBeInTheDocument();
+    // And NOW is not drawing its "nothing needs you" line over a running show.
+    expect(screen.queryByText(/Nothing needs you this minute/)).not.toBeInTheDocument();
+  });
+});
+
+describe("a report row with numbers nobody measured", () => {
+  // `answered: 0` and `answered: null` are different facts. The first is a
+  // session that answered nobody; the second is a session whose report never
+  // generated, where nothing was counted at all.
+  it("draws no figures at all rather than a zero", async () => {
+    await renderWithRouter(
+      <BehindBand
+        reports={[{ ...report, hasReport: false, answered: null, blocked: null }]}
+        followups={{ total: 0, ready: 0 }}
+      />,
+    );
+    expect(screen.getByText("no report")).toBeInTheDocument();
+    // Not "0 answered", and not an em-dash standing in for a number either.
+    expect(screen.queryByText(/\d+ answered/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/\d+ blocked/)).not.toBeInTheDocument();
+  });
+
+  it("says the end time is approximate on that row, in one word", async () => {
+    await renderWithRouter(
+      <BehindBand
+        reports={[{ ...report, hasReport: false, answered: null, blocked: null }]}
+        followups={{ total: 0, ready: 0 }}
+      />,
+    );
+    expect(screen.getByText(/eBay Live · about /)).toBeInTheDocument();
+  });
+
+  it("still prints the figures on a row that has a report", async () => {
+    await renderWithRouter(<BehindBand reports={[report]} followups={{ total: 0, ready: 0 }} />);
+    expect(screen.getByText("39 answered · 3 blocked")).toBeInTheDocument();
+  });
+});

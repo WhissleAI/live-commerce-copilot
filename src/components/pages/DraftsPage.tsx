@@ -16,9 +16,9 @@
  *   · the thread — the opening post and the branch above the comment, because a
  *     reply that answers the words and not the conversation reads as a bot;
  *   · the draft and its citations, so they know what it is standing on;
- *   · which rules of the room applied, and — the one that matters most — which
- *     rule WOULD have blocked it, because that is the sentence that gets an
- *     account banned and it is invisible everywhere else;
+ *   · which rules of the room applied, and which rule HELD it, because a rule
+ *     that stopped a reply is the reason there is nothing to send and it is
+ *     invisible everywhere else;
  *   · Copy, and Mark sent.
  *
  * "Mark sent" is recorded and never inferred. We cannot see the subreddit, so
@@ -38,7 +38,7 @@ import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { GUARD_LABEL, timeAgo } from "@/lib/format";
 import { capabilitiesOf, guardOrderFor, surfaceLabel } from "@/lib/surfaces";
-import type { AppliedRule, SurfaceDraft, SurfaceId } from "@/lib/types";
+import type { AppliedRule, HomeDraftCount, SurfaceDraft, SurfaceId } from "@/lib/types";
 import { AppShell, type Tab } from "@/components/app/AppShell";
 import {
   Badge,
@@ -53,15 +53,22 @@ import { EvidenceChips, StyleRef } from "@/components/console/ProposalQueue";
 
 export function DraftsPage() {
   const [drafts, setDrafts] = useState<SurfaceDraft[] | null>(null);
+  // The server's own count of what is waiting, across the whole account. Not
+  // derived from the list below: the list can be filtered and this must not
+  // move, and it is built by the same function that answers home — so the
+  // number here and the number there are the same number, not two that agree.
+  const [waiting, setWaiting] = useState<HomeDraftCount>({ total: 0, bySurface: [] });
   const [error, setError] = useState<string | null>(null);
   const [surface, setSurface] = useState<SurfaceId | "all">("all");
 
   const load = useCallback(async () => {
     try {
-      setDrafts(await api.drafts());
+      const queue = await api.drafts();
+      setDrafts(queue.drafts);
+      setWaiting(queue.waiting);
       setError(null);
     } catch (e) {
-      // An endpoint that is not there yet and an endpoint that refused are
+      // An endpoint that refused and an account with nothing waiting are
       // different facts. Neither of them is "you have no drafts".
       setError((e as Error).message);
       setDrafts([]);
@@ -77,26 +84,31 @@ export function DraftsPage() {
     [drafts],
   );
   const sent = useMemo(() => (drafts ?? []).filter((d) => d.status === "sent"), [drafts]);
+  // A guard held it: there is nothing to send, and it is not waiting on
+  // anyone. Carried rather than hidden, because an operator who never sees a
+  // held draft concludes the copilot simply did not answer.
+  const held = useMemo(() => (drafts ?? []).filter((d) => d.status === "blocked"), [drafts]);
 
-  const surfaces = useMemo(() => [...new Set(open.map((d) => d.surface))].sort(), [open]);
   const shown = surface === "all" ? open : open.filter((d) => d.surface === surface);
+  const heldShown = surface === "all" ? held : held.filter((d) => d.surface === surface);
 
-  // One tab per surface that actually has drafts. A tab for a surface with
-  // nothing in it is a promise of somewhere to go.
+  // One tab per surface that actually has something waiting, counted from the
+  // server's queue rather than from the rows on screen. A tab for a surface
+  // with nothing in it is a promise of somewhere to go.
   const tabs: Tab[] =
-    surfaces.length > 1
+    waiting.bySurface.length > 1
       ? [
           {
             label: "All",
-            count: open.length,
+            count: waiting.total,
             active: surface === "all",
             onClick: () => setSurface("all"),
           },
-          ...surfaces.map((s) => ({
-            label: surfaceLabel(s),
-            count: open.filter((d) => d.surface === s).length,
-            active: surface === s,
-            onClick: () => setSurface(s),
+          ...waiting.bySurface.map((s) => ({
+            label: surfaceLabel(s.surface),
+            count: s.count,
+            active: surface === s.surface,
+            onClick: () => setSurface(s.surface),
           })),
         ]
       : [];
@@ -118,8 +130,8 @@ export function DraftsPage() {
       ),
     );
     try {
-      if (what === "sent") await api.markDraftSent(id, d.surface);
-      else await api.dismissDraft(id, d.surface);
+      if (what === "sent") await api.markDraftSent(id);
+      else await api.dismissDraft(id);
     } catch (e) {
       setError((e as Error).message);
       await load();
@@ -133,11 +145,11 @@ export function DraftsPage() {
       subtitle={
         drafts === null
           ? "reading your drafts…"
-          : `${open.length} waiting · nothing here is ever posted by us`
+          : `${waiting.total} waiting · nothing here is ever posted by us`
       }
       tabs={tabs}
     >
-      <SectionHeading hint="These are the surfaces the copilot writes for and does not post to. It reads the thread, drafts a reply against the same guards a live show uses, and stops. You are the sender: copy it, post it under your own name, and mark it sent so the next draft knows this question is answered.">
+      <SectionHeading hint="These are the surfaces the copilot writes for and does not post to. It reads the thread, drafts a reply against the same guards a live session uses, and stops. You are the sender: copy it, post it under your own name, and mark it sent so the next draft knows this question is answered.">
         Written for you to send
       </SectionHeading>
 
@@ -177,6 +189,24 @@ export function DraftsPage() {
         )}
       </div>
 
+      {heldShown.length ? (
+        <div className="mt-8">
+          <SectionHeading hint="A guard stopped these before they were written out, so there is nothing to paste. They are here because a draft that never appears reads as a copilot that had no answer — and the rule that held it is usually the most useful thing on the card.">
+            Held by a guard
+          </SectionHeading>
+          <div className="mt-3 flex flex-col gap-2.5">
+            {heldShown.map((d) => (
+              <DraftCard
+                key={d.id}
+                d={d}
+                onSent={() => void mark(d, "sent")}
+                onDismiss={() => void mark(d, "dismissed")}
+              />
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       {sent.length ? (
         <div className="mt-8 mb-10">
           <SectionHeading hint="Marked by you, because nobody else can see it happen. This is what stops the copilot drafting the same answer again.">
@@ -187,7 +217,9 @@ export function DraftsPage() {
               <li key={d.id}>
                 <Card className="flex items-center gap-3 px-3 py-2.5">
                   <Check className="size-3.5 shrink-0 text-ok" aria-hidden />
-                  <span className="num shrink-0 text-[11.5px] text-text-muted">{d.room}</span>
+                  <span className="shrink-0 text-[11.5px] text-text-muted">
+                    {d.origin?.label ?? d.room}
+                  </span>
                   <span className="min-w-0 flex-1 truncate text-[12.5px] text-text-secondary">
                     {d.draft}
                   </span>
@@ -223,7 +255,6 @@ export function DraftCard({
   const evidence = d.evidence ?? [];
   const guards = d.guards ?? [];
   const blocking = rules.find((r) => r.effect === "blocked");
-  const wouldBlock = rules.filter((r) => r.effect === "would_block");
   const applied = rules.filter((r) => r.effect === "applied");
 
   const copy = () => {
@@ -242,7 +273,13 @@ export function DraftCard({
     <Card {...(blocking ? { tone: "warn" as const } : {})} className="overflow-hidden">
       <div className="flex flex-wrap items-center gap-2 px-3 py-2 shadow-[0_1px_0_var(--hairline)]">
         <Badge>{surfaceLabel(d.surface)}</Badge>
-        <span className="num truncate text-[12px] text-text-secondary">{d.room}</span>
+        {/* What a person would say out loud: `r/mechmarket`, or the session's
+            own title. The inbox used to print `ebay_47tK1SX0VsiHEXN1` here
+            because this client hard-coded the show id as the room; the server
+            joins the title and sends both. */}
+        <span className="truncate text-[12px] text-text-secondary">
+          {d.origin?.label ?? d.room}
+        </span>
         <span className="num ml-auto shrink-0 text-[11px] text-text-muted">
           {timeAgo(d.createdAt)}
         </span>
@@ -338,10 +375,13 @@ export function DraftCard({
         {/* The citations and the guard row exist where the surface recorded
             them. Where it did not — the follow-up inbox stores only a draft the
             chain had already cleared — the card says that in one line rather
-            than drawing six grey pills that would read as "nothing ran". */}
-        {d.evidence ? <EvidenceChips evidence={evidence} /> : null}
+            than drawing six grey pills that would read as "nothing ran".
+            Length, not presence: a server that sends `evidence: []` means the
+            same thing as one that sends nothing, and an empty rail is furniture
+            that looks like a failure. */}
+        {evidence.length ? <EvidenceChips evidence={evidence} /> : null}
 
-        {d.guards ? (
+        {guards.length ? (
           <div className="flex flex-wrap gap-1" role="list" aria-label="Guardrail results">
             {order.map((g) => (
               <GuardPill
@@ -360,7 +400,7 @@ export function DraftCard({
 
         <StyleRef styleRef={d.styleRef} />
 
-        <Rules blocking={blocking ?? null} wouldBlock={wouldBlock} applied={applied} />
+        <Rules blocking={blocking ?? null} applied={applied} />
 
         <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
           <Button variant="primary" onClick={copy}>
@@ -382,22 +422,16 @@ export function DraftCard({
 /**
  * What the room's rules did to this draft.
  *
- * The three states are deliberately not drawn alike. A rule that BLOCKED is the
- * reason there is nothing to send. A rule that WOULD have blocked is the more
- * valuable one and the one no other screen shows: it is the sentence the copilot
- * did not write, and the sentence the operator would otherwise have written
- * themselves.
+ * Two states, not three, and not drawn alike. A rule that BLOCKED is the reason
+ * there is nothing to send; the rest are constraints the reply was written
+ * under. There used to be a third — the rule an earlier draft tripped and this
+ * one clears — with a paragraph of copy behind it. The guard chain never
+ * returns a revise verdict, so the repair pass that would have produced an
+ * earlier draft is unreachable and the server can never set it. A state the UI
+ * renders and the system cannot reach is a promise the UI is making alone.
  */
-function Rules({
-  blocking,
-  wouldBlock,
-  applied,
-}: {
-  blocking: AppliedRule | null;
-  wouldBlock: AppliedRule[];
-  applied: AppliedRule[];
-}) {
-  if (!blocking && wouldBlock.length === 0 && applied.length === 0) return null;
+function Rules({ blocking, applied }: { blocking: AppliedRule | null; applied: AppliedRule[] }) {
+  if (!blocking && applied.length === 0) return null;
   return (
     <div className="rounded-sm bg-elevated px-2.5 py-2">
       <div className="section-header flex items-center gap-1.5">
@@ -412,13 +446,6 @@ function Rules({
           <span className="num text-[11px] text-text-muted">{blocking.factId}</span>
         </p>
       ) : null}
-
-      {wouldBlock.map((r) => (
-        <p key={r.factId} className="mt-1.5 text-[12px] leading-snug text-text-secondary">
-          <span className="font-medium">Would have blocked it — {r.label}.</span>{" "}
-          {r.reason ?? r.text}
-        </p>
-      ))}
 
       {applied.length ? (
         <p className="mt-1.5 text-[11.5px] leading-snug text-text-muted">

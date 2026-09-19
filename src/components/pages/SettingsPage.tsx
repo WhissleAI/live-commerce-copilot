@@ -597,8 +597,8 @@ function AccountAndData() {
       <Section title="What is kept, and for how long">
         <Card>
           {[
-            ["chat, proposals and their verdicts", "until you delete the show"],
-            ["the hash-chained audit log", "kept with the show"],
+            ["chat, proposals and their verdicts", "until you delete the session"],
+            ["the hash-chained audit log", "kept with the session"],
             [
               "host audio",
               "10-second chunks on the server's disk, with the transcript and its emotion and intent distributions — playable from the report",
@@ -609,7 +609,7 @@ function AccountAndData() {
             ],
             ["the agent's conclusion and the platform's session summary", "kept in the report"],
             ["the stream's Whissle agent", "deleted with the session"],
-            ["everything above", "deleted together when you delete the show — rows and bytes"],
+            ["everything above", "deleted together when you delete the session — rows and bytes"],
           ].map(([what, howLong]) => (
             <div
               key={what}

@@ -16,6 +16,7 @@ import { Route as CatalogRouteImport } from './routes/catalog'
 import { Route as ConsoleRouteImport } from './routes/console'
 import { Route as CostRouteImport } from './routes/cost'
 import { Route as DraftsRouteImport } from './routes/drafts'
+import { Route as KnowledgeRouteImport } from './routes/knowledge'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as PersonaRouteImport } from './routes/persona'
 import { Route as PrivacyRouteImport } from './routes/privacy'
@@ -61,6 +62,11 @@ const CostRoute = CostRouteImport.update({
 const DraftsRoute = DraftsRouteImport.update({
   id: '/drafts',
   path: '/drafts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KnowledgeRoute = KnowledgeRouteImport.update({
+  id: '/knowledge',
+  path: '/knowledge',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -127,6 +133,7 @@ export interface FileRoutesByFullPath {
   '/console': typeof ConsoleRoute
   '/cost': typeof CostRoute
   '/drafts': typeof DraftsRoute
+  '/knowledge': typeof KnowledgeRoute
   '/login': typeof LoginRoute
   '/persona': typeof PersonaRoute
   '/privacy': typeof PrivacyRoute
@@ -147,6 +154,7 @@ export interface FileRoutesByTo {
   '/console': typeof ConsoleRoute
   '/cost': typeof CostRoute
   '/drafts': typeof DraftsRoute
+  '/knowledge': typeof KnowledgeRoute
   '/login': typeof LoginRoute
   '/persona': typeof PersonaRoute
   '/privacy': typeof PrivacyRoute
@@ -168,6 +176,7 @@ export interface FileRoutesById {
   '/console': typeof ConsoleRoute
   '/cost': typeof CostRoute
   '/drafts': typeof DraftsRoute
+  '/knowledge': typeof KnowledgeRoute
   '/login': typeof LoginRoute
   '/persona': typeof PersonaRoute
   '/privacy': typeof PrivacyRoute
@@ -190,6 +199,7 @@ export interface FileRouteTypes {
     | '/console'
     | '/cost'
     | '/drafts'
+    | '/knowledge'
     | '/login'
     | '/persona'
     | '/privacy'
@@ -210,6 +220,7 @@ export interface FileRouteTypes {
     | '/console'
     | '/cost'
     | '/drafts'
+    | '/knowledge'
     | '/login'
     | '/persona'
     | '/privacy'
@@ -230,6 +241,7 @@ export interface FileRouteTypes {
     | '/console'
     | '/cost'
     | '/drafts'
+    | '/knowledge'
     | '/login'
     | '/persona'
     | '/privacy'
@@ -251,6 +263,7 @@ export interface RootRouteChildren {
   ConsoleRoute: typeof ConsoleRoute
   CostRoute: typeof CostRoute
   DraftsRoute: typeof DraftsRoute
+  KnowledgeRoute: typeof KnowledgeRoute
   LoginRoute: typeof LoginRoute
   PersonaRoute: typeof PersonaRoute
   PrivacyRoute: typeof PrivacyRoute
@@ -313,6 +326,13 @@ declare module '@tanstack/react-router' {
       path: '/drafts'
       fullPath: '/drafts'
       preLoaderRoute: typeof DraftsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/knowledge': {
+      id: '/knowledge'
+      path: '/knowledge'
+      fullPath: '/knowledge'
+      preLoaderRoute: typeof KnowledgeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -403,6 +423,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConsoleRoute: ConsoleRoute,
   CostRoute: CostRoute,
   DraftsRoute: DraftsRoute,
+  KnowledgeRoute: KnowledgeRoute,
   LoginRoute: LoginRoute,
   PersonaRoute: PersonaRoute,
   PrivacyRoute: PrivacyRoute,

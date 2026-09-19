@@ -1313,6 +1313,115 @@ export interface HomeView {
   prepared: PreparedShow[];
   preparing: string[];
   watching: ShowSummary[];
+
+  /**
+   * The surface-aware half, added when home stopped being one eBay show.
+   *
+   * Every key below is OPTIONAL and every one of them is derivable from the
+   * keys above plus reads this client already makes — which is the whole
+   * point. A tab open on an older server, or a deploy where the frontend
+   * lands first, gets the same four bands built out of the legacy payload
+   * rather than an empty screen. See `src/lib/home.ts`.
+   */
+  now?: HomeNow;
+  next?: HomeNext;
+  behind?: HomeBehind;
+  surfaces?: HomeSurfaceRow[];
+}
+
+/** A session on air, on any surface. `showId` because the API kept the word. */
+export interface HomeLiveSession {
+  showId: string;
+  surface: SurfaceId;
+  title: string;
+  host: string;
+  startedAt: string;
+  awaiting: number;
+  blocked: number;
+  readOnly: boolean;
+}
+
+export interface HomeDraftCount {
+  total: number;
+  bySurface: { surface: SurfaceId; count: number }[];
+}
+
+export interface HomeNow {
+  live: HomeLiveSession[];
+  drafts: HomeDraftCount;
+}
+
+export interface HomeNext {
+  prepared: PreparedShow[];
+  /** Surfaces with a live grid we can read. Today: eBay Live, and only it. */
+  discoverable: SurfaceId[];
+}
+
+/** One finished session, with the one number that matters and the top gap. */
+export interface HomeReport {
+  showId: string;
+  surface: SurfaceId;
+  title: string;
+  /**
+   * The report's own end time where there is a report. Where there is not it
+   * is APPROXIMATE — the last message the session recorded, else when it
+   * started — and `hasReport: false` is what says so.
+   */
+  endedAt: string;
+  /** Null, never zero, on a session whose report never generated: "answered 0"
+   *  is a measurement, and nobody made it. */
+  answered: number | null;
+  blocked: number | null;
+  /** The highest-count unanswered question the stored report already holds. */
+  topGap: string | null;
+  /**
+   * False for a session that ended without its report generating.
+   *
+   * Absent means true: everything in `behind.reports` is a report by
+   * definition. The derived path sets it, because a session whose report
+   * failed is the one an operator most wants to look at and the old sessions
+   * list said so — dropping those rows would quietly lose that.
+   */
+  hasReport?: boolean;
+}
+
+export interface HomeBehind {
+  reports: HomeReport[];
+  followups: { total: number; ready: number };
+}
+
+/** One step of a surface's Before, with the place that finishes it. */
+export interface HomeSurfaceStep {
+  label: string;
+  done: boolean;
+  /** An in-app destination. Absent when there is nothing to press. */
+  href?: string;
+  /** Search params for `href`, when it needs them. */
+  search?: Record<string, string>;
+  cta?: string;
+}
+
+/**
+ * One row of the surface table — the phase story for a single surface.
+ *
+ * `connected` is "has whatever this surface needs to run at all"; `missing`
+ * names the environment variable or the consent that is not there, using the
+ * same string `SurfaceUnavailable` sends, so the operator reads one wording in
+ * both places.
+ */
+export interface HomeSurfaceRow {
+  id: SurfaceId;
+  label: string;
+  attachable: boolean;
+  tempo: Tempo;
+  delivery: "api" | "draft-only";
+  connected: boolean;
+  missing: string | null;
+  before: HomeSurfaceStep[];
+  during: string;
+  after: string;
+  /** Async and room-based surfaces: how many rooms are watched. */
+  rooms?: number;
 }
 
 /** GET /api/cost — the history the live rail cannot have, because the meter
@@ -1403,14 +1512,22 @@ export interface ThreadContext {
 }
 
 /** One community rule, and what it did to this draft. */
+/**
+ * One rule of the room, and what it did to this draft.
+ *
+ * Two effects, not three. `would_block` — "the rule an earlier draft tripped
+ * and this one clears" — cannot happen in this system: the guard chain never
+ * returns a revise verdict, so the pipeline's single repair pass is
+ * unreachable, so there is never an earlier draft for a rule to have tripped.
+ * A field the UI reads and the server can never set is a promise the UI is
+ * making on our behalf, and this one had a paragraph of copy behind it.
+ */
 export interface AppliedRule {
   factId: string;
   label: string;
   text: string;
-  /** `blocked` means this rule is the reason the draft cannot be posted;
-   *  `would_block` is the rule an earlier draft tripped and this one clears. */
-  effect: "applied" | "would_block" | "blocked";
-  /** Why, in the guard's own words. */
+  effect: "applied" | "blocked";
+  /** The guard's own words, on the rule that held it. Null on the others. */
   reason?: string | null;
 }
 
@@ -1422,11 +1539,39 @@ export interface AppliedRule {
  * with: the thread above it, what it is standing on, and which rule of the room
  * would have stopped it.
  */
+/**
+ * What the operator calls the place a draft came from.
+ *
+ * The two kinds are genuinely different things and the queue does not pretend
+ * otherwise: a Reddit draft comes out of a ROOM still being watched, a
+ * follow-up out of a SESSION that ended hours ago. `label` is what a person
+ * would say out loud — `r/mechmarket`, or the session's title. `id` is the
+ * machine's name for the same thing, kept beside it rather than instead of it,
+ * which is what went wrong before: the inbox printed `ebay_47tK1SX0VsiHEXN1`
+ * where Reddit printed `r/mechmarket`, and that was our hard-coding, not the
+ * server's.
+ */
+export interface DraftOrigin {
+  kind: "room" | "session";
+  id: string;
+  label: string;
+}
+
+/** Where a draft is in the operator's hands. `open` is the only one that
+ *  counts as waiting. `blocked` is carried rather than hidden — a guard held
+ *  it, and an operator who cannot see that concludes it simply did not
+ *  answer. */
+export type DraftStatus = "open" | "sent" | "dismissed" | "blocked";
+
 export interface SurfaceDraft {
   id: string;
   surface: SurfaceId;
-  /** The subreddit, channel or show this came out of. */
+  origin: DraftOrigin;
+  /** `origin.label`, flat, because that is what the card prints. */
   room: string;
+  /** The session this draft belongs to: a live watch, or the session a
+   *  follow-up came out of. Present on both, so a client never guesses. */
+  sessionId?: string;
   /** The comment or post being answered. */
   question: { author: string; text: string; at: string; url?: string | null };
   draft: string;
@@ -1449,7 +1594,23 @@ export interface SurfaceDraft {
   styleRef?: StyleRef | null;
   /** Set by the operator when they have pasted it in themselves. */
   sentAt?: string | null;
-  status?: "open" | "sent" | "dismissed";
+  status?: DraftStatus;
+}
+
+/**
+ * `GET /api/drafts`.
+ *
+ * `waiting` is the WHOLE account's waiting queue whatever `?surface=` and
+ * `?status=` say — it is the number home prints, built by the same function
+ * on the server, so the count under the heading and the count on home are the
+ * same number by construction rather than by arithmetic that agrees today.
+ * The filters shape `drafts` only.
+ */
+export interface DraftsQueue {
+  surface: SurfaceId | null;
+  status: DraftStatus | null;
+  waiting: HomeDraftCount;
+  drafts: SurfaceDraft[];
 }
 
 // ── persona ─────────────────────────────────────────────────────────────────

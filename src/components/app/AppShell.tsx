@@ -12,7 +12,7 @@
  *     a console — it was already spending 92px of chrome plus six 36px section
  *     bars — and a rail costs 3.6% of the width and none of the height.
  *  2. A 28px LIVE STRIP rides above every screen that is not the console while
- *     a show is on air. Opening Cost mid-show used to mean losing all awareness
+ *     a session is on air. Opening Cost mid-session used to mean losing all awareness
  *     that two proposals were queued and one was blocked.
  *  3. One INSPECTOR, right-docked. Every "tell me more" — a guard verdict, a
  *     fact, an audit entry, a sent reply — opens the same panel, instead of the
@@ -47,10 +47,10 @@ import { CommandBar, type Command } from "@/components/app/CommandBar";
 export type { Command };
 
 export type Section =
-  | "shows"
+  | "home"
   | "console"
   | "drafts"
-  | "catalog"
+  | "knowledge"
   | "rooms"
   | "persona"
   | "reports"
@@ -62,16 +62,18 @@ export type Section =
 /**
  * Six destinations became five, and one of them is conditional.
  *
- *  · Home is the shows list, the paste box and Discover — everything a seller
- *    does between shows. It replaced "Shows", whose Live/Past/Following tabs
- *    were three views of the same list.
- *  · Console only exists while a show is on air. A rail button that opens
+ *  · Home is what needs the operator now, what they are preparing, what
+ *    finished, and the per-surface phase table underneath. It replaced
+ *    "Shows", which could only describe a product where a conversation was
+ *    always a live commerce show.
+ *  · Console only exists while a session is on air. A rail button that opens
  *    "nothing is on air" is a button that lies about having somewhere to go.
- *  · Reports is not a destination: every finished show on Home carries its
- *    Report button, and Analytics lists them by show.
+ *  · Reports is not a destination: every finished session on Home carries its
+ *    Report button, and Analytics lists them by session.
  */
 /**
- * Three destinations were added when a conversation stopped being only a show.
+ * Three destinations were added when a conversation stopped being only a
+ * session on a live commerce surface.
  *
  *  · Drafts is the console for a surface we do not post to: the reply is
  *    written, the human is the sender, and there is nowhere else for it to be.
@@ -80,10 +82,10 @@ export type Section =
  *    destinations, so neither is conditional the way Console is.
  */
 const RAIL: { id: Section; label: string; to: string; icon: typeof Tv }[] = [
-  { id: "shows", label: "Home", to: "/", icon: Tv },
+  { id: "home", label: "Home", to: "/", icon: Tv },
   { id: "console", label: "Console", to: "/console", icon: MonitorPlay },
   { id: "drafts", label: "Drafts", to: "/drafts", icon: SquarePen },
-  { id: "catalog", label: "Catalog", to: "/catalog", icon: PackageSearch },
+  { id: "knowledge", label: "Knowledge", to: "/knowledge", icon: PackageSearch },
   { id: "rooms", label: "Rooms", to: "/rooms", icon: Hash },
   { id: "persona", label: "Persona", to: "/persona", icon: Speech },
   { id: "analytics", label: "Analytics", to: "/analytics", icon: BarChart3 },
@@ -100,15 +102,15 @@ export interface Tab {
   onClick?: () => void;
 }
 
-/** Which show, if any, is on air — so every screen can say so. */
+/** Which session, if any, is on air — so every screen can say so. */
 export function useLiveShow(): ShowSummary | null {
   const [live, setLive] = useState<ShowSummary | null>(null);
   useEffect(() => {
     let stop = false;
     const read = async () => {
       const shows = await api.shows().catch(() => [] as ShowSummary[]);
-      // Only a show that is actually on air drives the strip and the rail
-      // dot; an ended eBay show used to keep both lit.
+      // Only a session that is actually on air drives the strip and the rail
+      // dot; an ended eBay session used to keep both lit.
       const onAir = shows.filter((s) => s.status === "live");
       if (!stop) setLive(onAir.find((s) => s.source === "ebaylive") ?? onAir[0] ?? null);
     };
@@ -124,7 +126,7 @@ export function useLiveShow(): ShowSummary | null {
 
 /**
  * Is the backend there. Every screen reads from it, and a screen that cannot
- * reach it renders as "nothing yet" — an empty shows list, a quiet console —
+ * reach it renders as "nothing yet" — an empty home, a quiet console —
  * which is the wrong thing to show for a server that is down. Polled slowly
  * while healthy and quickly while not, so recovery is noticed within seconds.
  */
@@ -352,7 +354,7 @@ export function AppShell({
   }, [navigate]);
 
   // ⌘K belongs to the shell, not to a screen: the header promises it everywhere,
-  // so it has to work everywhere. ⌘O is the same bar, opened to switch shows.
+  // so it has to work everywhere. ⌘O is the same bar, opened to switch sessions.
   // ⌘1…⌘7 are the rail in order.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -391,7 +393,7 @@ export function AppShell({
             }
           >
             This tab is still running the build it opened with. Reload when convenient — nothing
-            here is lost, and a show on air keeps running on eBay either way.
+            here is lost, and a session on air keeps running either way.
           </Banner>
         ) : null}
         {!health.ok ? (
@@ -404,9 +406,9 @@ export function AppShell({
               </button>
             }
           >
-            {API_BASE} — {health.detail ?? "no response"}. A show that is on air keeps running on
-            eBay; this console is simply not attached to it. Retrying every 5 s; nothing is sent
-            while disconnected.
+            {API_BASE} — {health.detail ?? "no response"}. A session that is on air keeps running on
+            its surface; this console is simply not attached to it. Retrying every 5 s; nothing is
+            sent while disconnected.
           </Banner>
         ) : null}
         {banner}

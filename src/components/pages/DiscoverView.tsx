@@ -450,11 +450,11 @@ function ShowCard({
               {empty ? "agent ready, catalog empty" : `${prepared.items} lots in its own agent`}
               {prepared.catalogId && !empty ? (
                 <Link
-                  to="/catalog"
+                  to="/knowledge"
                   search={{ id: prepared.catalogId }}
                   className="ml-auto inline-flex items-center gap-1 text-accent hover:underline"
                 >
-                  Open catalog <ArrowRight className="size-3" aria-hidden />
+                  Open knowledge <ArrowRight className="size-3" aria-hidden />
                 </Link>
               ) : null}
             </p>

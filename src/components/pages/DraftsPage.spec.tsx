@@ -7,7 +7,9 @@ import type { SurfaceDraft } from "@/lib/types";
 const full: SurfaceDraft = {
   id: "d_1",
   surface: "reddit",
+  origin: { kind: "room", id: "r/mechmarket", label: "r/mechmarket" },
   room: "r/mechmarket",
+  sessionId: "s_reddit",
   question: {
     author: "u/buyer",
     text: "Does this ship from the EU?",
@@ -43,13 +45,6 @@ const full: SurfaceDraft = {
   confidence: 0.74,
   rules: [
     {
-      factId: "community:mechmarket#3",
-      label: "rule 3",
-      text: "No vendor self-promotion outside the weekly thread.",
-      effect: "would_block",
-      reason: "a link to your own store would have tripped this",
-    },
-    {
       factId: "community:mechmarket#1",
       label: "rule 1",
       text: "Flair every sale post.",
@@ -61,11 +56,19 @@ const full: SurfaceDraft = {
 };
 
 /** A follow-up: the inbox stores a draft the guards already cleared, and keeps
- *  no evidence, no guard row and no thread. */
+ *  no evidence, no guard row and no thread. Its origin is the SESSION it came
+ *  out of, and the server joins that session's title — this client used to
+ *  hard-code the show id in its place. */
 const thin: SurfaceDraft = {
   id: "d_2",
   surface: "dm",
-  room: "ebay_47tK1SX0VsiHEXN1",
+  origin: {
+    kind: "session",
+    id: "ebay_47tK1SX0VsiHEXN1",
+    label: "Friday Night Grails — Ep. 42",
+  },
+  room: "Friday Night Grails — Ep. 42",
+  sessionId: "ebay_47tK1SX0VsiHEXN1",
   question: { author: "buyer42", text: "still have the 10?", at: "2026-09-16T20:00:00.000Z" },
   draft: "We do — one pair left in a 10.",
   createdAt: "2026-09-16T22:00:00.000Z",
@@ -96,13 +99,21 @@ describe("DraftCard with everything a room draft carries", () => {
     expect(screen.getByText("opening post")).toBeInTheDocument();
   });
 
-  it("names the rule that WOULD have blocked it, separately from the ones in force", () => {
+  it("names the rules in force as constraints, never as facts it answered from", () => {
     render(<DraftCard d={full} onSent={noop} onDismiss={noop} />);
-    expect(screen.getByText("Would have blocked it — rule 3.")).toBeInTheDocument();
-    expect(
-      screen.getByText(/a link to your own store would have tripped this/),
-    ).toBeInTheDocument();
     expect(screen.getByText(/Also in force: rule 1/)).toBeInTheDocument();
+    expect(screen.getByText(/never facts it answers from/)).toBeInTheDocument();
+  });
+
+  /**
+   * `would_block` — "the rule an earlier draft tripped and this one clears" —
+   * cannot happen: the guard chain never returns a revise verdict, so the
+   * repair pass that would produce an earlier draft is unreachable. The card
+   * carried a paragraph of copy for a state the server can never send.
+   */
+  it("has no third rule state, because the system cannot reach one", () => {
+    render(<DraftCard d={full} onSent={noop} onDismiss={noop} />);
+    expect(screen.queryByText(/Would have blocked/)).not.toBeInTheDocument();
   });
 
   it("renders the guard row this surface runs, including the room-rule guard", () => {
@@ -120,6 +131,23 @@ describe("DraftCard with everything a room draft carries", () => {
     expect(screen.getByText("We never post this. You do.")).toBeInTheDocument();
     fireEvent.click(screen.getByText("Mark sent"));
     expect(sent).toEqual(["sent"]);
+  });
+});
+
+describe("where a draft came from", () => {
+  it("prints the subreddit on a room draft", () => {
+    render(<DraftCard d={full} onSent={noop} onDismiss={noop} />);
+    expect(screen.getByText("r/mechmarket")).toBeInTheDocument();
+  });
+
+  // The bug: this client hard-coded `room: f.showId`, so the inbox printed
+  // `ebay_47tK1SX0VsiHEXN1` where Reddit printed `r/mechmarket`. The server
+  // joins the session title and sends both; the card prints the one a person
+  // would say out loud.
+  it("prints the session's title on a follow-up, not its id", () => {
+    render(<DraftCard d={thin} onSent={noop} onDismiss={noop} />);
+    expect(screen.getByText("Friday Night Grails — Ep. 42")).toBeInTheDocument();
+    expect(screen.queryByText("ebay_47tK1SX0VsiHEXN1")).not.toBeInTheDocument();
   });
 });
 
@@ -152,8 +180,13 @@ describe("DraftCard when the surface recorded less", () => {
   });
 
   // The degrade path for a payload from a backend that is still being written.
-  it("survives a draft with no rules array and no question url", () => {
-    const half = { ...thin, rules: undefined, evidence: undefined } as unknown as SurfaceDraft;
+  it("survives a draft with no rules array, no origin and no question url", () => {
+    const half = {
+      ...thin,
+      origin: undefined,
+      rules: undefined,
+      evidence: undefined,
+    } as unknown as SurfaceDraft;
     expect(() => render(<DraftCard d={half} onSent={noop} onDismiss={noop} />)).not.toThrow();
   });
 });
@@ -162,6 +195,7 @@ describe("a blocked draft", () => {
   it("strikes the draft through and names the rule that held it", () => {
     const blocked: SurfaceDraft = {
       ...full,
+      status: "blocked",
       rules: [
         {
           factId: "community:mechmarket#3",

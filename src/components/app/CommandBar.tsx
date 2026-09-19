@@ -55,7 +55,7 @@ const NAV: { id: string; label: string; to: string; icon: LucideIcon; keys: stri
   { id: "go_shows", label: "Home", to: "/", icon: Tv, keys: "⌘1" },
   { id: "go_console", label: "Console", to: "/console", icon: MonitorPlay, keys: "⌘2" },
   { id: "go_drafts", label: "Drafts", to: "/drafts", icon: SquarePen, keys: "⌘3" },
-  { id: "go_catalog", label: "Catalog", to: "/catalog", icon: PackageSearch, keys: "⌘4" },
+  { id: "go_knowledge", label: "Knowledge", to: "/knowledge", icon: PackageSearch, keys: "⌘4" },
   { id: "go_rooms", label: "Rooms", to: "/rooms", icon: Hash, keys: "⌘5" },
   { id: "go_persona", label: "Persona", to: "/persona", icon: Speech, keys: "⌘6" },
   { id: "go_analytics", label: "Analytics", to: "/analytics", icon: BarChart3, keys: "⌘7" },
@@ -94,7 +94,7 @@ export function CommandBar({
     setQuery("");
     setCursor(0);
     requestAnimationFrame(() => inputRef.current?.focus());
-    // Read the shows once per opening, not once per keystroke: a search over
+    // Read the sessions once per opening, not once per keystroke: a search over
     // fifty rows is a filter, not a query.
     void api
       .reports(50)
@@ -121,7 +121,7 @@ export function CommandBar({
           : s.hasReport
             ? "finished — open the report"
             : "finished, no report was generated",
-      group: "Shows",
+      group: "Sessions",
       icon: s.status === "live" ? Radio : FileText,
       run: () => {
         if (s.status === "live") {
@@ -136,7 +136,7 @@ export function CommandBar({
 
     const all = [...commands, ...nav, ...showCmds];
     const q = query.trim();
-    if (!q) return all.filter((c) => c.group !== "Shows").concat(showCmds.slice(0, 3));
+    if (!q) return all.filter((c) => c.group !== "Sessions").concat(showCmds.slice(0, 3));
     return all.filter((c) => fuzzy(q, `${c.label} ${c.group}`));
   }, [commands, navigate, query, shows]);
 

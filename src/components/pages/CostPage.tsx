@@ -1,7 +1,7 @@
 /**
  * Cost — the money, with a history.
  *
- * The old cost rail could answer "what is this show costing right now" and
+ * The old cost rail could answer "what is this session costing right now" and
  * nothing at all about last week, because the meter and the wallet-delta window
  * both lived in process memory. Every finished session now writes a row, and
  * this page reads them.
@@ -45,7 +45,7 @@ const compact = (n: number) =>
 
 const DOOR_LABEL: Record<string, string> = {
   chat_turn: "Buyer replies",
-  utility_turn: "Show context",
+  utility_turn: "Session context",
   voice_start: "Host audio",
   kb_upload: "Catalog sync",
   visual_read: "Camera reads",
@@ -53,10 +53,10 @@ const DOOR_LABEL: Record<string, string> = {
 };
 
 const BASIS_TITLE: Record<"wallet-exclusive" | "metered" | "none", string> = {
-  "wallet-exclusive": "Priced by the wallet's movement while this show ran alone — its real spend.",
+  "wallet-exclusive": "Priced by the wallet's movement while this session ran alone — its real spend.",
   metered:
-    "Priced from this show's calls at the average cost per call measured on shows that ran alone.",
-  none: "Nothing to price this show on.",
+    "Priced from this session's calls at the average cost per call measured on sessions that ran alone.",
+  none: "Nothing to price this session on.",
 };
 
 /** Which basis a row's dollar figure rests on. Small, beside the number. */
@@ -114,7 +114,7 @@ function CapLine() {
     <Card className="mt-3 px-4 py-3">
       <div className="flex items-baseline gap-2">
         <span className="text-[12.5px] font-medium">
-          {b.capped ? "Spend cap reached — drafting is stopped" : "This show, against your cap"}
+          {b.capped ? "Spend cap reached — drafting is stopped" : "This session, against your cap"}
         </span>
         <span className="num ml-auto text-[12px] text-text-secondary">
           {b.spentUsd == null ? "—" : `$${b.spentUsd.toFixed(2)}`} of ${b.capUsd.toFixed(2)}
@@ -187,7 +187,7 @@ export function CostPage() {
         </Card>
       ) : null}
 
-      <SectionHeading hint="What your shows cost you. Calls are exact — this app counts them. Dollars are priced per show, and each row says on what basis.">
+      <SectionHeading hint="What your sessions cost you. Calls are exact — this app counts them. Dollars are priced per session, and each row says on what basis.">
         Your money
       </SectionHeading>
 
@@ -243,7 +243,7 @@ export function CostPage() {
           {!data ? (
             <Skeleton className="h-[160px]" />
           ) : data.shows.length === 0 ? (
-            <EmptyState title="No finished shows in this window">
+            <EmptyState title="No finished sessions in this window">
               A row is written when a session closes. Shows that are still on air appear in the
               console's cost rail until they end.
             </EmptyState>
@@ -281,7 +281,7 @@ export function CostPage() {
                       <td className="num px-4 py-2.5 text-right">{compact(s.contextChars)}</td>
                       <td className="num px-4 py-2.5 text-right">
                         {s.estimatedUsd == null ? (
-                          <span title="nothing to price this show on">—</span>
+                          <span title="nothing to price this session on">—</span>
                         ) : (
                           <span className="inline-flex items-center justify-end gap-1">
                             {usd(s.estimatedUsd, 2)}

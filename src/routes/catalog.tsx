@@ -1,14 +1,15 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { CatalogPage } from "@/components/pages/CatalogPage";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
-/** `/catalog?id=<catalogId>` opens straight onto one catalog — the link a
- *  prepared show on Discover carries to its lineup. */
+/**
+ * Knowledge IS the catalog page now, under the name that covers all seven
+ * corpus kinds. Every link ever written to `/catalog` — including the ones
+ * Discover carries to a prepared session's lineup — lands in the right place,
+ * with its `id` intact.
+ */
 export const Route = createFileRoute("/catalog")({
   validateSearch: (s: Record<string, unknown>): { id?: string } =>
     typeof s["id"] === "string" && s["id"] ? { id: s["id"] } : {},
-  head: () => ({ meta: [{ title: "SideStage — Catalog" }] }),
-  component: function CatalogRoute() {
-    const { id } = Route.useSearch();
-    return <CatalogPage initialId={id} />;
+  beforeLoad: ({ search }) => {
+    throw redirect({ to: "/knowledge", search: search.id ? { id: search.id } : {} });
   },
 });

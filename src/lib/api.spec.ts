@@ -13,6 +13,11 @@ import { api, surfaceUnavailable, type ApiError } from "./api";
 
 type Reply = { status?: number; body: unknown };
 let routes: Record<string, Reply>;
+/** Every URL the client actually asked for. An endpoint it must NOT read is
+ *  only provable by looking at what it read. */
+let asked: string[];
+
+const calls = (): string[] => asked;
 
 function jsonResponse(r: Reply): Response {
   const status = r.status ?? 200;
@@ -26,9 +31,11 @@ function jsonResponse(r: Reply): Response {
 
 beforeEach(() => {
   routes = {};
+  asked = [];
   vi.stubGlobal(
     "fetch",
     vi.fn((input: string) => {
+      asked.push(String(input));
       const path = new URL(input, "http://backend.test").pathname;
       const r = routes[path];
       if (!r) return Promise.resolve(jsonResponse({ status: 404, body: { error: "no route" } }));
@@ -80,21 +87,69 @@ describe("api.surfaces", () => {
 });
 
 describe("api.drafts", () => {
-  it("merges the room drafts and the follow-up inbox into one list, newest first", async () => {
-    routes["/api/drafts"] = {
-      body: {
-        drafts: [
-          {
-            id: "d_1",
-            surface: "reddit",
-            room: "r/mechmarket",
-            question: { author: "u/buyer", text: "?", at: "2026-09-17T09:00:00.000Z" },
-            draft: "…",
-            createdAt: "2026-09-17T09:00:00.000Z",
-          },
-        ],
+  /** One follow-up and one Reddit draft, as the queue sends them. */
+  const queue = {
+    surface: null,
+    status: null,
+    waiting: {
+      total: 2,
+      bySurface: [
+        { surface: "reddit", count: 1 },
+        { surface: "dm", count: 1 },
+      ],
+    },
+    drafts: [
+      {
+        id: "f_1",
+        surface: "dm",
+        origin: { kind: "session", id: "ebay_1", label: "Friday Night Grails — Ep. 42" },
+        room: "Friday Night Grails — Ep. 42",
+        sessionId: "ebay_1",
+        question: {
+          author: "buyer42",
+          text: "still have the 10?",
+          at: "2026-09-18T09:00:00.000Z",
+          url: null,
+        },
+        draft: "We do.",
+        createdAt: "2026-09-18T09:00:00.000Z",
+        status: "open",
+        sentAt: null,
       },
-    };
+      {
+        id: "d_1",
+        surface: "reddit",
+        origin: { kind: "room", id: "r/mechmarket", label: "r/mechmarket" },
+        room: "r/mechmarket",
+        sessionId: "s_reddit",
+        question: { author: "u/buyer", text: "?", at: "2026-09-17T09:00:00.000Z", url: null },
+        draft: "…",
+        createdAt: "2026-09-17T09:00:00.000Z",
+        status: "open",
+        sentAt: null,
+      },
+    ],
+  };
+
+  it("reads the envelope and takes the server's waiting count whole", async () => {
+    routes["/api/drafts"] = { body: queue };
+    const q = await api.drafts();
+    expect(q.drafts.map((d) => d.id)).toEqual(["f_1", "d_1"]);
+    // Deep-equal to `/api/home` → now.drafts by construction, ordering and all.
+    expect(q.waiting).toEqual(queue.waiting);
+  });
+
+  /**
+   * The bug this replaced.
+   *
+   * `/api/drafts` did not exist, so the client read it, swallowed the 404, and
+   * merged `/api/followups` in itself. Follow-ups are INSIDE the queue now, so
+   * that merge would return every one of them twice — once from the queue and
+   * once from the inbox the queue already contains — and the page would say
+   * three waiting where home said two.
+   */
+  it("does not read the follow-up inbox at all, so nothing is counted twice", async () => {
+    routes["/api/drafts"] = { body: queue };
     routes["/api/followups"] = {
       body: {
         followups: [
@@ -111,26 +166,55 @@ describe("api.drafts", () => {
         ],
       },
     };
-    const rows = await api.drafts();
-    expect(rows.map((r) => r.id)).toEqual(["f_1", "d_1"]);
-    const followup = rows[0]!;
-    expect(followup.surface).toBe("dm");
-    expect(followup.room).toBe("ebay_1");
-    expect(followup.question.author).toBe("buyer42");
-    // "draft" is the inbox's word for it; the destination's word is "open".
-    expect(followup.status).toBe("open");
-    // The thin row carries no invented confidence or guard verdict.
-    expect(followup.confidence).toBeUndefined();
-    expect(followup.guards).toBeUndefined();
+    const q = await api.drafts();
+    expect(q.drafts).toHaveLength(2);
+    expect(q.drafts.filter((d) => d.id === "f_1")).toHaveLength(1);
+    expect(q.waiting.total).toBe(2);
+    expect(calls().some((u) => u.includes("/api/followups"))).toBe(false);
   });
 
-  it("shows the inbox even when the room-drafts endpoint does not exist", async () => {
-    routes["/api/followups"] = { body: { followups: [] } };
-    await expect(api.drafts()).resolves.toEqual([]);
+  it("passes the filters through, and the filters never touch the count", async () => {
+    routes["/api/drafts"] = {
+      body: { ...queue, surface: "reddit", drafts: [queue.drafts[1]] },
+    };
+    const q = await api.drafts({ surface: "reddit", status: "open" });
+    expect(calls().some((u) => u.includes("surface=reddit") && u.includes("status=open"))).toBe(
+      true,
+    );
+    expect(q.drafts).toHaveLength(1);
+    expect(q.waiting.total).toBe(2);
   });
 
-  it("shows nothing rather than throwing when neither endpoint exists", async () => {
-    await expect(api.drafts()).resolves.toEqual([]);
+  it("synthesises an origin rather than printing undefined where a room goes", async () => {
+    routes["/api/drafts"] = {
+      body: {
+        drafts: [
+          {
+            id: "d_2",
+            surface: "reddit",
+            room: "r/watchexchange",
+            question: { author: "u/x", text: "?", at: "2026-09-17T09:00:00.000Z" },
+            draft: "…",
+            createdAt: "2026-09-17T09:00:00.000Z",
+          },
+        ],
+      },
+    };
+    const q = await api.drafts();
+    expect(q.drafts[0]!.origin).toEqual({
+      kind: "room",
+      id: "r/watchexchange",
+      label: "r/watchexchange",
+    });
+    // No envelope, so the heading is counted from what arrived rather than
+    // left blank.
+    expect(q.waiting.total).toBe(1);
+  });
+
+  it("shows nothing rather than throwing when the endpoint does not answer", async () => {
+    const q = await api.drafts();
+    expect(q.drafts).toEqual([]);
+    expect(q.waiting).toEqual({ total: 0, bySurface: [] });
   });
 });
 
