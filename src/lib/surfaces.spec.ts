@@ -9,9 +9,12 @@ import {
   recognise,
   surfaceLabel,
   surfaceOf,
+  surfacesForCorpus,
   withRemote,
+  CORPUS_BLURB,
+  CORPUS_LABEL,
 } from "./surfaces";
-import type { SurfaceCapabilities, SurfaceInfo } from "./types";
+import type { CorpusKind, SurfaceCapabilities, SurfaceInfo } from "./types";
 
 describe("capabilitiesOf", () => {
   it("answers from the table for a surface it knows", () => {
@@ -312,5 +315,64 @@ describe("the capability mirror matches the backend, field for field", () => {
       expect(actions).not.toContain("end_listing");
       expect(SURFACE_CAPABILITIES[id].delivery).toBe("draft-only");
     }
+  });
+});
+
+/**
+ * CONTENT-17. `surfacesForCorpus` read the capability table without asking
+ * whether an adapter exists, so `youtubelive` — a capability row the backend
+ * registers no adapter for — was printed in the Grounds column of five of the
+ * Knowledge page's seven rows, offering a surface nobody can attach as a
+ * reason to load a corpus. And eBay Live appeared under "Community rules"
+ * although it declares `communityRules: false`, which is the backend saying it
+ * has no per-room rules to retrieve.
+ */
+describe("which surfaces a corpus grounds", () => {
+  it("never offers a surface with no adapter", () => {
+    for (const kind of Object.keys(CORPUS_LABEL) as CorpusKind[]) {
+      expect(surfacesForCorpus(kind)).not.toContain("youtubelive");
+    }
+  });
+
+  it("never offers the scripted fixture", () => {
+    for (const kind of Object.keys(CORPUS_LABEL) as CorpusKind[]) {
+      expect(surfacesForCorpus(kind)).not.toContain("simulated");
+    }
+  });
+
+  it("lists community rules only where the surface actually has rules per room", () => {
+    const grounds = surfacesForCorpus("community");
+    expect(grounds).not.toContain("ebaylive");
+    for (const id of grounds) {
+      expect(capabilitiesOf(id).communityRules, `${id} has no per-room rules`).toBe(true);
+    }
+    // Reddit is the one this was built for; if it ever comes back empty the
+    // table has moved under the page.
+    expect(grounds).toContain("reddit");
+  });
+
+  it("still answers for the corpora that do ground a surface", () => {
+    expect(surfacesForCorpus("listing")).toContain("ebaylive");
+    expect(surfacesForCorpus("qa").length).toBeGreaterThan(2);
+  });
+});
+
+/**
+ * CONTENT-16. The blurb claimed community rules were "retrieved per subreddit
+ * or channel before a reply is drafted". The Reddit adapter fetches them once,
+ * at attach, and uses the result only to build a status string; the facts
+ * never reach the retriever, so the guard answers n/a. The landing page has
+ * always said this correctly and the app said the opposite.
+ */
+describe("the community-rules blurb", () => {
+  it("does not claim the rules are retrieved when a reply is drafted", () => {
+    const b = CORPUS_BLURB.community.toLowerCase();
+    expect(b).not.toMatch(/before a reply is drafted/);
+    expect(b).not.toMatch(/retrieved per/);
+  });
+
+  it("says when they are read and that they are not yet checked against", () => {
+    expect(CORPUS_BLURB.community).toMatch(/when you attach/i);
+    expect(CORPUS_BLURB.community).toMatch(/not yet/i);
   });
 });

@@ -659,7 +659,9 @@ export function CorpusGrid({ catalogs }: { catalogs: CatalogSummary[] | null }) 
     },
     community: {
       has: false,
-      line: "retrieved per room when a reply is drafted — add rooms on Rooms",
+      // CONTENT-16. The guard is written; the facts are not fed to it. The
+      // landing page has always said this correctly and this page did not.
+      line: "read once when you attach a room, and shown there — the guard that would check a draft against them is built and not yet fed",
     },
     product: { has: false, line: "no store for these yet — nothing here grounds a reply" },
     schedule: { has: false, line: "no store for these yet — nothing here grounds a reply" },

@@ -25,6 +25,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { SURFACE_IDS, capabilitiesOf, draftOnly } from "@/lib/surfaces";
+import { SITE_DESCRIPTION, SITE_IMAGE, SITE_IMAGE_ALT, siteMeta } from "@/lib/meta";
 import {
   FamilyCard,
   NOT_THE_SENDER,
@@ -183,5 +184,42 @@ describe("the claims that are counted", () => {
 
   it("says why the numbers are absent rather than quietly dropping them", () => {
     expect(SOURCE).toMatch(/re-?measur/i);
+  });
+});
+
+/**
+ * CONTENT-11 / CONTENT-12. The live site's meta description and
+ * og:description were the pre-multisurface, eBay-only pitch, written twice in
+ * two divergent copies, on a page whose own header comment says "a hero that
+ * names one of them is a hero that is wrong about the rest". And
+ * `twitter:card: summary_large_image` was declared with no image anywhere, so
+ * a large-card unfurl rendered a blank slot.
+ */
+describe("what a link preview says", () => {
+  it("does not sell a single-surface eBay product", () => {
+    const d = SITE_DESCRIPTION.toLowerCase();
+    expect(d).not.toMatch(/copilot for ebay live sellers/);
+    expect(d).not.toMatch(/\bthe show\b/);
+    for (const room of ["show", "stream", "subreddit", "inbox"]) expect(d).toContain(room);
+  });
+
+  it("keeps the sender claim in the one sentence most people will read", () => {
+    expect(SITE_DESCRIPTION.toLowerCase()).toMatch(/nothing is posted for you/);
+  });
+
+  it("declares a large card only because there is an image to put in it", () => {
+    const meta = siteMeta();
+    const has = (k: string) => meta.some((m) => m.name === k || m.property === k);
+    expect(has("twitter:card")).toBe(true);
+    expect(has("og:image")).toBe(true);
+    expect(has("twitter:image")).toBe(true);
+  });
+
+  it("points that image at a file that exists", () => {
+    expect(existsSync(resolve(`public${SITE_IMAGE}`))).toBe(true);
+  });
+
+  it("gives it alt text", () => {
+    expect(SITE_IMAGE_ALT.length).toBeGreaterThan(30);
   });
 });
