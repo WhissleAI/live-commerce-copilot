@@ -604,3 +604,65 @@ describe("whose catalogs are whose", () => {
     expect(ownCatalogs(seeds).map((c) => c.id)).toEqual(["c_own"]);
   });
 });
+
+describe("the scripted show is hidden as a setup row, never as a running session", () => {
+  const simulated = watching({
+    showId: "s_demo",
+    surface: "simulated",
+    source: "simulated",
+    title: "Friday Night Grails — Ep. 42",
+  });
+
+  // `HIDDEN_SURFACES` filters the TABLE, which is a list of places you could
+  // sell. A session on air is not a setup row, and dropping it would leave an
+  // operator with a running console nothing on home points at.
+  it("keeps it out of the surface table", () => {
+    const m = homeModel(sources({ home: legacyHome({ watching: [simulated] }) }));
+    expect(m.surfaces.map((s) => s.id)).not.toContain("simulated");
+  });
+
+  it("keeps it IN the NOW band when it is on air, derived", () => {
+    const m = homeModel(sources({ home: legacyHome({ watching: [simulated] }) }));
+    expect(m.now.live.map((l) => l.showId)).toEqual(["s_demo"]);
+    expect(m.now.live[0]!.surface).toBe("simulated");
+  });
+
+  it("keeps it IN the NOW band when it is on air, served", () => {
+    const served = legacyHome({
+      now: {
+        live: [
+          {
+            showId: "s_demo",
+            surface: "simulated",
+            title: "Friday Night Grails — Ep. 42",
+            host: "@kicksbyrae",
+            startedAt: "2026-09-18T19:00:00.000Z",
+            awaiting: 1,
+            blocked: 0,
+            readOnly: false,
+          },
+        ],
+        drafts: { total: 0, bySurface: [] },
+      },
+      surfaces: [
+        {
+          id: "simulated",
+          label: "Simulated show",
+          attachable: true,
+          tempo: "live",
+          delivery: "api",
+          connected: true,
+          missing: null,
+          before: [],
+          during: "answers and acts",
+          after: "report and follow-ups",
+        },
+      ],
+    });
+    const m = homeModel(sources({ home: served }));
+    // Filtered out of a table the server itself sent it in…
+    expect(m.surfaces.map((s) => s.id)).not.toContain("simulated");
+    // …and still the session that needs the operator.
+    expect(m.now.live.map((l) => l.showId)).toEqual(["s_demo"]);
+  });
+});

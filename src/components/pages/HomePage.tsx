@@ -39,6 +39,7 @@ import {
   Circle,
   FileText,
   Loader2,
+  Play,
   Plus,
   Radio,
   SquarePen,
@@ -129,15 +130,16 @@ export function HomePage({ view = "today" }: { view?: View }) {
   const canOpen = !targetRow || targetRow.attachable;
 
   const start = useCallback(
-    async (paste?: string) => {
+    async (paste?: string, catalogId?: string) => {
       const value = (paste ?? url).trim();
       if (!value || starting) return;
       setStarting(true);
       setError(null);
+      const attach = catalogId ? { url: value, catalogId } : { url: value };
       try {
         let res;
         try {
-          res = await api.startSession({ url: value });
+          res = await api.startSession(attach);
         } catch (e) {
           // A surface we know and cannot reach. The response names the variable
           // that would fix it, and that name is the whole value of the answer.
@@ -168,7 +170,7 @@ export function HomePage({ view = "today" }: { view?: View }) {
             thumbnailUrl: null,
           });
           setError(null);
-          res = await api.startSession({ url: value });
+          res = await api.startSession(attach);
         }
         await navigate({ to: "/setup", search: { showId: res.showId } });
       } catch (e) {
@@ -184,6 +186,24 @@ export function HomePage({ view = "today" }: { view?: View }) {
     [navigate, starting, url, target],
   );
 
+  /**
+   * The scripted show, started the same way anything else is.
+   *
+   * `demo` is what the simulated adapter's own pattern accepts, and the attach
+   * route resolves it through the registry before Twitch gets a look at the
+   * bare word — so this is the real door, not a demo path that could pass
+   * while the real one is broken. The seeded catalog is handed over when there
+   * is one, because a rehearsal with nothing to cite rehearses the wrong
+   * thing; without one it still runs, grounded in the stream.
+   */
+  const startRehearsal = useCallback(async () => {
+    const cats = await api.catalogs().catch(() => [] as CatalogSummary[]);
+    const seed =
+      cats.find((c) => c.id === "kicksbyrae") ??
+      cats.find((c) => (c.origin?.kind ?? "seed") === "seed");
+    await start("demo", seed?.id);
+  }, [start]);
+
   const openConsole = useCallback(
     (showId: string) => {
       void api
@@ -193,6 +213,24 @@ export function HomePage({ view = "today" }: { view?: View }) {
     },
     [navigate],
   );
+
+  /**
+   * Has anything at all happened on this account?
+   *
+   * Not "is any surface connected": the follow-up inbox needs nothing and is
+   * always connected, and a scraped surface is connected as soon as the server
+   * has its keys — so a connected-count would never reach zero and the way in
+   * would never be offered. What an operator with nothing actually has is no
+   * session on air, none prepared, none finished, no drafts waiting, and no
+   * eBay consent — eBay being the one surface they must go and connect.
+   */
+  const nothingYet =
+    !loading &&
+    model.now.live.length === 0 &&
+    model.now.drafts.total === 0 &&
+    model.next.prepared.length === 0 &&
+    model.behind.reports.length === 0 &&
+    !model.surfaces.some((s) => s.id === "ebaylive" && s.connected);
 
   const tabs: Tab[] = [
     { label: "Today", active: tab === "today", onClick: () => setTab("today") },
@@ -285,6 +323,13 @@ export function HomePage({ view = "today" }: { view?: View }) {
             ) : null}
 
             <div className="mt-3 flex flex-col gap-1.5">
+              {/* Nothing connected, nothing prepared, nothing on air: the one
+                  surface that needs no setup at all is the only way to see
+                  what any of this does before committing to a key. It steps
+                  aside the moment the operator has anything real. */}
+              {nothingYet ? (
+                <RehearsalCard starting={starting} onStart={() => void startRehearsal()} />
+              ) : null}
               {model.next.prepared.map((p) => (
                 <Card key={p.eventId} className="flex items-center gap-3 px-3 py-2.5">
                   <Badge tone="accent">prepared</Badge>
@@ -746,6 +791,39 @@ function Phase({ label, children }: { label: string; children: ReactNode }) {
       <div className="section-header mb-1.5">{label}</div>
       {children}
     </div>
+  );
+}
+
+/**
+ * The way in for an operator who has connected nothing.
+ *
+ * Six surfaces that all want a key and a Discover grid that wants an eBay
+ * session is a product nobody can watch work. The scripted show needs nothing
+ * — no account, no catalog, no consent — and it runs the real pipeline: the
+ * same retrieval, the same six guards, the same approve-or-edit.
+ *
+ * It is never dressed as a live session. The word is rehearsal, the buyers are
+ * named as scripted, and the moment anything real is connected, prepared or on
+ * air this card is gone rather than sitting under the work as clutter.
+ */
+export function RehearsalCard({ starting, onStart }: { starting?: boolean; onStart: () => void }) {
+  return (
+    <Card className="flex items-center gap-3 px-3 py-2.5">
+      <Play className="size-3.5 shrink-0 text-text-muted" aria-hidden />
+      <span className="min-w-0 flex-1 text-[12.5px] text-text-secondary">
+        Nothing is connected yet. Watch the copilot answer a{" "}
+        <strong className="font-medium text-text">scripted rehearsal</strong> — a recorded show with
+        written questions, not real buyers — before you connect anything.
+      </span>
+      <Button size="sm" variant="primary" onClick={onStart} disabled={starting}>
+        {starting ? (
+          <Loader2 className="size-3.5 animate-spin" aria-hidden />
+        ) : (
+          <Play className="size-3" aria-hidden />
+        )}
+        Start the rehearsal
+      </Button>
+    </Card>
   );
 }
 
