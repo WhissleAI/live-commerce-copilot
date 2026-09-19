@@ -9,12 +9,17 @@
  *
  * It is organised the way the product is: a conversation is answered on a
  * SURFACE, and it passes through three PHASES. The page opened on one eBay Live
- * show for as long as that was the whole product; it is now seven surfaces
- * across two tempos, and a hero that names one of them is a hero that is wrong
- * about six. The surfaces strip is generated from `SURFACE_CAPABILITIES` — the
- * same table the console lays itself out from — so a claim about what a surface
- * can do cannot drift from what the code does. Where the table says
- * `draft-only`, the card says we never post, and a spec holds that line.
+ * show for as long as that was the whole product; it answers in four kinds of
+ * room now, and a hero that names one of them is a hero that is wrong about the
+ * rest. Two rules keep the retelling honest:
+ *
+ *  · Every surface claim was read out of the backend before it was written
+ *    here, and the ones the code does not support are said as limits rather
+ *    than left out — a key that is not set, an action that is tested but not
+ *    wired, a surface that is off behind a flag.
+ *  · The claim the page would most like to fudge is who sends the reply.
+ *    Nobody but the operator does, anywhere. `NOT_THE_SENDER` says it once and
+ *    a spec holds every card to it, so no section can imply otherwise.
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -122,17 +127,21 @@ const DARK = "bg-[#0F1E1A] text-white";
 
 // ── the surfaces strip ──────────────────────────────────────────────────────
 //
-// Four families, seven surfaces, two tempos. The families are an editorial
-// grouping — the operator thinks "streams" before "twitch" — but everything a
-// card CLAIMS is read out of `SURFACE_CAPABILITIES`, so marketing copy and the
-// console cannot disagree about whether we can send a reply somewhere. If the
-// table ever flips Reddit to `api`, this page stops saying we never post before
-// anyone has to remember to edit it.
+// Four families, two tempos. The grouping is editorial — an operator thinks
+// "streams" before "twitch" — but the tempo chip is read out of the shipped
+// capability table, and `LandingPage.spec.tsx` holds every family the table
+// calls draft-only to copy that says so. If Reddit is ever flipped to `api`,
+// the spec is where that argument happens, not a marketing review.
+//
+// YouTube Live is deliberately absent. It has a row in the capability table and
+// no adapter behind it, and a surface a visitor cannot use is not a surface.
 
 export interface SurfaceFamily {
   id: string;
   title: string;
   surfaces: SurfaceId[];
+  /** What the copilot does with a reply here. Never "sends" — see NOT_THE_SENDER. */
+  delivery: string;
   /** What it does on these surfaces. */
   lead: string;
   /** The limit, said here rather than discovered later. */
@@ -144,46 +153,58 @@ export const SURFACE_FAMILIES: SurfaceFamily[] = [
     id: "commerce",
     title: "Live commerce",
     surfaces: ["ebaylive", "whatnot", "tiktoklive"],
-    lead: "It answers the buyer out of your own stock, and proposes the fix the answer implies — a markdown, a stock correction, a different lot pinned, a listing ended.",
+    delivery: "answers · proposes the listing fix",
+    lead: "It reads the same public page the buyer reads, resolves the lot on the block, and answers out of your own listings — then proposes the change the answer implies: a markdown, a stock correction, a listing ended.",
     limit:
-      "Acts on listings only on a show you own, and only with your keystroke. A show you do not own is monitored read-only: it drafts, proposes and reports, and never writes.",
+      "eBay Live is the one that acts on listings: on a show you own, after a preflight, with a 90-second undo — and against a mock until you connect eBay and arm that show. Whatnot and TikTok Live are read the same way and draft only, and TikTok stays off until its own flag is set.",
   },
   {
     id: "streams",
     title: "Creator streams",
-    surfaces: ["twitch", "youtubelive"],
-    lead: "It answers chat from your schedule, your sponsor briefs and your product docs, and proposes what a stream actually does — a clip, a highlight, a poll, a pinned message.",
+    surfaces: ["twitch"],
+    delivery: "answers · you connect it",
+    lead: "Twitch chat, on a channel you connect with your own keys and an OAuth sign-in. Same reading, same drafting, same guards — a stream's chat is a room like any other.",
     limit:
-      "Supported in the build and gated on your own keys. Until they are set the app names the variable it is missing rather than hiding the surface, and nothing here is connected in production yet.",
+      "Key-gated and not connected in production. Without the credentials the app names the variable it wants instead of hiding the surface. The stream's own actions — a clip, a poll, a pinned message — are written and tested against Twitch's API and not yet wired into the running app, so this page will not sell them to you.",
   },
   {
     id: "communities",
     title: "Communities",
     surfaces: ["reddit"],
-    lead: "It reads the thread and the branch above the question, retrieves the subreddit's own rules, and writes the reply you would have written — with the rule that nearly blocked it attached.",
+    delivery: "drafts · you post",
+    lead: "It watches the subreddits you choose, reads a question with the branch of the thread above it, and writes the reply you would have written — against the same guards a live show uses.",
     limit:
-      "Draft-only in the code, not as a setting anyone can flip. We never post to Reddit for you: the reply goes to Drafts and you post it, under your own name.",
+      "Draft-only in the code, four times over: the capability says so, the action list contains no reply, preflight refuses one, and the Reddit client has no write path at all — its only POST mints an OAuth token. We never post to Reddit for you. You post it, under your own name.",
   },
   {
     id: "inbox",
     title: "Your follow-up inbox",
     surfaces: ["dm"],
-    lead: "Everyone who asked during a session and did not buy is a question you still owe an answer to. The inbox holds one written reply per person, in your voice.",
+    delivery: "drafts · you send",
+    lead: "Everyone who asked during a show and did not buy is a question you still owe an answer to. When the show ends the inbox holds one written reply per person — re-checked against the catalog as it stands now, not as it stood then.",
     limit:
-      "Only a follow-up the guards already cleared is written down at all — a blocked one is never stored. You are the sender; the inbox marks it answered when you say so.",
+      "A follow-up the guards block is never written down at all, so everything waiting for you has already passed the chain. It skips anyone you settled with a committed change to the listing they asked about. You are the sender; marking it sent is your word, which is the only word there is.",
   },
 ];
 
-/** What the capability table says we can do here, in the operator's words. */
-export function deliveryLabel(ids: SurfaceId[]): string {
-  return ids.every((id) => draftOnly(capabilitiesOf(id)))
-    ? "drafts · you send"
-    : "answers · acts · you approve";
-}
+/**
+ * The line the whole page rests on, and the one it would be easiest to fudge:
+ * no surface delivers a reply. eBay Live publishes no chat-post API and the
+ * scrape has no send path by construction, so an approved reply is recorded,
+ * audited and handed back to the operator to paste. Said here once, as a
+ * constant, so a section cannot quietly imply otherwise.
+ */
+export const NOT_THE_SENDER =
+  "You are the sender, on every surface. The copilot reads, drafts, cites and checks; a human puts the words in the room.";
 
-/** live or async, read off the same table. */
+/** live or async, read off the shipped capability table. */
 export function tempoLabel(ids: SurfaceId[]): string {
   return ids.every((id) => capabilitiesOf(id).tempo === "async") ? "async" : "live";
+}
+
+/** Does the shipped table forbid us from delivering anywhere in this family? */
+export function isDraftOnlyFamily(f: SurfaceFamily): boolean {
+  return f.surfaces.every((id) => draftOnly(capabilitiesOf(id)));
 }
 
 function FamilyCard({ f }: { f: SurfaceFamily }) {
@@ -194,7 +215,7 @@ function FamilyCard({ f }: { f: SurfaceFamily }) {
           {tempoLabel(f.surfaces)}
         </span>
         <span className="h-3 w-px bg-hairline" aria-hidden />
-        <span className="num text-[11px] text-text-muted">{deliveryLabel(f.surfaces)}</span>
+        <span className="num text-[11px] text-text-muted">{f.delivery}</span>
       </div>
       <p className="mt-3 text-[20px] font-semibold">{f.title}</p>
       <ul className="mt-3 flex flex-wrap gap-1.5" aria-label={`${f.title} surfaces`}>
@@ -412,10 +433,10 @@ export function LandingPage() {
           </h1>
           <p className="mt-6 max-w-[540px] text-[17px] leading-relaxed text-text-secondary">
             SideStage is one copilot across a live show, a stream, a subreddit and your own
-            follow-up inbox. It reads the conversation, answers from your listings, policies,
-            schedule and prior answers, cites the fact it used, and runs six deterministic guards
-            against the state as it stands right now — and nothing reaches a buyer, a listing or a
-            thread until a human approves it.
+            follow-up inbox. It reads the conversation, answers out of your listings, your policies
+            and every question you have already answered, names the fact it used, and runs six
+            deterministic guards against the state as it stands right now. Then it hands the reply
+            to you: nothing it writes reaches a buyer, a listing or a thread on its own.
           </p>
           <div className="mt-8 flex flex-wrap gap-3.5">
             <Primary to="/register">
@@ -425,8 +446,8 @@ export function LandingPage() {
           </div>
           <p className="mt-6 max-w-[528px] text-[13px] leading-relaxed text-text-muted">
             For the one person running the whole thing · read-only on any session you do not own ·
-            draft-only where the community says so · a human approves every send and every action,
-            at every rung
+            draft-only where the room says so · a human approves every reply and every action, at
+            every rung
           </p>
         </div>
 
@@ -493,23 +514,31 @@ export function LandingPage() {
               <FamilyCard key={f.id} f={f} />
             ))}
           </div>
-          <div className="mt-10 grid gap-8 rounded-lg bg-panel p-7 shadow-[0_0_0_1px_var(--hairline)] md:grid-cols-2">
+          <div className="mt-10 grid gap-8 rounded-lg bg-panel p-7 shadow-[0_0_0_1px_var(--hairline)] md:grid-cols-3">
             <div>
               <p className="text-[18px] font-semibold">Two tempos, one set of rules</p>
               <p className="mt-3 text-[16px] leading-relaxed text-text-secondary">
                 A live surface gets a bounded session: attach, answer, end, report. An async surface
                 has no session at all — a standing watch on the rooms you chose and a queue of
-                drafts that is always open. Both go through the same retrieval, the same guard
-                chain, the same audit.
+                drafts that is always open. Both go through the same retrieval, the same six guards,
+                the same audit.
               </p>
             </div>
             <div>
-              <p className="text-[18px] font-semibold">What is connected today</p>
+              <p className="text-[18px] font-semibold">What is running today</p>
               <p className="mt-3 text-[16px] leading-relaxed text-text-secondary">
-                eBay Live is the surface this was built on and the one we run. Whatnot and TikTok
-                Live are read the same way, from the page the buyer sees. Twitch, YouTube Live and
-                Reddit ship in the build and wait on their own credentials — the app says which
-                variable is missing rather than pretending the surface does not exist.
+                eBay Live is the surface this was built on and the one we run, including its report
+                and its follow-ups. Whatnot reads the same way. TikTok Live, Twitch and Reddit ship
+                in the build behind their own credentials or their own flag — and the app names the
+                variable it is missing rather than pretending the surface is broken.
+              </p>
+            </div>
+            <div>
+              <p className="text-[18px] font-semibold">Who sends it</p>
+              <p className="mt-3 text-[16px] leading-relaxed text-text-secondary">
+                {NOT_THE_SENDER} eBay Live publishes no chat-post API and our reader has no send
+                path by construction, so an approved reply is recorded, audited and handed back to
+                you to paste. That is a boundary we chose, not a feature we owe you.
               </p>
             </div>
           </div>
