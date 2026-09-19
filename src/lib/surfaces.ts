@@ -384,7 +384,8 @@ export const CORPUS_BLURB: Record<CorpusKind, string> = {
   schedule: "When you are on, and what is planned. A stream answers “when is the next one”.",
   sponsor: "What a sponsor requires said, and what they forbid. The sponsor guard reads this.",
   product: "Specs, manuals and spec sheets for things you did not list yourself.",
-  community: "The rules of each room, retrieved per subreddit or channel before a reply is drafted.",
+  community:
+    "The rules of each room, retrieved per subreddit or channel before a reply is drafted.",
   qa: "Questions already answered, and the answer that was approved.",
 };
 

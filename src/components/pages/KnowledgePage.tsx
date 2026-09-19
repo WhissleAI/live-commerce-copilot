@@ -41,7 +41,13 @@ import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { formatMoney } from "@/lib/format";
 import type { CatalogMarket, CatalogSummary, CorpusKind, EbayResult, MarketRow } from "@/lib/types";
-import { CORPUS_BLURB, CORPUS_LABEL, CORPUS_ORDER, surfaceLabel, surfacesForCorpus } from "@/lib/surfaces";
+import {
+  CORPUS_BLURB,
+  CORPUS_LABEL,
+  CORPUS_ORDER,
+  surfaceLabel,
+  surfacesForCorpus,
+} from "@/lib/surfaces";
 import { AppShell, type Tab } from "@/components/app/AppShell";
 import {
   Badge,

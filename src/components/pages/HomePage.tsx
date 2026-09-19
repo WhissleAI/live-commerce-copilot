@@ -104,7 +104,9 @@ export function HomePage({ view = "today" }: { view?: View }) {
       void api.catalogs().then(setCatalogs).catch(noop);
       void api.ebayStatus().then(setEbay).catch(noop);
       void Promise.all(
-        ROOM_SURFACES.map(async (id) => [id, (await api.rooms(id).catch(() => [])).length] as const),
+        ROOM_SURFACES.map(
+          async (id) => [id, (await api.rooms(id).catch(() => [])).length] as const,
+        ),
       ).then((pairs) => setRooms(Object.fromEntries(pairs)));
     }
   }, []);
@@ -197,7 +199,11 @@ export function HomePage({ view = "today" }: { view?: View }) {
     // Scoped on the label, not implied by silence: one surface has a grid we
     // can read, and six do not because they have no grid — not because they
     // are broken.
-    { label: "Discover · eBay Live", active: tab === "discover", onClick: () => setTab("discover") },
+    {
+      label: "Discover · eBay Live",
+      active: tab === "discover",
+      onClick: () => setTab("discover"),
+    },
   ];
 
   return (
@@ -631,7 +637,9 @@ export function SurfaceRow({
             </Badge>
             <Badge>{row.tempo === "async" ? "async" : "live"}</Badge>
             {!row.attachable && row.tempo === "live" ? (
-              <Badge title="No adapter is wired for this surface in this build">no adapter yet</Badge>
+              <Badge title="No adapter is wired for this surface in this build">
+                no adapter yet
+              </Badge>
             ) : null}
           </div>
         </td>
@@ -679,7 +687,10 @@ export function SurfaceRow({
                         {s.done ? (
                           <Check className="mt-0.5 size-3.5 shrink-0 text-ok" aria-hidden />
                         ) : (
-                          <Circle className="mt-0.5 size-3.5 shrink-0 text-text-faint" aria-hidden />
+                          <Circle
+                            className="mt-0.5 size-3.5 shrink-0 text-text-faint"
+                            aria-hidden
+                          />
                         )}
                         <span className="min-w-0 flex-1 text-[12px]">{s.label}</span>
                         {!s.done && s.href ? <StepLink step={s} /> : null}

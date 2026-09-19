@@ -406,9 +406,9 @@ export function AppShell({
               </button>
             }
           >
-            {API_BASE} — {health.detail ?? "no response"}. A session that is on air keeps running
-            on its surface; this console is simply not attached to it. Retrying every 5 s; nothing
-            is sent while disconnected.
+            {API_BASE} — {health.detail ?? "no response"}. A session that is on air keeps running on
+            its surface; this console is simply not attached to it. Retrying every 5 s; nothing is
+            sent while disconnected.
           </Banner>
         ) : null}
         {banner}

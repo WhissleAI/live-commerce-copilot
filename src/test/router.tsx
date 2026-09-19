@@ -18,7 +18,7 @@ import {
   RouterProvider,
 } from "@tanstack/react-router";
 
-export function renderWithRouter(ui: ReactNode) {
+export async function renderWithRouter(ui: ReactNode) {
   const root = createRootRoute({ component: () => <Outlet /> });
   const index = createRoute({ getParentRoute: () => root, path: "/", component: () => <>{ui}</> });
   const rest = createRoute({ getParentRoute: () => root, path: "$", component: () => null });
@@ -26,5 +26,9 @@ export function renderWithRouter(ui: ReactNode) {
     routeTree: root.addChildren([index, rest]),
     history: createMemoryHistory({ initialEntries: ["/"] }),
   });
+  // The provider resolves its first match asynchronously, so a bare `render`
+  // returns an empty document and every query after it fails. Load once here
+  // rather than making each spec chase the same `findBy`.
+  await router.load();
   return render(<RouterProvider router={router as never} />);
 }
