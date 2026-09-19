@@ -60,7 +60,9 @@ const watching = (over: Partial<ShowSummary> = {}): ShowSummary => ({
 const draft = (over: Partial<SurfaceDraft> = {}): SurfaceDraft => ({
   id: "d_1",
   surface: "reddit",
+  origin: { kind: "room", id: "r/mechmarket", label: "r/mechmarket" },
   room: "r/mechmarket",
+  sessionId: "s_reddit",
   question: { author: "u/buyer", text: "ships to EU?", at: "2026-09-17T09:00:00.000Z" },
   draft: "Yes — from Lisbon.",
   createdAt: "2026-09-17T09:01:00.000Z",

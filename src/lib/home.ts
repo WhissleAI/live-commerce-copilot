@@ -391,6 +391,15 @@ function reportsFrom(rows: ShowRow[] | null): HomeReport[] {
 
 export interface HomeSources {
   home: HomeView | null;
+  /**
+   * `GET /api/drafts` → `waiting`, when this client has read it.
+   *
+   * The server builds it with the same function that builds `now.drafts`, so
+   * on the degrade path — an older home payload beside a current drafts one —
+   * preferring it gives home the number it would have been sent, rather than
+   * one this file worked out from the rows it happens to be holding.
+   */
+  waiting?: HomeDraftCount | null;
   surfaces: SurfaceInfo[] | null;
   reports: ShowRow[] | null;
   drafts: SurfaceDraft[] | null;
@@ -429,9 +438,12 @@ export function homeModel(sources: HomeSources): HomeModel {
               total: home!.now!.drafts.total ?? 0,
               bySurface: home!.now!.drafts.bySurface.filter((d) => isSurfaceId(d.surface)),
             }
-          : draftsFrom(sources.drafts),
+          : (sources.waiting ?? draftsFrom(sources.drafts)),
       }
-    : { live: liveFromWatching(home?.watching ?? []), drafts: draftsFrom(sources.drafts) };
+    : {
+        live: liveFromWatching(home?.watching ?? []),
+        drafts: sources.waiting ?? draftsFrom(sources.drafts),
+      };
 
   const servedNext = Array.isArray(home?.next?.discoverable);
   const next: HomeNext = {

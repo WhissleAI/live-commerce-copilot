@@ -441,3 +441,36 @@ describe("the scripted show once it is running", () => {
     expect(screen.queryByText(/Nothing needs you this minute/)).not.toBeInTheDocument();
   });
 });
+
+describe("a report row with numbers nobody measured", () => {
+  // `answered: 0` and `answered: null` are different facts. The first is a
+  // session that answered nobody; the second is a session whose report never
+  // generated, where nothing was counted at all.
+  it("draws no figures at all rather than a zero", async () => {
+    await renderWithRouter(
+      <BehindBand
+        reports={[{ ...report, hasReport: false, answered: null, blocked: null }]}
+        followups={{ total: 0, ready: 0 }}
+      />,
+    );
+    expect(screen.getByText("no report")).toBeInTheDocument();
+    // Not "0 answered", and not an em-dash standing in for a number either.
+    expect(screen.queryByText(/\d+ answered/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/\d+ blocked/)).not.toBeInTheDocument();
+  });
+
+  it("says the end time is approximate on that row, in one word", async () => {
+    await renderWithRouter(
+      <BehindBand
+        reports={[{ ...report, hasReport: false, answered: null, blocked: null }]}
+        followups={{ total: 0, ready: 0 }}
+      />,
+    );
+    expect(screen.getByText(/eBay Live · about /)).toBeInTheDocument();
+  });
+
+  it("still prints the figures on a row that has a report", async () => {
+    await renderWithRouter(<BehindBand reports={[report]} followups={{ total: 0, ready: 0 }} />);
+    expect(screen.getByText("39 answered · 3 blocked")).toBeInTheDocument();
+  });
+});

@@ -6,6 +6,8 @@
 import { getMockDriver } from "./mockStream";
 import { withRemote } from "./surfaces";
 import type {
+  DraftsQueue,
+  DraftStatus,
   LearnReport,
   Persona,
   PersonaView,
@@ -386,35 +388,44 @@ function asArray<T>(raw: unknown, key: string): T[] {
 
 const asRooms = (raw: unknown): SurfaceRoom[] => asArray<SurfaceRoom>(raw, "rooms");
 
-/**
- * A follow-up, as the inbox stores it.
- *
- * Thinner than a room draft by design rather than by omission: a follow-up the
- * guards blocked is never written at all, so there is no verdict to carry and
- * no evidence to explain. What survives is a reply that already cleared the
- * chain and the person it is owed to.
- */
-interface FollowUpRow {
-  id: string;
-  showId: string;
-  buyer: string;
-  question: string;
-  draft: string;
-  status: "draft" | "sent" | "dismissed";
-  createdAt: string;
-  sentAt: string | null;
-}
+const EMPTY_DRAFTS_QUEUE: DraftsQueue = {
+  surface: null,
+  status: null,
+  waiting: { total: 0, bySurface: [] },
+  drafts: [],
+};
 
-function fromFollowUp(f: FollowUpRow): SurfaceDraft {
+/**
+ * The queue, made safe to render.
+ *
+ * `origin` is the field the card prints and the server always sends it — but a
+ * row that arrives without one must not put the word "undefined" where a
+ * subreddit goes, so it is synthesised from `room` here, once, rather than
+ * with a fallback at every call site.
+ */
+function asDraftsQueue(raw: unknown): DraftsQueue {
+  const o = (raw ?? {}) as Partial<DraftsQueue>;
+  const drafts = asArray<SurfaceDraft>(raw, "drafts").map((d) => ({
+    ...d,
+    origin: d.origin ?? {
+      kind: d.surface === "dm" ? ("session" as const) : ("room" as const),
+      id: d.room ?? "",
+      label: d.room ?? "",
+    },
+    room: d.origin?.label ?? d.room ?? "",
+  }));
+  const waiting = o.waiting?.bySurface
+    ? { total: o.waiting.total ?? 0, bySurface: o.waiting.bySurface }
+    : // No envelope: count what arrived, so the heading is never blank.
+      {
+        total: drafts.filter((d) => (d.status ?? "open") === "open").length,
+        bySurface: [] as { surface: SurfaceId; count: number }[],
+      };
   return {
-    id: f.id,
-    surface: "dm",
-    room: f.showId,
-    question: { author: f.buyer, text: f.question, at: f.createdAt },
-    draft: f.draft,
-    createdAt: f.createdAt,
-    sentAt: f.sentAt,
-    status: f.status === "draft" ? "open" : f.status,
+    surface: o.surface ?? null,
+    status: o.status ?? null,
+    waiting,
+    drafts,
   };
 }
 
@@ -781,46 +792,45 @@ export const api = {
   // ── drafts ────────────────────────────────────────────────────────────────
 
   /**
-   * Every reply written for a surface we will not post to.
+   * Every reply waiting on the operator, across every surface we will not post
+   * to — one endpoint, one shape.
    *
-   * Two sources, one list. The follow-up inbox is the `dm` surface and has
-   * shipped; `/api/drafts` is where a room-based surface's drafts land and may
-   * not have. Neither failing is an error — a destination whose whole point is
-   * "these are yours to send" should show what it has, not a stack trace for
-   * what it has not.
+   * This used to read `/api/drafts` AND `/api/followups` and merge them here,
+   * because the first did not exist yet and the second was the whole inbox.
+   * It does exist now, and follow-ups are INSIDE it — so the merge that was
+   * once the only way to see both would double-count every follow-up: once
+   * from the queue, once from the inbox it already contains.
+   *
+   * `waiting` is the whole account's queue whatever the filters say. It is
+   * built by the same function that builds `/api/home` → `now.drafts`, so the
+   * count under this page's heading and the count on home are the same number
+   * by construction. Filters shape `drafts` only, and a per-surface tab must
+   * not move the number above it.
    */
-  drafts: async (surface?: SurfaceId): Promise<SurfaceDraft[]> => {
-    if (USE_MOCKS) return [];
-    const [roomDrafts, followups] = await Promise.all([
-      surface === "dm"
-        ? Promise.resolve([])
-        : get<unknown>(`/api/drafts${surface ? `?surface=${encodeURIComponent(surface)}` : ""}`)
-            .then((r) => asArray<SurfaceDraft>(r, "drafts"))
-            .catch(() => [] as SurfaceDraft[]),
-      surface && surface !== "dm"
-        ? Promise.resolve([])
-        : get<unknown>("/api/followups")
-            .then((r) => asArray<FollowUpRow>(r, "followups").map(fromFollowUp))
-            .catch(() => [] as SurfaceDraft[]),
-    ]);
-    return [...roomDrafts, ...followups].sort(
-      (a, b) => +new Date(b.createdAt) - +new Date(a.createdAt),
-    );
+  drafts: async (
+    opts: { surface?: SurfaceId; status?: DraftStatus } = {},
+  ): Promise<DraftsQueue> => {
+    if (USE_MOCKS) return EMPTY_DRAFTS_QUEUE;
+    const q = new URLSearchParams();
+    if (opts.surface) q.set("surface", opts.surface);
+    if (opts.status) q.set("status", opts.status);
+    const raw = await get<unknown>(`/api/drafts${q.size ? `?${q}` : ""}`).catch(() => null);
+    return asDraftsQueue(raw);
   },
 
   /**
    * The operator pasted it in themselves. Recorded, never inferred — we cannot
    * see the subreddit, so the person who sent it is the only honest source.
+   *
+   * One route for every surface. The `dm` special case that used to live here
+   * was a workaround for `/api/drafts/:id/sent` 404ing on anything that was
+   * not a follow-up; it resolves both id namespaces itself now.
    */
-  markDraftSent: (id: string, surface: SurfaceId): Promise<unknown> =>
-    surface === "dm"
-      ? post(`/api/followups/${encodeURIComponent(id)}/sent`)
-      : post(`/api/drafts/${encodeURIComponent(id)}/sent`),
+  markDraftSent: (id: string): Promise<unknown> =>
+    post(`/api/drafts/${encodeURIComponent(id)}/sent`),
 
-  dismissDraft: (id: string, surface: SurfaceId): Promise<unknown> =>
-    surface === "dm"
-      ? post(`/api/followups/${encodeURIComponent(id)}/dismiss`)
-      : post(`/api/drafts/${encodeURIComponent(id)}/dismiss`),
+  dismissDraft: (id: string): Promise<unknown> =>
+    post(`/api/drafts/${encodeURIComponent(id)}/dismiss`),
 
   // ── persona ───────────────────────────────────────────────────────────────
 

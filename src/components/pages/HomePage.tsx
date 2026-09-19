@@ -52,6 +52,7 @@ import { timeAgo } from "@/lib/format";
 import { useNow } from "@/hooks/useNow";
 import type {
   CatalogSummary,
+  DraftsQueue,
   EbayStatus,
   HomeLiveSession,
   HomeReport,
@@ -59,7 +60,6 @@ import type {
   HomeSurfaceStep,
   HomeView,
   ShowRow,
-  SurfaceDraft,
   SurfaceId,
   SurfaceInfo,
 } from "@/lib/types";
@@ -80,7 +80,7 @@ export function HomePage({ view = "today" }: { view?: View }) {
   const [home, setHome] = useState<HomeView | null>(null);
   const [surfaces, setSurfaces] = useState<SurfaceInfo[] | null>(null);
   const [rows, setRows] = useState<ShowRow[] | null>(null);
-  const [drafts, setDrafts] = useState<SurfaceDraft[] | null>(null);
+  const [drafts, setDrafts] = useState<DraftsQueue | null>(null);
   const [catalogs, setCatalogs] = useState<CatalogSummary[] | null>(null);
   const [ebay, setEbay] = useState<EbayStatus | null>(null);
   const [rooms, setRooms] = useState<Partial<Record<SurfaceId, number>>>({});
@@ -117,7 +117,17 @@ export function HomePage({ view = "today" }: { view?: View }) {
   }, [load]);
 
   const model = useMemo(
-    () => homeModel({ home, surfaces, reports: rows, drafts, catalogs, ebay, rooms }),
+    () =>
+      homeModel({
+        home,
+        surfaces,
+        reports: rows,
+        drafts: drafts?.drafts ?? null,
+        waiting: drafts?.waiting ?? null,
+        catalogs,
+        ebay,
+        rooms,
+      }),
     [home, surfaces, rows, drafts, catalogs, ebay, rooms],
   );
 
@@ -556,14 +566,24 @@ export function BehindBand({
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[13px]">{r.title}</span>
                 <span className="block truncate text-[11.5px] text-text-muted">
-                  {surfaceLabel(r.surface)} · {timeAgo(r.endedAt)}
+                  {surfaceLabel(r.surface)} ·{" "}
+                  {/* Without a report there is no end time either: this is the
+                      last message the session recorded, or when it started. The
+                      "about" is the whole difference and costs one word. */}
+                  {r.hasReport === false ? `about ${timeAgo(r.endedAt)}` : timeAgo(r.endedAt)}
                   {r.topGap ? ` · top gap: “${r.topGap}”` : ""}
                 </span>
               </span>
-              <span className="num hidden shrink-0 text-[11.5px] text-text-muted sm:block">
-                {r.answered} answered
-                {r.blocked ? ` · ${r.blocked} blocked` : ""}
-              </span>
+              {/* Null is not zero. A session whose report never generated
+                  measured nothing, and "0 answered" is a measurement — so the
+                  figures are absent on that row rather than drawn as a count
+                  that would read as a session which answered nobody. */}
+              {r.answered != null ? (
+                <span className="num hidden shrink-0 text-[11.5px] text-text-muted sm:block">
+                  {r.answered} answered
+                  {r.blocked ? ` · ${r.blocked} blocked` : ""}
+                </span>
+              ) : null}
               {r.hasReport === false ? (
                 // The session ended and its report never generated. That is the
                 // one an operator most wants to look at, so it is still a row —

@@ -1362,9 +1362,16 @@ export interface HomeReport {
   showId: string;
   surface: SurfaceId;
   title: string;
+  /**
+   * The report's own end time where there is a report. Where there is not it
+   * is APPROXIMATE — the last message the session recorded, else when it
+   * started — and `hasReport: false` is what says so.
+   */
   endedAt: string;
-  answered: number;
-  blocked: number;
+  /** Null, never zero, on a session whose report never generated: "answered 0"
+   *  is a measurement, and nobody made it. */
+  answered: number | null;
+  blocked: number | null;
   /** The highest-count unanswered question the stored report already holds. */
   topGap: string | null;
   /**
@@ -1505,14 +1512,22 @@ export interface ThreadContext {
 }
 
 /** One community rule, and what it did to this draft. */
+/**
+ * One rule of the room, and what it did to this draft.
+ *
+ * Two effects, not three. `would_block` — "the rule an earlier draft tripped
+ * and this one clears" — cannot happen in this system: the guard chain never
+ * returns a revise verdict, so the pipeline's single repair pass is
+ * unreachable, so there is never an earlier draft for a rule to have tripped.
+ * A field the UI reads and the server can never set is a promise the UI is
+ * making on our behalf, and this one had a paragraph of copy behind it.
+ */
 export interface AppliedRule {
   factId: string;
   label: string;
   text: string;
-  /** `blocked` means this rule is the reason the draft cannot be posted;
-   *  `would_block` is the rule an earlier draft tripped and this one clears. */
-  effect: "applied" | "would_block" | "blocked";
-  /** Why, in the guard's own words. */
+  effect: "applied" | "blocked";
+  /** The guard's own words, on the rule that held it. Null on the others. */
   reason?: string | null;
 }
 
@@ -1524,11 +1539,39 @@ export interface AppliedRule {
  * with: the thread above it, what it is standing on, and which rule of the room
  * would have stopped it.
  */
+/**
+ * What the operator calls the place a draft came from.
+ *
+ * The two kinds are genuinely different things and the queue does not pretend
+ * otherwise: a Reddit draft comes out of a ROOM still being watched, a
+ * follow-up out of a SESSION that ended hours ago. `label` is what a person
+ * would say out loud — `r/mechmarket`, or the session's title. `id` is the
+ * machine's name for the same thing, kept beside it rather than instead of it,
+ * which is what went wrong before: the inbox printed `ebay_47tK1SX0VsiHEXN1`
+ * where Reddit printed `r/mechmarket`, and that was our hard-coding, not the
+ * server's.
+ */
+export interface DraftOrigin {
+  kind: "room" | "session";
+  id: string;
+  label: string;
+}
+
+/** Where a draft is in the operator's hands. `open` is the only one that
+ *  counts as waiting. `blocked` is carried rather than hidden — a guard held
+ *  it, and an operator who cannot see that concludes it simply did not
+ *  answer. */
+export type DraftStatus = "open" | "sent" | "dismissed" | "blocked";
+
 export interface SurfaceDraft {
   id: string;
   surface: SurfaceId;
-  /** The subreddit, channel or show this came out of. */
+  origin: DraftOrigin;
+  /** `origin.label`, flat, because that is what the card prints. */
   room: string;
+  /** The session this draft belongs to: a live watch, or the session a
+   *  follow-up came out of. Present on both, so a client never guesses. */
+  sessionId?: string;
   /** The comment or post being answered. */
   question: { author: string; text: string; at: string; url?: string | null };
   draft: string;
@@ -1551,7 +1594,23 @@ export interface SurfaceDraft {
   styleRef?: StyleRef | null;
   /** Set by the operator when they have pasted it in themselves. */
   sentAt?: string | null;
-  status?: "open" | "sent" | "dismissed";
+  status?: DraftStatus;
+}
+
+/**
+ * `GET /api/drafts`.
+ *
+ * `waiting` is the WHOLE account's waiting queue whatever `?surface=` and
+ * `?status=` say — it is the number home prints, built by the same function
+ * on the server, so the count under the heading and the count on home are the
+ * same number by construction rather than by arithmetic that agrees today.
+ * The filters shape `drafts` only.
+ */
+export interface DraftsQueue {
+  surface: SurfaceId | null;
+  status: DraftStatus | null;
+  waiting: HomeDraftCount;
+  drafts: SurfaceDraft[];
 }
 
 // ── persona ─────────────────────────────────────────────────────────────────
