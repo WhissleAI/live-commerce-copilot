@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { api, API_BASE, USE_MOCKS, ensureSession, tokenQuery } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { isTypingIn, modalOpen, shortcutActs } from "@/lib/keys";
 import { useShowStream } from "@/hooks/useShowStream";
 import {
   capabilitiesOf,
@@ -48,21 +49,6 @@ import { AppShell, type Command } from "@/components/app/AppShell";
 import { Inspector, inspectorTitle, type InspectorSubject } from "@/components/app/Inspector";
 import { Banner, Button, Card, EmptyState, Skeleton } from "@/components/ui/kit";
 import { ToastRail, useToasts } from "@/components/app/ToastRail";
-
-function isTyping(): boolean {
-  const el = document.activeElement;
-  if (!el) return false;
-  const tag = el.tagName;
-  // A focused button counts too: after clicking Edit or Dismiss, a bare Enter
-  // both re-fired that button and sent the focused proposal.
-  return (
-    tag === "INPUT" ||
-    tag === "TEXTAREA" ||
-    tag === "BUTTON" ||
-    tag === "SELECT" ||
-    (el as HTMLElement).isContentEditable
-  );
-}
 
 export function Console() {
   const store = useShowStream();
@@ -268,19 +254,34 @@ export function Console() {
       // ⌘J, not ⌘K: ⌘K is the shell's command bar, which every header promises.
       // Research is one thing you can do, not the way into everything.
       if (cmd && e.key.toLowerCase() === "j") {
+        // It may always close itself; it may not open behind the legend.
+        if (!paletteOpen && modalOpen()) return;
         e.preventDefault();
         setPaletteOpen((o) => !o);
         return;
       }
       if (e.key === "Escape") {
-        if (paletteOpen) setPaletteOpen(false);
+        // The legend is first because it is the one that opens by itself, so
+        // it is the one an operator presses Escape at without being asked.
+        if (legendOpen) closeLegend();
+        else if (paletteOpen) setPaletteOpen(false);
         else if (shortcutsOpen) setShortcutsOpen(false);
         else if (editingId) setEditingId(null);
         else if (inspect) setInspect(null);
         else if (costOpen) setCostOpen(false);
         return;
       }
-      if (isTyping() || paletteOpen) return;
+      // `?` is the console's own overlay, so it must be able to close itself
+      // while it is the thing on screen. It is still a character, though.
+      if (e.key === "?" && !isTypingIn(document.activeElement)) {
+        if (!shortcutsOpen && modalOpen()) return;
+        e.preventDefault();
+        setShortcutsOpen((o) => !o);
+        return;
+      }
+      // One rule, in `lib/keys`: no modal up, not typing, and — for Enter
+      // only — no button already claiming the key.
+      if (!shortcutActs(e.key)) return;
 
       const focused = decidable.find((p) => p.id === focusedId);
       switch (e.key) {
@@ -369,21 +370,19 @@ export function Console() {
             );
           }
           break;
-        case "?":
-          e.preventDefault();
-          setShortcutsOpen((o) => !o);
-          break;
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [
     actions,
+    closeLegend,
     costOpen,
     decidable,
     editingId,
     focusedId,
     inspect,
+    legendOpen,
     move,
     openInspect,
     paletteOpen,

@@ -325,7 +325,15 @@ function ProposalCard({
   const [value, setValue] = useState(p.draft);
 
   useEffect(() => {
-    if (focused) ref.current?.scrollIntoView({ block: "nearest" });
+    if (!focused) return;
+    const el = ref.current;
+    if (!el) return;
+    el.scrollIntoView({ block: "nearest" });
+    // J/K used to move a ring and nothing else: `aria-current` was set on a
+    // card no screen reader was ever told about, because focus stayed on
+    // <body>. Move focus with the highlight — unless the operator is already
+    // inside this card, where taking it back would undo their click.
+    if (!el.contains(document.activeElement)) el.focus({ preventScroll: true });
   }, [focused]);
 
   useEffect(() => {
