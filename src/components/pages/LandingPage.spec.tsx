@@ -78,6 +78,13 @@ describe("the surfaces strip", () => {
       expect(copy).not.toMatch(/\bauto(matically)?[- ]?(post|send|repl)/);
     }
     expect(NOT_THE_SENDER.toLowerCase()).toContain("you are the sender");
+    // It may not claim this as an absolute over surfaces. The product ships a
+    // per-room posting switch — `RoomsPage` renders it, `rooms.ts` persists
+    // it, preflight reads it — so "on every surface" was a promise the app's
+    // own settings page contradicted. The claim is about THIS BUILD, which
+    // has no wired path that posts anything.
+    expect(NOT_THE_SENDER.toLowerCase()).not.toContain("on every surface");
+    expect(NOT_THE_SENDER.toLowerCase()).toMatch(/this build/);
   });
 
   it("says draft-only where the shipped table says draft-only", () => {
@@ -149,5 +156,32 @@ describe("the claims that are counted", () => {
       /\$0\.06/, // the measured cost, with its basis
     ];
     for (const re of limits) expect(SOURCE).toMatch(re);
+  });
+
+  /**
+   * Two measured figures went stale in the flattering direction on a page
+   * whose whole argument is that measured claims are kept honest:
+   *
+   *  · "2.11s against a 2.00s budget" — `npm run bench` now produces a TOTAL
+   *    p95 of 2604ms and 2235ms on two runs. 2.11s was the best observation,
+   *    not the current measurement.
+   *  · "1.000 precision and recall on our own 44 cases" — there are 46 cases
+   *    (`test/guardrails.eval.ts`), and the suite exits non-zero.
+   *
+   * Both are removed until they are re-measured. A number nobody re-ran is
+   * exactly what this file exists to catch, so it may not come back by
+   * accident: whoever restores one has to delete the assertion that forbids
+   * it, which is a line in a diff a reviewer can see.
+   */
+  it("quotes no p95 and no eval score while they are being re-measured", () => {
+    expect(SOURCE).not.toMatch(/2\.11\s*s/);
+    expect(SOURCE).not.toMatch(/\b1\.000\b/);
+    expect(SOURCE).not.toMatch(/precision and recall\s*—?\s*on our own \d+/i);
+    // 44 was the wrong denominator even before the suite went red.
+    expect(SOURCE).not.toMatch(/\b44 cases\b/);
+  });
+
+  it("says why the numbers are absent rather than quietly dropping them", () => {
+    expect(SOURCE).toMatch(/re-?measur/i);
   });
 });

@@ -189,14 +189,30 @@ export const SURFACE_FAMILIES: SurfaceFamily[] = [
 ];
 
 /**
- * The line the whole page rests on, and the one it would be easiest to fudge:
- * no surface delivers a reply. eBay Live publishes no chat-post API and the
- * scrape has no send path by construction, so an approved reply is recorded,
- * audited and handed back to the operator to paste. Said here once, as a
- * constant, so a section cannot quietly imply otherwise.
+ * The line the whole page rests on, and the one it would be easiest to fudge.
+ *
+ * It used to read "on every surface", stated as an absolute — and the same
+ * page then described a per-room posting switch four sections later, which is
+ * a switch that exists: `RoomsPage` ships it, `surfaces/rooms.ts` persists the
+ * flag, and `actions/preflight.ts` has a branch that would permit a
+ * `post_reply` once it is on. An absolute the product's own settings page
+ * contradicts is worse than a narrower claim, so this is the narrower claim,
+ * and it is the one that is true of the code:
+ *
+ *   · Nothing is posted for anybody in this build. `post_reply` is never
+ *     proposed — `actions/proposer.ts` does not produce it — and never
+ *     executed: `actions/executor.ts` has no branch for it, and the one
+ *     implementation that exists (`surfaces/twitch/actions.ts`) is imported
+ *     by its own test and by nothing in `src/`.
+ *   · `pipeline.send()` marks a reply `sent`, counts it and appends an audit
+ *     entry. There is no platform call on any path.
+ *   · Where a surface could post one day, the room switch is off by default
+ *     and refuses to exist at all on a draft-only surface.
+ *
+ * Said here once, as a constant, so a section cannot quietly imply otherwise.
  */
 export const NOT_THE_SENDER =
-  "You are the sender, on every surface. The copilot reads, drafts, cites and checks; a human puts the words in the room.";
+  "You are the sender. Nothing in this build posts a reply for you on any surface: the copilot reads, drafts, cites and checks, and a human puts the words in the room.";
 
 /** live or async, read off the shipped capability table. */
 export function tempoLabel(ids: SurfaceId[]): string {
@@ -534,9 +550,9 @@ export function LandingPage() {
         <div className={`${WRAP} grid gap-14 md:grid-cols-3`}>
           {[
             [
-              "2.11s",
-              "against a 2.00s budget. We missed it.",
-              "Every breach is counted and shown on the show bar rather than averaged away. You will see the number we are not proud of before you see the ones we are.",
+              "2.00s",
+              "is the budget a drafted reply is measured against. We miss it.",
+              "The p95 figure that belongs in this space was measured on an older build and no longer reproduces, so it is not quoted here — a stale number in the flattering direction is the exact failure this section promises not to commit. It is being re-measured. Until then the only p95 worth reading is your own: every breach is counted and shown on the session bar rather than averaged away.",
               "text-[#F5B84A]",
             ],
             [
@@ -546,9 +562,9 @@ export function LandingPage() {
               "",
             ],
             [
-              "1.000",
-              "precision and recall — on our own 44 cases.",
-              "Which proves internal consistency and not much else, since the same person wrote the guards and the tests. Live traffic has caught seven bugs the suite never would have.",
+              "6",
+              "deterministic guards. A reply passes all six, or it is held.",
+              "They are rules over the catalog as it stands right now, not a second model asked to be careful. The precision and recall this space used to quote came from our own labelled case suite and is not quoted while that suite is being re-measured against a change to the chain — and it proved internal consistency and not much else anyway, since the same person wrote the guards and the cases.",
               "",
             ],
           ].map(([n, lead, body, tone = ""]) => (
@@ -607,9 +623,13 @@ export function LandingPage() {
             <div>
               <p className="text-[18px] font-semibold">Who sends it</p>
               <p className="mt-3 text-[16px] leading-relaxed text-text-secondary">
-                {NOT_THE_SENDER} eBay Live publishes no chat-post API and our reader has no send
-                path by construction, so an approved reply is recorded, audited and handed back to
-                you to paste. That is a boundary we chose, not a feature we owe you.
+                {NOT_THE_SENDER} An approved reply is recorded, audited and handed back to you
+                to copy. eBay Live publishes no chat-post API and the scraped surfaces have no
+                send path by construction; Twitch&apos;s is written and tested against its API and
+                is not wired into the app that runs. Rooms you do not own carry a posting switch
+                that starts off, stays off until you turn it on for that room by name, and cannot
+                be turned on at all where the surface is draft-only — and nothing in this build
+                acts on it yet. That is a boundary we chose, not a feature we owe you.
               </p>
             </div>
           </div>
@@ -1075,7 +1095,7 @@ export function LandingPage() {
               "Known limits",
               [
                 "p95 misses the 2s budget on the cold path.",
-                "No surface delivers a reply. We draft, check, record and audit it; you paste it. eBay Live publishes no chat-post API and the reader has no send path by construction.",
+                "No surface delivers a reply. We draft, check, record and audit it; you paste it. eBay Live publishes no chat-post API, the scraped surfaces have no send path by construction, Reddit refuses the action in four separate places, and Twitch's is written and tested but not wired into the executor.",
                 "Listing writes run against a mock by default; the eBay adapter is switched on per show, after you consent on eBay's own page. No live action has committed through it yet.",
                 "Comparables are asking prices, not sold prices — eBay's completed-sales feed is limited-release and this keyset was not granted it.",
                 "TikTok Live, Twitch and Reddit need a flag or their own credentials; the app names the variable instead of failing vaguely. YouTube Live is a capability row with no adapter, so it is not offered.",
@@ -1089,7 +1109,7 @@ export function LandingPage() {
                 "One agent per session, created before the show if you prepare it, deleted with the session.",
                 "Guardrails armed on the agent, not only in the app.",
                 "Hash-chained audit for every approved reply and every write.",
-                "Posting into a room you do not own starts off, stays off until you turn it on for that room — and cannot be turned on at all where the surface is draft-only.",
+                "Posting into a room you do not own starts off, stays off until you turn it on for that room — and cannot be turned on at all where the surface is draft-only. Nothing in this build acts on that switch yet; it is the lock, ahead of the door.",
               ],
             ],
             [
