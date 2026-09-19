@@ -16,6 +16,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { AlertTriangle, ArrowRight, Check, ExternalLink, Info, Loader2 } from "lucide-react";
 import { api, API_BASE, tokenQuery } from "@/lib/api";
+import { surfaceLabel, surfaceOf } from "@/lib/surfaces";
 import type { CatalogFit, CatalogReadiness, ShowSummary } from "@/lib/types";
 import { AppShell } from "@/components/app/AppShell";
 import { Badge, Button, Card, SectionHeading, Skeleton } from "@/components/ui/kit";
@@ -29,8 +30,8 @@ export function SetupPage({ showId }: { showId?: string | undefined }) {
 
   const load = useCallback(async () => {
     const shows = await api.shows().catch(() => [] as ShowSummary[]);
-    // An id the server does not know is "not found", not the first show it
-    // does know — a readiness page for the wrong show is worse than none.
+    // An id the server does not know is "not found", not the first session it
+    // does know — a readiness page for the wrong session is worse than none.
     const target = showId ? (shows.find((s) => s.showId === showId) ?? null) : (shows[0] ?? null);
     setShow(target);
     const [r, f] = await Promise.all([
@@ -50,6 +51,13 @@ export function SetupPage({ showId }: { showId?: string | undefined }) {
     return () => clearInterval(t);
   }, [load]);
 
+  // Which surface this session is on. Everything eBay-specific below hangs
+  // off it: required aspects are eBay's rules for an eBay listing, and
+  // rendering them over a Whatnot or Twitch session states a requirement that
+  // surface does not have.
+  const surface = surfaceOf(show);
+  const isEbay = surface === "ebaylive";
+
   const checks = readiness?.checks ?? [];
   const blockers = checks.filter((c) => !c.ok && c.severity === "blocker");
   const warnings = checks.filter((c) => !c.ok && c.severity === "warning");
@@ -60,17 +68,17 @@ export function SetupPage({ showId }: { showId?: string | undefined }) {
   return (
     <AppShell
       section="home"
-      title={show ? "Ready to answer?" : "Monitor a show"}
+      title={show ? "Ready to answer?" : "Monitor a session"}
       subtitle={
         show
-          ? "the show is attached and being read — this is what the copilot can and cannot ground before you open the console"
+          ? `this ${surfaceLabel(surface)} session is attached and being read — this is what the copilot can and cannot ground before you open the console`
           : "everything below is ingested once, before the copilot answers anything"
       }
       actions={
-        // The show is ALREADY attached and ingesting by the time this page
+        // The session is ALREADY attached and ingesting by the time this page
         // exists — attaching happens on Home. The button used to read "Start
         // monitoring" and go grey behind blockers, which told the operator the
-        // running show was not running. Blockers degrade answers; they do not
+        // running session was not running. Blockers degrade answers; they do not
         // gate the console.
         <Button
           size="md"
@@ -90,14 +98,14 @@ export function SetupPage({ showId }: { showId?: string | undefined }) {
         </div>
       ) : !show ? (
         <Card className="px-4 py-4 text-[12.5px] text-text-muted">
-          No show is attached. Paste a stream on Home to begin.
+          No session is attached. Paste a link on Home to begin.
         </Card>
       ) : (
         <div className="grid gap-4 lg:grid-cols-[1fr_380px] lg:items-start">
           <div className="flex flex-col gap-4">
             <Card className="px-4 py-3.5">
               <div className="flex items-center gap-2.5">
-                <span className="section-header">Stream</span>
+                <span className="section-header">{surfaceLabel(surface)}</span>
                 <span className="num text-[11px] text-text-muted">
                   {show.externalId ?? show.showId}
                 </span>
@@ -113,9 +121,13 @@ export function SetupPage({ showId }: { showId?: string | undefined }) {
                 </p>
                 {show.readOnly ? (
                   <p className="mt-2 text-[11.5px] leading-relaxed text-text-muted">
-                    A show you do not own is monitored{" "}
+                    A session you do not own is monitored{" "}
                     <strong className="text-text">read-only</strong>: the copilot drafts replies and
-                    proposes actions, but never writes to the listing and never posts to eBay.
+                    proposes actions, but{" "}
+                    {isEbay
+                      ? "never writes to the listing and never posts to eBay"
+                      : `nothing is ever written back to ${surfaceLabel(surface)}`}
+                    .
                   </p>
                 ) : null}
               </div>
@@ -124,7 +136,7 @@ export function SetupPage({ showId }: { showId?: string | undefined }) {
             {readiness?.carried ? (
               <Card>
                 <div className="flex items-center gap-2 px-4 py-3 shadow-[0_1px_0_var(--hairline)]">
-                  <span className="section-header">Carried from your last show</span>
+                  <span className="section-header">Carried from your last session</span>
                   <span className="min-w-0 flex-1 truncate text-[11.5px] text-text-muted">
                     {readiness.carried.title}
                   </span>
@@ -191,8 +203,8 @@ export function SetupPage({ showId }: { showId?: string | undefined }) {
 
             {checks.length === 0 ? (
               <p className="px-4 py-4 text-[12.5px] text-text-muted">
-                This show grounds in the stream itself — there is no catalog to check. Every lot the
-                host puts on screen becomes inventory the copilot can answer from.
+                This session grounds in the stream itself — there is no catalog to check. Every lot
+                the host puts on screen becomes inventory the copilot can answer from.
               </p>
             ) : (
               <ul>
@@ -233,8 +245,12 @@ export function SetupPage({ showId }: { showId?: string | undefined }) {
 
             {/* What eBay expects, spelled out. The check above says a field is
                 missing; this says which items and what eBay calls it, because
-                "Department" is not guessable from "your catalog is incomplete". */}
-            {readiness?.aspects && readiness.aspects.missing.length ? (
+                "Department" is not guessable from "your catalog is incomplete".
+                eBay's rules for an eBay listing — drawn only on an eBay
+                session, because a Whatnot or Twitch session has no category
+                and no required aspects, and saying it did would invent a
+                requirement. */}
+            {isEbay && readiness?.aspects && readiness.aspects.missing.length ? (
               <div className="px-4 py-3 shadow-[0_-1px_0_var(--hairline)]">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-[12.5px] font-medium">
