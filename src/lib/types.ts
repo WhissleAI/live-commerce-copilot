@@ -1313,6 +1313,99 @@ export interface HomeView {
   prepared: PreparedShow[];
   preparing: string[];
   watching: ShowSummary[];
+
+  /**
+   * The surface-aware half, added when home stopped being one eBay show.
+   *
+   * Every key below is OPTIONAL and every one of them is derivable from the
+   * keys above plus reads this client already makes — which is the whole
+   * point. A tab open on an older server, or a deploy where the frontend
+   * lands first, gets the same four bands built out of the legacy payload
+   * rather than an empty screen. See `src/lib/home.ts`.
+   */
+  now?: HomeNow;
+  next?: HomeNext;
+  behind?: HomeBehind;
+  surfaces?: HomeSurfaceRow[];
+}
+
+/** A session on air, on any surface. `showId` because the API kept the word. */
+export interface HomeLiveSession {
+  showId: string;
+  surface: SurfaceId;
+  title: string;
+  host: string;
+  startedAt: string;
+  awaiting: number;
+  blocked: number;
+  readOnly: boolean;
+}
+
+export interface HomeDraftCount {
+  total: number;
+  bySurface: { surface: SurfaceId; count: number }[];
+}
+
+export interface HomeNow {
+  live: HomeLiveSession[];
+  drafts: HomeDraftCount;
+}
+
+export interface HomeNext {
+  prepared: PreparedShow[];
+  /** Surfaces with a live grid we can read. Today: eBay Live, and only it. */
+  discoverable: SurfaceId[];
+}
+
+/** One finished session, with the one number that matters and the top gap. */
+export interface HomeReport {
+  showId: string;
+  surface: SurfaceId;
+  title: string;
+  endedAt: string;
+  answered: number;
+  blocked: number;
+  /** The highest-count unanswered question the stored report already holds. */
+  topGap: string | null;
+}
+
+export interface HomeBehind {
+  reports: HomeReport[];
+  followups: { total: number; ready: number };
+}
+
+/** One step of a surface's Before, with the place that finishes it. */
+export interface HomeSurfaceStep {
+  label: string;
+  done: boolean;
+  /** An in-app destination. Absent when there is nothing to press. */
+  href?: string;
+  /** Search params for `href`, when it needs them. */
+  search?: Record<string, string>;
+  cta?: string;
+}
+
+/**
+ * One row of the surface table — the phase story for a single surface.
+ *
+ * `connected` is "has whatever this surface needs to run at all"; `missing`
+ * names the environment variable or the consent that is not there, using the
+ * same string `SurfaceUnavailable` sends, so the operator reads one wording in
+ * both places.
+ */
+export interface HomeSurfaceRow {
+  id: SurfaceId;
+  label: string;
+  attachable: boolean;
+  tempo: Tempo;
+  delivery: "api" | "draft-only";
+  connected: boolean;
+  missing: string | null;
+  before: HomeSurfaceStep[];
+  during: string;
+  after: string;
+  /** Async and room-based surfaces: how many rooms are watched. */
+  rooms?: number;
 }
 
 /** GET /api/cost — the history the live rail cannot have, because the meter

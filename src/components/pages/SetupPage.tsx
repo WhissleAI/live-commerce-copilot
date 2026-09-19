@@ -59,7 +59,7 @@ export function SetupPage({ showId }: { showId?: string | undefined }) {
 
   return (
     <AppShell
-      section="shows"
+      section="home"
       title={show ? "Ready to answer?" : "Monitor a show"}
       subtitle={
         show
