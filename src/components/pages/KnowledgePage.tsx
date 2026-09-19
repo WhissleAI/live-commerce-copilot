@@ -40,6 +40,7 @@ import {
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { formatMoney } from "@/lib/format";
+import { ownCatalogs } from "@/lib/home";
 import type { CatalogMarket, CatalogSummary, CorpusKind, EbayResult, MarketRow } from "@/lib/types";
 import {
   CORPUS_BLURB,
@@ -624,24 +625,31 @@ function EbaySearch() {
  * has a sponsor brief because the guard for one exists.
  */
 export function CorpusGrid({ catalogs }: { catalogs: CatalogSummary[] | null }) {
-  const own = (catalogs ?? []).filter((c) =>
-    c.origin ? c.origin.kind !== "seed" : !["kicksbyrae", "curated-cards"].includes(c.id),
-  );
+  const own = ownCatalogs(catalogs);
   const items = own.reduce((a, c) => a + c.itemCount, 0);
   const policies = own.reduce((a, c) => a + c.policyCount, 0);
+  // A seeded catalog is a demo, not the seller's ground truth, so it is right
+  // that it does not count here. But the Listings tab beside this one counts
+  // it, so a flat "nothing loaded" reads as a contradiction rather than a
+  // distinction. Name which one the reader is looking at.
+  const demoOnly = own.length === 0 && (catalogs ?? []).length > 0;
+  const nothingYet = (what: string) =>
+    demoOnly
+      ? `only the demo catalog so far — ${what}`
+      : `nothing loaded — ${what}`;
 
   const state: Record<CorpusKind, { has: boolean; line: string }> = {
     listing: {
       has: items > 0,
       line: items
         ? `${items} lots across ${own.length} catalog${own.length === 1 ? "" : "s"}`
-        : "nothing loaded — import your listings on Settings › eBay, or prepare a session",
+        : nothingYet("import your listings on Settings › eBay, or prepare a session"),
     },
     policy: {
       has: policies > 0,
       line: policies
         ? `${policies} policies the copilot can cite verbatim`
-        : "nothing loaded — a catalog carries your shipping, returns and authenticity wording",
+        : nothingYet("a catalog carries your shipping, returns and authenticity wording"),
     },
     qa: {
       has: false,

@@ -140,13 +140,13 @@ describe("the NOW band", () => {
   });
 
   // A band that vanishes when quiet teaches that the copilot is only there
-  // when it is busy. It is watching either way, and says how widely.
-  it("stays on screen when empty and names how many surfaces are watching", async () => {
+  // when it is busy. It is connected either way, and says how widely.
+  it("stays on screen when empty and names how many surfaces are connected", async () => {
     await renderWithRouter(
       <NowBand live={[]} drafts={{ total: 0, bySurface: [] }} surfaces={derived} onOpen={noop} />,
     );
     expect(screen.getByText(/Nothing needs you this minute\./)).toBeInTheDocument();
-    expect(screen.getByText(/surfaces? watching/)).toBeInTheDocument();
+    expect(screen.getByText(/surfaces? connected/)).toBeInTheDocument();
   });
 
   it("is still a band, with its phase and what the phase means", async () => {
@@ -207,7 +207,7 @@ describe("the surface table", () => {
     await renderWithRouter(<SurfaceTable rows={derived} />);
     // Reddit and the follow-up inbox are both draft-only, and both say so.
     expect(screen.getAllByText("drafts only")).toHaveLength(2);
-    expect(screen.getAllByText("weekly digest")).toHaveLength(2);
+    expect(screen.getAllByText("a record of what you sent")).toHaveLength(2);
   });
 
   it("lists every surface the operator could use, not only the live ones", async () => {
@@ -293,7 +293,7 @@ describe("one surface row", () => {
         tempo: "async",
         delivery: "draft-only",
         during: "drafts only",
-        after: "weekly digest",
+        after: "a record of what you sent",
         rooms: 3,
         before: [],
       }),

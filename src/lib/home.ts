@@ -84,9 +84,18 @@ export function duringLabel(caps: SurfaceCapabilities): string {
   return caps.actions.some((a) => WRITE_ACTIONS.has(a)) ? "answers and acts" : "answers, you send";
 }
 
-/** What it leaves AFTER. A surface with no session leaves a digest, not a report. */
+/**
+ * What it leaves AFTER.
+ *
+ * This said "weekly digest" for async surfaces, which is the thing we want to
+ * build and not the thing that exists. What a Reddit watch or a follow-up
+ * inbox actually leaves is the queue's own record of what you sent and what
+ * you skipped. A table cell promising an unbuilt feature is the same lie as a
+ * landing page doing it, in smaller type. The server sends this string now;
+ * this is the fallback and it has to agree.
+ */
 export function afterLabel(caps: SurfaceCapabilities): string {
-  return caps.tempo === "async" ? "weekly digest" : "report and follow-ups";
+  return caps.tempo === "async" ? "a record of what you sent" : "report and follow-ups";
 }
 
 /**
@@ -498,5 +507,10 @@ export function watchingLine(surfaces: HomeSurfaceRow[]): string {
   if (on.length === 0) return "No surface is connected yet — the table below is where that starts.";
   const names = on.map((s) => s.label);
   const listed = names.length <= 3 ? names.join(", ") : `${names.slice(0, 3).join(", ")} and more`;
-  return `Nothing needs you this minute. ${on.length} surface${on.length === 1 ? "" : "s"} watching — ${listed}.`;
+  // "Watching" was wrong and reassuring in the wrong direction: a connected
+  // surface is one we COULD watch, not one with a live watch on it. An
+  // operator reading "3 surfaces watching" over an empty queue would take it
+  // as three rooms being read right now. "Connected" is what is true, and it
+  // is the same word the header counts with.
+  return `Nothing needs you this minute. ${on.length} surface${on.length === 1 ? "" : "s"} connected — ${listed}.`;
 }

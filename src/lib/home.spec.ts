@@ -208,7 +208,7 @@ describe("what a surface does during and after", () => {
 
   it("gives an async surface a digest, not a report it never has a session for", () => {
     expect(afterLabel(SURFACE_CAPABILITIES.ebaylive)).toBe("report and follow-ups");
-    expect(afterLabel(SURFACE_CAPABILITIES.reddit)).toBe("weekly digest");
+    expect(afterLabel(SURFACE_CAPABILITIES.reddit)).toBe("a record of what you sent");
   });
 });
 
@@ -384,7 +384,7 @@ describe("a surface row the server sent", () => {
     expect(row.label).toBe("Reddit");
     expect(row.before).toEqual([]);
     expect(row.during).toBe("drafts only");
-    expect(row.after).toBe("weekly digest");
+    expect(row.after).toBe("a record of what you sent");
     expect(row.connected).toBe(false);
   });
 
@@ -438,7 +438,7 @@ describe("home against a server that has shipped the new keys", () => {
         missing: "REDDIT_CLIENT_SECRET",
         before: [{ label: "Keys on the server", done: false, href: "/settings" }],
         during: "drafts only",
-        after: "weekly digest",
+        after: "a record of what you sent",
         rooms: 2,
       },
     ],
@@ -583,7 +583,7 @@ describe("an empty NOW", () => {
     const m = homeModel(sources({ ebay: ebayConnected }));
     const line = watchingLine(m.surfaces);
     expect(line).toContain("Nothing needs you this minute.");
-    expect(line).toMatch(/\d+ surfaces watching/);
+    expect(line).toMatch(/\d+ surfaces connected/);
   });
 
   it("points at the table when nothing at all is connected", () => {
