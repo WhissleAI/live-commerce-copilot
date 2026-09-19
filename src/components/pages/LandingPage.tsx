@@ -6,17 +6,29 @@
  * numbers with their caveats attached, the limits stated before anyone asks,
  * and the one moment the product exists for — a wrong answer, blocked — above
  * the fold. Nothing on this page says something the app does not do.
+ *
+ * It is organised the way the product is: a conversation is answered on a
+ * SURFACE, and it passes through three PHASES. The page opened on one eBay Live
+ * show for as long as that was the whole product; it is now seven surfaces
+ * across two tempos, and a hero that names one of them is a hero that is wrong
+ * about six. The surfaces strip is generated from `SURFACE_CAPABILITIES` — the
+ * same table the console lays itself out from — so a claim about what a surface
+ * can do cannot drift from what the code does. Where the table says
+ * `draft-only`, the card says we never post, and a spec holds that line.
  */
 
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { ShieldAlert } from "lucide-react";
 import { LogoLockup } from "@/components/brand/Logo";
+import { SURFACE_LABEL, capabilitiesOf, draftOnly } from "@/lib/surfaces";
+import type { SurfaceId } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 /** The sections the nav points at, in page order. */
 const NAV = [
-  ["how", "How it works"],
+  ["surfaces", "Surfaces"],
+  ["phases", "How it works"],
   ["guardrails", "Guardrails"],
   ["autonomy", "Autonomy"],
   ["price", "Price"],
@@ -107,6 +119,101 @@ function useReveal(root: React.RefObject<HTMLElement | null>) {
 }
 
 const DARK = "bg-[#0F1E1A] text-white";
+
+// ── the surfaces strip ──────────────────────────────────────────────────────
+//
+// Four families, seven surfaces, two tempos. The families are an editorial
+// grouping — the operator thinks "streams" before "twitch" — but everything a
+// card CLAIMS is read out of `SURFACE_CAPABILITIES`, so marketing copy and the
+// console cannot disagree about whether we can send a reply somewhere. If the
+// table ever flips Reddit to `api`, this page stops saying we never post before
+// anyone has to remember to edit it.
+
+export interface SurfaceFamily {
+  id: string;
+  title: string;
+  surfaces: SurfaceId[];
+  /** What it does on these surfaces. */
+  lead: string;
+  /** The limit, said here rather than discovered later. */
+  limit: string;
+}
+
+export const SURFACE_FAMILIES: SurfaceFamily[] = [
+  {
+    id: "commerce",
+    title: "Live commerce",
+    surfaces: ["ebaylive", "whatnot", "tiktoklive"],
+    lead: "It answers the buyer out of your own stock, and proposes the fix the answer implies — a markdown, a stock correction, a different lot pinned, a listing ended.",
+    limit:
+      "Acts on listings only on a show you own, and only with your keystroke. A show you do not own is monitored read-only: it drafts, proposes and reports, and never writes.",
+  },
+  {
+    id: "streams",
+    title: "Creator streams",
+    surfaces: ["twitch", "youtubelive"],
+    lead: "It answers chat from your schedule, your sponsor briefs and your product docs, and proposes what a stream actually does — a clip, a highlight, a poll, a pinned message.",
+    limit:
+      "Supported in the build and gated on your own keys. Until they are set the app names the variable it is missing rather than hiding the surface, and nothing here is connected in production yet.",
+  },
+  {
+    id: "communities",
+    title: "Communities",
+    surfaces: ["reddit"],
+    lead: "It reads the thread and the branch above the question, retrieves the subreddit's own rules, and writes the reply you would have written — with the rule that nearly blocked it attached.",
+    limit:
+      "Draft-only in the code, not as a setting anyone can flip. We never post to Reddit for you: the reply goes to Drafts and you post it, under your own name.",
+  },
+  {
+    id: "inbox",
+    title: "Your follow-up inbox",
+    surfaces: ["dm"],
+    lead: "Everyone who asked during a session and did not buy is a question you still owe an answer to. The inbox holds one written reply per person, in your voice.",
+    limit:
+      "Only a follow-up the guards already cleared is written down at all — a blocked one is never stored. You are the sender; the inbox marks it answered when you say so.",
+  },
+];
+
+/** What the capability table says we can do here, in the operator's words. */
+export function deliveryLabel(ids: SurfaceId[]): string {
+  return ids.every((id) => draftOnly(capabilitiesOf(id)))
+    ? "drafts · you send"
+    : "answers · acts · you approve";
+}
+
+/** live or async, read off the same table. */
+export function tempoLabel(ids: SurfaceId[]): string {
+  return ids.every((id) => capabilitiesOf(id).tempo === "async") ? "async" : "live";
+}
+
+function FamilyCard({ f }: { f: SurfaceFamily }) {
+  return (
+    <div className="flex h-full flex-col rounded-lg bg-panel p-6 shadow-[0_0_0_1px_var(--hairline),0_10px_28px_-22px_rgba(0,0,0,.35)]">
+      <div className="flex items-center gap-2">
+        <span className="num text-[11px] tracking-[0.04em] text-text-muted uppercase">
+          {tempoLabel(f.surfaces)}
+        </span>
+        <span className="h-3 w-px bg-hairline" aria-hidden />
+        <span className="num text-[11px] text-text-muted">{deliveryLabel(f.surfaces)}</span>
+      </div>
+      <p className="mt-3 text-[20px] font-semibold">{f.title}</p>
+      <ul className="mt-3 flex flex-wrap gap-1.5" aria-label={`${f.title} surfaces`}>
+        {f.surfaces.map((id) => (
+          <li
+            key={id}
+            className="num rounded-sm bg-elevated px-2 py-0.5 text-[12px] text-text-secondary"
+          >
+            {SURFACE_LABEL[id]}
+          </li>
+        ))}
+      </ul>
+      <p className="mt-4 text-[16px] leading-relaxed text-text-secondary">{f.lead}</p>
+      <p className="mt-4 border-t border-hairline pt-4 text-[14px] leading-relaxed text-text-muted">
+        {f.limit}
+      </p>
+    </div>
+  );
+}
 
 /** A real screenshot, framed. Every image on this page is a capture of the
  *  product or of eBay Live, never a mock — the caption says which. */
@@ -296,16 +403,19 @@ export function LandingPage() {
       <section className={`${WRAP} grid gap-12 py-[92px] lg:grid-cols-[560px_1fr] lg:items-center`}>
         <div>
           <span className="inline-flex items-center gap-2 rounded-full bg-bad/10 px-3 py-1.5 text-[12px] font-semibold tracking-[0.04em] text-bad">
-            <span className="anim-live size-2 rounded-full bg-bad" aria-hidden /> ON AIR
+            <span className="anim-live size-2 rounded-full bg-bad" aria-hidden /> ON AIR · AND IN
+            THE THREAD
           </span>
           <h1 className="mt-6 font-[Archivo,Inter,sans-serif] text-[42px] leading-[1.04] font-bold tracking-[-0.025em] text-balance md:text-[52px]">
-            It watches the show. It answers the room. You keep the last word.
+            It answers the room, wherever the room is. From what you actually know. You keep the
+            last word.
           </h1>
           <p className="mt-6 max-w-[540px] text-[17px] leading-relaxed text-text-secondary">
-            SideStage attaches to an eBay Live show and works the room while you sell. It reads the
-            chat, hears you, sees the lot on camera, drafts every reply, proposes every markdown and
-            stock fix, and writes the report afterwards — and nothing reaches a buyer or a listing
-            until you press Enter.
+            SideStage is one copilot across a live show, a stream, a subreddit and your own
+            follow-up inbox. It reads the conversation, answers from your listings, policies,
+            schedule and prior answers, cites the fact it used, and runs six deterministic guards
+            against the state as it stands right now — and nothing reaches a buyer, a listing or a
+            thread until a human approves it.
           </p>
           <div className="mt-8 flex flex-wrap gap-3.5">
             <Primary to="/register">
@@ -314,8 +424,9 @@ export function LandingPage() {
             <Secondary to="/login">Sign in</Secondary>
           </div>
           <p className="mt-6 max-w-[528px] text-[13px] leading-relaxed text-text-muted">
-            For eBay Live sellers running solo · read-only on any show, writes only on yours · a
-            human approves every send and every action, at every rung
+            For the one person running the whole thing · read-only on any session you do not own ·
+            draft-only where the community says so · a human approves every send and every action,
+            at every rung
           </p>
         </div>
 
@@ -359,6 +470,49 @@ export function LandingPage() {
               <p className="mt-3 text-[15px] leading-relaxed text-white/70">{body}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* surfaces -------------------------------------------------------------- */}
+      <section id="surfaces" data-reveal className="bg-canvas py-[112px]">
+        <div className={WRAP}>
+          <div className="grid gap-10 lg:grid-cols-[480px_1fr] lg:items-end">
+            <div>
+              <Kicker>Where it answers</Kicker>
+              <H2>The same copilot, in four places that behave nothing alike.</H2>
+            </div>
+            <p className="text-[17px] leading-relaxed text-text-secondary lg:pb-1">
+              A live show is a session with a start and an end, a latency budget and a lot on
+              camera. A subreddit is a thread from Tuesday that still deserves a real answer. The
+              copilot changes shape between them — the console drops the meter, the lot rail becomes
+              the thread — and the guards, the citations and the approval do not change at all.
+            </p>
+          </div>
+          <div className="mt-14 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+            {SURFACE_FAMILIES.map((f) => (
+              <FamilyCard key={f.id} f={f} />
+            ))}
+          </div>
+          <div className="mt-10 grid gap-8 rounded-lg bg-panel p-7 shadow-[0_0_0_1px_var(--hairline)] md:grid-cols-2">
+            <div>
+              <p className="text-[18px] font-semibold">Two tempos, one set of rules</p>
+              <p className="mt-3 text-[16px] leading-relaxed text-text-secondary">
+                A live surface gets a bounded session: attach, answer, end, report. An async surface
+                has no session at all — a standing watch on the rooms you chose and a queue of
+                drafts that is always open. Both go through the same retrieval, the same guard
+                chain, the same audit.
+              </p>
+            </div>
+            <div>
+              <p className="text-[18px] font-semibold">What is connected today</p>
+              <p className="mt-3 text-[16px] leading-relaxed text-text-secondary">
+                eBay Live is the surface this was built on and the one we run. Whatnot and TikTok
+                Live are read the same way, from the page the buyer sees. Twitch, YouTube Live and
+                Reddit ship in the build and wait on their own credentials — the app says which
+                variable is missing rather than pretending the surface does not exist.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
