@@ -182,11 +182,12 @@ export function DraftsPage() {
               icon={<SquarePen className="size-5" aria-hidden />}
               title="Nothing to send."
             >
-              Two things fill this queue. A room you watch — add a subreddit or a channel on Rooms —
-              puts a draft here whenever the copilot reads a thread and writes a reply for it. And a
-              session that ends leaves one reply per buyer who asked and did not buy, re-checked
-              against your knowledge as it stands now. Either way you are the sender: Reddit drafts
-              are never posted by us, not as a setting, in the code.
+              Two things fill this queue. A session open on a room — you start one by pasting a link
+              on Home — puts a draft here whenever the copilot reads a thread and writes a reply for
+              it; a room kept on Rooms is a choice, and nothing reads it on its own. And a session
+              that ends leaves one reply per buyer who asked and did not buy, re-checked against
+              your knowledge as it stands now. Either way you are the sender: Reddit drafts are
+              never posted by us, not as a setting, in the code.
             </EmptyState>
           </Card>
         ) : (
