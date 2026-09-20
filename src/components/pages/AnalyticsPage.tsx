@@ -300,78 +300,121 @@ function Overview({ o }: { o: AnalyticsOverview | null }) {
         <SectionHeading hint="Newest first. A session without a report is listed — that is the one to open.">
           By session
         </SectionHeading>
-        <Card className="mt-3 overflow-hidden">
-          <div className="scroll-thin overflow-x-auto">
-            <table className="w-full min-w-[720px] text-[12.5px]">
-              <thead>
-                <tr className="text-left text-[11px] text-text-muted">
-                  <th className="px-4 py-2 font-medium">Session</th>
-                  <th className="px-3 py-2 text-right font-medium">On air</th>
-                  <th className="px-3 py-2 text-right font-medium">Answered</th>
-                  <th className="px-3 py-2 text-right font-medium">p95</th>
-                  <th className="px-3 py-2 text-right font-medium">Blocked</th>
-                  <th className="px-3 py-2 text-right font-medium">GMV</th>
-                  <th className="px-4 py-2 font-medium">Chain</th>
-                </tr>
-              </thead>
-              <tbody>
-                {o.perShow.map((r) => (
-                  <tr key={r.showId} className="shadow-[0_1px_0_var(--hairline)] last:shadow-none">
-                    <td className="max-w-[300px] px-4 py-2">
-                      <Link
-                        to="/reports/$showId"
-                        params={{ showId: r.showId }}
-                        className="block truncate hover:underline"
-                      >
-                        {r.title}
-                      </Link>
-                      <span className="num text-[11px] text-text-muted">
-                        {new Date(r.startedAt).toLocaleDateString(undefined, {
-                          weekday: "short",
-                          day: "numeric",
-                          month: "short",
-                        })}
-                      </span>
-                    </td>
-                    <td className="num px-3 py-2 text-right">
-                      {r.durationMin
-                        ? `${Math.floor(r.durationMin / 60)}h ${r.durationMin % 60}m`
-                        : "—"}
-                    </td>
-                    <td className="num px-3 py-2 text-right">{pctText(r.answeredRate)}</td>
-                    <td
-                      className={cn(
-                        "num px-3 py-2 text-right",
-                        r.p95LatencyMs > 2000 && "text-bad",
-                      )}
-                    >
-                      {r.p95LatencyMs ? ms(r.p95LatencyMs) : "—"}
-                    </td>
-                    <td className="num px-3 py-2 text-right">{r.blocked}</td>
-                    <td className="num px-3 py-2 text-right">
-                      {r.gmvCents == null ? (
-                        <span className="text-text-faint">—</span>
-                      ) : (
-                        formatMoney(r.gmvCents)
-                      )}
-                    </td>
-                    <td className="px-4 py-2">
-                      {r.durationMin === 0 ? (
-                        <Badge tone="warn">no report</Badge>
-                      ) : r.chainOk ? (
-                        <Badge tone="ok">intact</Badge>
-                      ) : (
-                        <Badge tone="bad">broken</Badge>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
+        <BySession rows={o.perShow} />
       </div>
     </>
+  );
+}
+
+/**
+ * One row per session, and what each row is allowed to claim.
+ *
+ * Exported so a spec can drive it without standing up the page: the numbers on
+ * a session with no report are coercions rather than measurements, and which
+ * of them may be printed is the whole content of this table.
+ */
+export function BySession({ rows }: { rows: AnalyticsOverview["perShow"] }) {
+  return (
+    <Card className="mt-3 overflow-hidden">
+      <div className="scroll-thin overflow-x-auto">
+        <table className="w-full min-w-[720px] text-[12.5px]">
+          <thead>
+            <tr className="text-left text-[11px] text-text-muted">
+              <th className="px-4 py-2 font-medium">Session</th>
+              <th className="px-3 py-2 text-right font-medium">On air</th>
+              <th className="px-3 py-2 text-right font-medium">Answered</th>
+              <th className="px-3 py-2 text-right font-medium">p95</th>
+              <th className="px-3 py-2 text-right font-medium">Blocked</th>
+              <th className="px-3 py-2 text-right font-medium">GMV</th>
+              <th className="px-4 py-2 font-medium">Chain</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => {
+              /**
+               * Was this session measured?
+               *
+               * The server says so now (`hasReport`, backend
+               * `src/shows/analytics.ts`), which matters twice. A real
+               * report for a session shorter than thirty seconds rounds
+               * to zero minutes, so the old `durationMin === 0` test
+               * called a graded session ungraded beside its own numbers.
+               * And the figures on an ungraded row are coercions, not
+               * measurements: printing `0` under a target reads as a
+               * failing grade for a session nobody ever graded, and `0`
+               * in the Chain column would read as a BROKEN audit chain —
+               * a false statement about trust, which is worse than a
+               * missing number.
+               *
+               * Falls back to the old heuristic where the field is absent,
+               * because an older server still has to render.
+               */
+              const measured = r.hasReport ?? r.durationMin > 0;
+              return (
+                <tr key={r.showId} className="shadow-[0_1px_0_var(--hairline)] last:shadow-none">
+                  <td className="max-w-[300px] px-4 py-2">
+                    <Link
+                      to="/reports/$showId"
+                      params={{ showId: r.showId }}
+                      className="block truncate hover:underline"
+                    >
+                      {r.title}
+                    </Link>
+                    <span className="num text-[11px] text-text-muted">
+                      {new Date(r.startedAt).toLocaleDateString(undefined, {
+                        weekday: "short",
+                        day: "numeric",
+                        month: "short",
+                      })}
+                    </span>
+                  </td>
+                  <td className="num px-3 py-2 text-right">
+                    {!measured
+                      ? "—"
+                      : r.durationMin >= 1
+                        ? `${Math.floor(r.durationMin / 60)}h ${r.durationMin % 60}m`
+                        : "under a minute"}
+                  </td>
+                  <td className="num px-3 py-2 text-right">
+                    {measured ? pctText(r.answeredRate) : "—"}
+                  </td>
+                  <td
+                    className={cn(
+                      "num px-3 py-2 text-right",
+                      measured && r.p95LatencyMs > 2000 && "text-bad",
+                    )}
+                  >
+                    {measured && r.p95LatencyMs ? ms(r.p95LatencyMs) : "—"}
+                  </td>
+                  <td className="num px-3 py-2 text-right">{measured ? r.blocked : "—"}</td>
+                  <td className="num px-3 py-2 text-right">
+                    {r.gmvCents == null ? (
+                      <span className="text-text-faint">—</span>
+                    ) : (
+                      formatMoney(r.gmvCents)
+                    )}
+                  </td>
+                  <td className="px-4 py-2">
+                    {!measured ? (
+                      <Badge
+                        tone="warn"
+                        title="This session left no report, so there is nothing to verify. Not a broken chain — an ungraded session."
+                      >
+                        no report
+                      </Badge>
+                    ) : r.chainOk ? (
+                      <Badge tone="ok">intact</Badge>
+                    ) : (
+                      <Badge tone="bad">broken</Badge>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </Card>
   );
 }
 

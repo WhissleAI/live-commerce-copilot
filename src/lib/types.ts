@@ -784,6 +784,21 @@ export interface AnalyticsOverview {
     showId: string;
     title: string;
     startedAt: string;
+    /**
+     * Was this session MEASURED at all?
+     *
+     * The honest answer to a question that used to be inferred from
+     * `durationMin === 0` — which is also what a real report for a session
+     * shorter than thirty seconds rounds to, so a graded twenty-second session
+     * was labelled "no report" beside its own numbers (backend
+     * `src/shows/analytics.ts`).
+     *
+     * Optional, because a backend older than the field says nothing. Absent,
+     * the duration heuristic is still the best available guess — but where the
+     * field IS present it is the answer, and the zeroes beside it mean
+     * "nobody measured this", never "measured, and it was zero".
+     */
+    hasReport?: boolean;
     durationMin: number;
     answeredRate: number;
     p95LatencyMs: number;
