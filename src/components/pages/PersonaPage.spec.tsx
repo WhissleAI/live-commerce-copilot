@@ -88,9 +88,20 @@ describe("RegisterRow", () => {
     expect(screen.getByText("draft-only")).toBeInTheDocument();
   });
 
-  it("does not call a live surface draft-only", () => {
+  /**
+   * Draft-only is not a property of the tempo. eBay Live is live AND
+   * draft-only: there is no chat-post API for a Live event, which is the
+   * reason the surface is read through a scraped browser session at all. The
+   * badge said otherwise here for as long as the mirror did.
+   */
+  it("calls a live surface draft-only when that is what it is", () => {
     render(<RegisterRow surface="ebaylive" register={null} onChange={noop} />);
     expect(screen.getByText("live")).toBeInTheDocument();
+    expect(screen.getByText("draft-only")).toBeInTheDocument();
+  });
+
+  it("keeps the badge off a surface that really does deliver", () => {
+    render(<RegisterRow surface="twitch" register={null} onChange={noop} />);
     expect(screen.queryByText("draft-only")).not.toBeInTheDocument();
   });
 

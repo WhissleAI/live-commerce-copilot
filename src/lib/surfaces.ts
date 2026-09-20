@@ -18,6 +18,7 @@
 import type {
   CorpusKind,
   GuardName,
+  ReplyDelivery,
   SurfaceCapabilities,
   SurfaceId,
   SurfaceInfo,
@@ -27,7 +28,21 @@ import type {
 /** eBay Live as it behaves today, field for field. Nothing here is new. */
 export const EBAYLIVE_CAPABILITIES: SurfaceCapabilities = {
   tempo: "live",
-  delivery: "api",
+  // `draft-only`, and it always was.
+  //
+  // eBay publishes no chat-post API for a Live event — that absence is the
+  // whole reason the surface is read through a scraped browser session rather
+  // than a client. The backend's row says `draft-only`
+  // (`src/surfaces/types.ts`, EBAYLIVE_CAPABILITIES) and its docs always did;
+  // only this mirror said otherwise, and because the console rendered its
+  // Send button and its "Reply sent to @buyer" toast off this row, the
+  // reference surface's most-used button reported a delivery that never
+  // happened.
+  //
+  // What does happen is real and is the product: the reply is composed against
+  // the seller's catalog, checked by eight guards, recorded, audited — and a
+  // human posts it.
+  delivery: "draft-only",
   perception: { audio: true, video: true },
   actions: ["push_listing", "swap_pinned", "markdown_price", "adjust_stock", "end_listing"],
   corpora: ["listing", "policy", "qa", "community"],
@@ -175,7 +190,11 @@ export function normalizeCapabilities(c: Partial<SurfaceCapabilities> | null | u
   const base = EBAYLIVE_CAPABILITIES;
   return {
     tempo: c?.tempo === "async" ? "async" : "live",
-    delivery: c?.delivery === "draft-only" ? "draft-only" : "api",
+    // A server that did not say cannot be read as "we may post here". Every
+    // other field falls back to eBay Live's because a wrong answer there costs
+    // a layout; this one decides whether the console offers to speak on the
+    // operator's behalf, so it fails closed on its own.
+    delivery: c?.delivery === "api" ? "api" : "draft-only",
     perception: {
       audio: c?.perception?.audio ?? base.perception.audio,
       video: c?.perception?.video ?? base.perception.video,
@@ -208,6 +227,28 @@ export function draftOnly(caps: SurfaceCapabilities): boolean {
   return caps.delivery === "draft-only";
 }
 
+/**
+ * Who sends THIS reply.
+ *
+ * Read off the proposal, never off the table above. The two answers differ,
+ * and the difference is the defect this function exists to end: the surface
+ * row is what a platform would permit, and `ReplyProposal.delivery` is what
+ * the server will actually do, having also asked whether a delivery path is
+ * wired into the process that drafted it (backend `Pipeline.deliveryFor`).
+ *
+ * A missing field is `"human"`. A server too old to send the field is a server
+ * that cannot be promising a delivery, and the whole point of moving this
+ * decision to the server is that the client stops assuming one.
+ */
+export function deliveryOf(p: { delivery?: ReplyDelivery | null }): ReplyDelivery {
+  return p.delivery === "api" ? "api" : "human";
+}
+
+/** Does the copilot put this reply in front of the buyer, or does the operator? */
+export function deliveredForUs(p: { delivery?: ReplyDelivery | null }): boolean {
+  return deliveryOf(p) === "api";
+}
+
 // ── what the console renders, as a function of what the surface can do ──────
 //
 // One object, computed once, so the four places that need to know cannot
@@ -227,8 +268,6 @@ export interface ConsoleLayout {
   threadPanel: boolean;
   /** Actions and the audit chain — every surface has at least one action. */
   actionRail: boolean;
-  /** The reply is ours to send, or the operator's. */
-  deliverable: boolean;
 }
 
 export function consoleLayout(caps: SurfaceCapabilities): ConsoleLayout {
@@ -238,7 +277,6 @@ export function consoleLayout(caps: SurfaceCapabilities): ConsoleLayout {
     hostAudio: caps.perception.audio,
     threadPanel: caps.tempo === "async",
     actionRail: caps.actions.length > 0,
-    deliverable: caps.delivery === "api",
   };
 }
 

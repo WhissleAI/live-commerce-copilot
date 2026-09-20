@@ -14,9 +14,45 @@ import {
   SENT_MEANS,
   SENT_MEANS_REPLIES,
   SENT_MEANS_SUMMARY,
+  heldReplyAdvice,
   operatorMessage,
   streamTitle,
 } from "./copy";
+
+/**
+ * Pressing Enter on a held card used to do nothing and say nothing — on the
+ * card whose own panel tells the operator to edit it and send.
+ */
+describe("what a held reply says when the keyboard reaches it", () => {
+  const held = [
+    { guard: "price", verdict: "block", reason: "Quotes listing version 12; the live one is 13." },
+    { guard: "tone", verdict: "allow" },
+  ];
+
+  it("names the guard and repeats its reason verbatim", () => {
+    const s = heldReplyAdvice(held);
+    expect(s).toContain("price");
+    expect(s).toContain("Quotes listing version 12; the live one is 13.");
+  });
+
+  it("says the thing that does work", () => {
+    expect(heldReplyAdvice(held)).toMatch(/press e to edit/i);
+  });
+
+  it("reads the guard that blocked, not the first one in the list", () => {
+    expect(
+      heldReplyAdvice([
+        { guard: "tone", verdict: "revise", reason: "softer, please" },
+        { guard: "pii", verdict: "block", reason: "An address appears in the reply." },
+      ]),
+    ).toContain("An address appears in the reply.");
+  });
+
+  it("still says something when no guard gave a reason", () => {
+    expect(heldReplyAdvice([])).toMatch(/held by a guardrail/i);
+    expect(heldReplyAdvice([])).toMatch(/press e to edit/i);
+  });
+});
 
 describe("what sent means", () => {
   /**

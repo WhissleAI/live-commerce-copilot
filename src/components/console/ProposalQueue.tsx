@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { GUARD_LABEL, GUARD_MEANS, GUARD_ORDER, formatMs, timeAgo } from "@/lib/format";
+import { deliveryOf } from "@/lib/surfaces";
 import type { Evidence, GuardName, GuardResult, ReplyProposal } from "@/lib/types";
 import { ConsoleButton, Dots, Hover, IntentBadge, Kbd, SectionHeader } from "./primitives";
 import {
@@ -165,8 +166,7 @@ function GuardStrip({ guards, order }: { guards: GuardResult[]; order: GuardName
                   it. On the one screen the product exists for, a blocked
                   reply could not be understood without a mouse. */}
               <span className="sr-only">
-                {GUARD_LABEL[name]} {VERDICT_WORD[verdict]}.{" "}
-                {g?.reason ?? GUARD_MEANS[name]}
+                {GUARD_LABEL[name]} {VERDICT_WORD[verdict]}. {g?.reason ?? GUARD_MEANS[name]}
                 {g?.detail?.expected || g?.detail?.found
                   ? ` Expected ${g.detail.expected ?? "—"}, found ${g.detail.found ?? "—"}.`
                   : ""}
@@ -221,19 +221,38 @@ export function StyleRef({ styleRef }: { styleRef: ReplyProposal["styleRef"] | u
   );
 }
 
-/** The one control a draft-only surface has. The clipboard can be refused (an
- *  insecure origin, a denied permission) and the button says so rather than
- *  looking like it worked. */
 /**
- * CONTENT-19: this rendered only on draft-only surfaces, so eBay Live — the
- * one surface the landing page says by name "hands an approved reply back to
- * you to paste" — had a button labelled Send, a status that read `sent`, and
- * nowhere to copy from. Nothing is actually delivered anywhere (`send()` marks
- * the proposal and appends an audit entry; there is no platform call on any
- * path), so the copy is the operator's real next step on every surface. It is
- * the primary action where there is nothing else, and secondary beside Send.
+ * Taking the reply.
+ *
+ * CONTENT-19 made this render on every surface rather than only the draft-only
+ * ones, because nothing is delivered anywhere: `send()` re-checks the draft,
+ * records it and writes it into the audit chain, and no code path posts a
+ * character to any platform. So the copy is the operator's real next step.
+ *
+ * `onCopied` is what makes it more than a clipboard button. Where the reply is
+ * the operator's to post, copying it IS accepting it — it is the moment they
+ * take the words — so the copy records it through the same endpoint the Send
+ * button uses, and the reply stops being an open proposal. Until this existed,
+ * the only control offered on those surfaces never called the API at all, so
+ * the answered-rate, the audit chain and the Recent list all had nothing to
+ * say about a reply the operator had actually used.
+ *
+ * It records only after the clipboard ACCEPTED the text. A copy the browser
+ * refused (an insecure origin, a denied permission) leaves the operator with
+ * nothing in hand, and recording "I took this" on top of that would be the
+ * same false statement in a smaller place.
  */
-function CopyDraft({ text, variant = "primary" }: { text: string; variant?: "primary" | "secondary" }) {
+function CopyDraft({
+  text,
+  variant = "primary",
+  onCopied,
+}: {
+  text: string;
+  variant?: "primary" | "secondary";
+  /** Called once the text is really on the clipboard. Absent where the reply
+   *  is ours to deliver: there, Send is the accept and a copy is a copy. */
+  onCopied?: (() => void) | undefined;
+}) {
   const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
   return (
     <ConsoleButton
@@ -241,12 +260,19 @@ function CopyDraft({ text, variant = "primary" }: { text: string; variant?: "pri
       onClick={() => {
         void navigator.clipboard
           ?.writeText(text)
-          .then(() => setState("copied"))
+          .then(() => {
+            setState("copied");
+            onCopied?.();
+          })
           .catch(() => setState("failed"));
         if (!navigator.clipboard) setState("failed");
         window.setTimeout(() => setState("idle"), 2000);
       }}
-      title="The reply is yours to post — nothing is delivered for you"
+      title={
+        onCopied
+          ? "The reply is yours to post — copying it records that you took it"
+          : "Put the reply on the clipboard"
+      }
     >
       {state === "copied" ? "Copied" : state === "failed" ? "Could not copy" : "Copy"}
     </ConsoleButton>
@@ -319,9 +345,9 @@ function ProposalCard({
   highlighted,
   editing,
   guardOrder,
-  deliverable,
   onFocus,
   onSend,
+  onCopy,
   onEdit,
   onCancelEdit,
   onDismiss,
@@ -333,11 +359,11 @@ function ProposalCard({
   highlighted: boolean;
   editing: boolean;
   guardOrder: GuardName[];
-  /** False on a draft-only surface: the reply is the operator's to send, and a
-   *  Send button that cannot send is a lie the console must not tell. */
-  deliverable: boolean;
   onFocus: () => void;
   onSend: (text?: string) => void;
+  /** The operator took the words. Only offered where the reply is theirs to
+   *  post; see `CopyDraft`. */
+  onCopy: (text?: string) => void;
   onEdit: () => void;
   onCancelEdit: () => void;
   onDismiss: () => void;
@@ -376,6 +402,20 @@ function ProposalCard({
   const blocked = p.status === "blocked";
   const needsReview = p.status === "needs_review";
   const blockingGuard = p.guards.find((g) => g.verdict === "block");
+  /** The guard that asked for a revision — `needs_review`'s equivalent of the
+   *  one that blocked, and the only one with anything to say about why the
+   *  draft is on this card rather than sendable outright. */
+  const revisingGuard = p.guards.find((g) => g.verdict === "revise");
+  /**
+   * Who sends this one — the server's answer, on this proposal.
+   *
+   * Not the surface's capability row. The row is what a platform would permit;
+   * this is what the backend will actually do, having also asked whether a
+   * delivery path is wired into the process that drafted it. They disagree on
+   * every surface in the build today, and the console rendered a Send button
+   * and a "Reply sent" toast off the optimistic half of the disagreement.
+   */
+  const delivers = deliveryOf(p) === "api";
 
   return (
     <li
@@ -475,9 +515,14 @@ function ProposalCard({
               }
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
                 e.preventDefault();
-                // The Send button is hidden on a blocked card; the shortcut
-                // must not be a way around that.
-                if (!blocked) onSend(value);
+                // Unconditionally, held card included. An edit is a NEW draft
+                // and is judged on its own words: the server re-guards what
+                // was typed here and refuses with the guard's own reason if it
+                // still fails (`Pipeline.send`, backend
+                // `src/pipeline/pipeline.ts`). Gating the keystroke on the
+                // verdict the REPLACED text earned is what made the card's own
+                // instruction — "edit it and send" — impossible to follow.
+                onSend(value);
               }
             }}
             rows={3}
@@ -500,26 +545,45 @@ function ProposalCard({
 
         {!drafting ? (
           <>
-            {blocked ? (
+            {/* Why this card is not simply sendable.
+                Two states, one panel, and `needs_review` had only a stripe:
+                it is the common one — a guard asking for a revision, a repair
+                pass that did not fully clear — and an amber edge with no words
+                beside it leaves the operator to guess which of eight checks
+                spoke and what it said. Both read the SERVER's reason; neither
+                invents one. */}
+            {blocked || needsReview ? (
               <div className="flex items-start gap-2 rounded-[4px] border border-warn/40 bg-warn/[0.07] px-2.5 py-2 text-[12px]">
                 <ShieldAlert className="mt-0.5 size-3.5 shrink-0 text-warn" aria-hidden />
                 <div className="min-w-0">
                   <p className="font-medium text-text">
-                    Held by the {blockingGuard ? GUARD_LABEL[blockingGuard.guard] : "guardrail"}{" "}
-                    guard
+                    {blocked ? (
+                      <>
+                        Held by the {blockingGuard ? GUARD_LABEL[blockingGuard.guard] : "guardrail"}{" "}
+                        guard
+                      </>
+                    ) : revisingGuard ? (
+                      <>The {GUARD_LABEL[revisingGuard.guard]} guard asked for a revision</>
+                    ) : (
+                      <>Needs your eyes before it goes out</>
+                    )}
                   </p>
                   <p className="mt-0.5 leading-snug text-text-secondary">
-                    {blockingGuard?.reason ??
-                      "This draft did not pass the checks a reply must pass before it can be sent."}
+                    {(blocked ? blockingGuard : revisingGuard)?.reason ??
+                      (blocked
+                        ? "This draft did not pass the checks a reply must pass before it can be sent."
+                        : "No guard gave a reason — this one was not cleared to go out on its own.")}
                   </p>
-                  {blockingGuard?.detail ? (
+                  {(blocked ? blockingGuard : revisingGuard)?.detail ? (
                     <p className="num mt-0.5 text-[11px] text-text-muted">
-                      expected {blockingGuard.detail.expected} · found {blockingGuard.detail.found}
+                      expected {(blocked ? blockingGuard : revisingGuard)?.detail?.expected} · found{" "}
+                      {(blocked ? blockingGuard : revisingGuard)?.detail?.found}
                     </p>
                   ) : null}
                   <p className="mt-1 text-[11px] text-text-muted">
-                    What to do: edit it and send — the edit is checked again — or dismiss it.
-                    Nothing went wrong; the reply was stopped on purpose.
+                    {blocked
+                      ? "What to do: edit it and send — your edit is a new draft and is checked again, on its own words — or dismiss it. Nothing went wrong; this one was stopped on purpose."
+                      : "What to do: take it as it stands, edit it first, or regenerate. Nothing is blocked here — the reply is yours to decide on."}
                   </p>
                 </div>
               </div>
@@ -530,27 +594,40 @@ function ProposalCard({
             <StyleRef styleRef={p.styleRef} />
 
             <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-              {blocked ? null : deliverable ? (
+              {/* Accepting it.
+                  A held draft cannot go out AS IT STANDS, and the server is
+                  where that refusal lives — a keystroke and a curl are not
+                  this console. But an edit is a new draft: while the operator
+                  is rewriting a held card the accept control comes back, as a
+                  secondary, and the server judges what they typed. Hiding it
+                  here was the last of the three locks that made the card's own
+                  instruction impossible to follow. */}
+              {blocked && !editing ? null : delivers ? (
                 <ConsoleButton
-                  variant={needsReview ? "secondary" : "primary"}
+                  variant={blocked || needsReview ? "secondary" : "primary"}
                   onClick={() => onSend(editing ? value : undefined)}
                 >
-                  {needsReview ? "Send anyway" : "Send"}
-                  <Kbd
-                    className={
-                      needsReview
-                        ? ""
-                        : "border-accent-foreground/40 bg-transparent text-accent-foreground/80"
-                    }
-                  >
-                    ⏎
-                  </Kbd>
+                  {blocked ? "Send edit" : needsReview ? "Send anyway" : "Send"}
+                  {/* Bare ⏎ does not send a held card — it says what to do
+                      instead — so the key is only claimed where it works. */}
+                  {blocked ? null : (
+                    <Kbd
+                      className={
+                        needsReview
+                          ? ""
+                          : "border-accent-foreground/40 bg-transparent text-accent-foreground/80"
+                      }
+                    >
+                      ⏎
+                    </Kbd>
+                  )}
                 </ConsoleButton>
               ) : null}
-              {blocked ? null : (
+              {blocked && !editing ? null : (
                 <CopyDraft
                   text={editing ? value : p.draft}
-                  variant={deliverable ? "secondary" : "primary"}
+                  variant={delivers ? "secondary" : "primary"}
+                  onCopied={delivers ? undefined : () => onCopy(editing ? value : undefined)}
                 />
               )}
               <ConsoleButton variant="secondary" onClick={editing ? onCancelEdit : onEdit}>
@@ -560,11 +637,14 @@ function ProposalCard({
               <ConsoleButton variant="ghost" onClick={onDismiss}>
                 Dismiss <Kbd>X</Kbd>
               </ConsoleButton>
-              {blocked ? null : (
-                <ConsoleButton variant="ghost" onClick={onRegenerate}>
-                  Regenerate <Kbd>R</Kbd>
-                </ConsoleButton>
-              )}
+              {/* Regenerate was hidden on a held card by this console alone:
+                  `POST /api/proposals/:id/regenerate` has never once looked at
+                  the verdict (backend `src/api/routes.ts`), and asking for
+                  another draft is the obvious move when the guards refused the
+                  first one. */}
+              <ConsoleButton variant="ghost" onClick={onRegenerate}>
+                Regenerate <Kbd>R</Kbd>
+              </ConsoleButton>
             </div>
           </>
         ) : null}
@@ -581,6 +661,7 @@ export function ProposalQueue({
   highlightedId,
   onFocus,
   onSend,
+  onCopy,
   onEdit,
   onCancelEdit,
   onDismiss,
@@ -590,7 +671,6 @@ export function ProposalQueue({
   leading,
   trailing,
   guardOrder = GUARD_ORDER,
-  deliverable = true,
 }: {
   live: ReplyProposal[];
   recent: ReplyProposal[];
@@ -599,6 +679,9 @@ export function ProposalQueue({
   highlightedId: string | null;
   onFocus: (id: string) => void;
   onSend: (id: string, text?: string) => void;
+  /** The operator copied the reply on a surface where that is how it goes out.
+   *  Recorded through the same endpoint Send uses — see `CopyDraft`. */
+  onCopy: (id: string, text?: string) => void;
   onEdit: (id: string) => void;
   onCancelEdit: () => void;
   onDismiss: (id: string) => void;
@@ -615,8 +698,6 @@ export function ProposalQueue({
   /** Which guards this surface runs, in order. The base six by default, which
    *  is every live-commerce surface and every card rendered before surfaces. */
   guardOrder?: GuardName[];
-  /** Can we deliver a reply here, or is the operator the sender? */
-  deliverable?: boolean;
 }) {
   const [filter, setFilter] = useState<"all" | "blocked">("all");
   // An abstention is not a suggestion. When retrieval found nothing, the draft
@@ -704,9 +785,9 @@ export function ProposalQueue({
                 highlighted={highlightedId === p.id}
                 editing={editingId === p.id}
                 guardOrder={guardOrder}
-                deliverable={deliverable}
                 onFocus={() => onFocus(p.id)}
                 onSend={(text) => onSend(p.id, text)}
+                onCopy={(text) => onCopy(p.id, text)}
                 onEdit={() => onEdit(p.id)}
                 onCancelEdit={onCancelEdit}
                 onDismiss={() => onDismiss(p.id)}
