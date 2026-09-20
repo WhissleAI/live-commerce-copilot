@@ -309,8 +309,20 @@ function Shot({
   );
 }
 
-/** Four seconds of a real show, replayed: the lot moved, the draft quoted the
- *  old price, the price guard blocked it. */
+/**
+ * The stale-price race, exactly as `npm run demo:stale-price` prints it.
+ *
+ * CONTENT-10. This card used to depict a trucker jacket at $132.00 against an
+ * expected $148.00, on listing v13, asked about by s_okafor — and then invited
+ * the visitor to run the command, which prints an Air Jordan 1 at $412.00
+ * against $370.00, on v2, asked about by @mia_k. Someone who took the page up
+ * on its offer got a different item, different numbers and a different buyer
+ * from the ones they had just read.
+ *
+ * Every figure below was copied out of a run of that command on 19 September
+ * 2026. Nothing here is illustrative; if the demo changes, this card is wrong
+ * and should be recaptured rather than adjusted.
+ */
 function MomentCard() {
   return (
     <div>
@@ -319,22 +331,22 @@ function MomentCard() {
           <span className="flex items-center gap-1.5 font-semibold text-bad">
             <span className="anim-live size-[7px] rounded-full bg-bad" aria-hidden /> LIVE
           </span>
-          <span className="num text-text-secondary">01:12:36</span>
-          <span className="ml-auto text-text-muted">s_okafor asked about the trucker</span>
+          <span className="num text-text-secondary">t+1.5s</span>
+          <span className="ml-auto text-text-muted">@mia_k asked how much for the Chicagos</span>
         </div>
         <div className="bg-panel p-5">
           <p className="num text-[14px] font-medium">
-            the lot moved four seconds ago — it is now v13
+            the seller marked it down 1.4 seconds ago — the listing is now v2
           </p>
           <p className="mt-3 text-[16px] text-text-muted line-through">
-            I can do $132.00 on the trucker jacket if you want it
+            Mia_k, the Chicago Reimagined AJ1 size 10 is $412.00.
           </p>
           <div className="mt-4 flex gap-3 rounded-md bg-bad/[0.07] px-3.5 py-3">
             <ShieldAlert className="mt-0.5 size-4 shrink-0 text-bad" aria-hidden />
             <div>
               <p className="text-[14px] font-semibold text-bad">Blocked by the price guard</p>
               <p className="num mt-0.5 text-[13px] text-text-secondary">
-                expected $148.00 · found $132.00
+                expected $370.00 (v2) · found $412.00 (v1)
               </p>
             </div>
           </div>
@@ -352,8 +364,12 @@ function MomentCard() {
         </div>
       </div>
       <p className="mt-3.5 text-[13px] leading-relaxed text-text-muted">
-        Four seconds of a real show, replayed: the lot moved, the draft quoted the old price, the
-        guard blocked it. Run it yourself: <span className="num">npm run demo:stale-price</span>
+        Two and a half seconds: the seller marked the lot down, the draft quoted the old price, the
+        guard compared the fact&apos;s listing version against the live one and stopped it. Run it
+        yourself: <span className="num">npm run demo:stale-price</span> — and read past the block,
+        because the script then repairs the draft and sends it, which is a step the shipped pipeline
+        does not have. A guard that asks for a revision aggregates to a block, so a blocked draft is
+        held for you rather than re-written.
       </p>
     </div>
   );
@@ -567,8 +583,8 @@ export function LandingPage() {
             ],
             [
               "$0.06",
-              "a minute on air. About $7 for a two-hour show.",
-              "One omni-channel agent per show — it reads the chat, hears the host, sees the lot — metered by the minute, with the meter beside the queue while the show runs. Measured tonight: $0.52 for nine minutes of a watch auction. An upper bound, because the wallet is org-wide, and it says so there too.",
+              "a minute, measured once. Not a price.",
+              "One omni-channel agent per session — it reads the chat, hears the host, sees the lot — metered by the minute, with the meter beside the queue while the session runs. This figure is one observation: $0.52 for nine minutes of a watch auction, and an upper bound at that, because the wallet it was measured against is shared across the workspace. Nothing in the product quotes a rate, and the meter you should read is your own.",
               "",
             ],
             [
@@ -633,13 +649,13 @@ export function LandingPage() {
             <div>
               <p className="text-[18px] font-semibold">Who sends it</p>
               <p className="mt-3 text-[16px] leading-relaxed text-text-secondary">
-                {NOT_THE_SENDER} An approved reply is recorded, audited and handed back to you
-                to copy. eBay Live publishes no chat-post API and the scraped surfaces have no
-                send path by construction; Twitch&apos;s is written and tested against its API and
-                is not wired into the app that runs. Rooms you do not own carry a posting switch
-                that starts off, stays off until you turn it on for that room by name, and cannot
-                be turned on at all where the surface is draft-only — and nothing in this build
-                acts on it yet. That is a boundary we chose, not a feature we owe you.
+                {NOT_THE_SENDER} An approved reply is recorded, audited and handed back to you to
+                copy. eBay Live publishes no chat-post API and the scraped surfaces have no send
+                path by construction; Twitch&apos;s is written and tested against its API and is not
+                wired into the app that runs. Rooms you do not own carry a posting switch that
+                starts off, stays off until you turn it on for that room by name, and cannot be
+                turned on at all where the surface is draft-only — and nothing in this build acts on
+                it yet. That is a boundary we chose, not a feature we owe you.
               </p>
             </div>
           </div>
@@ -809,14 +825,14 @@ export function LandingPage() {
                 n="03"
                 label="after"
                 title="It reports, and then it owes people answers."
-                lead="Five sections and a to-do list: did it help · what the host did · can I trust it · what the agent concluded · fix before the next show. The counts are measured; the conclusion is written by the show's own agent from evidence on that same page, and it is prose from a model, so the counts come first."
+                lead="Five sections and a to-do list: did it help · what the host did · can I trust it · what the agent concluded · fix before the next session. The counts are measured; the conclusion is written by the session's own agent from evidence on that same page, and it is prose from a model, so the counts come first."
               />
               <div className="mt-8">
                 <Points
                   items={[
                     "Comments seen, questions, answered rate, median and p95 latency, cache hits, what each guard blocked, and whether the hash-chained audit still verifies.",
                     "Every gap — the questions nobody answered, with how often each was asked — carries a button that writes the answer straight into the catalog.",
-                    "The show plays back: audio in ten-second chunks, the transcript with its emotion and intent distributions, the frames the agent read with what it read in them. All of it is deleted with the show.",
+                    "The session plays back: audio in ten-second chunks, the transcript with its emotion and intent distributions, the frames the agent read with what it read in them. All of it is deleted with the session.",
                     <>
                       And everyone who asked and did not buy leaves with a drafted answer. One per
                       buyer, re-checked against the catalog as it stands now — and skipped entirely
@@ -832,7 +848,7 @@ export function LandingPage() {
               </div>
               <div className="mt-10 grid gap-8 sm:grid-cols-3">
                 {[
-                  ["77%", "answered, last show"],
+                  ["77%", "answered, last session"],
                   ["23/31", "sold lots that had a question answered"],
                   ["11", "gaps, each with an Answer button"],
                 ].map(([n, l]) => (
@@ -862,8 +878,8 @@ export function LandingPage() {
                   floor.
                 </p>
                 <p className="mt-4 text-[14px] leading-relaxed text-text-muted">
-                  Three flagged on the last show. Two more caught by a later state change. Neither
-                  is the whole truth.
+                  The report shows both figures for your own session, side by side, and says that
+                  neither is the whole truth.
                 </p>
               </div>
             </div>
@@ -871,12 +887,18 @@ export function LandingPage() {
 
           <div className="mt-16 grid gap-10 lg:grid-cols-[1fr_520px] lg:items-center">
             <div className="rounded-lg bg-panel p-7 shadow-[0_0_0_1px_var(--hairline)]">
-              <p className="text-[20px] font-semibold">The show that made the inbox exist</p>
+              <p className="text-[20px] font-semibold">The session that made the inbox exist</p>
               <p className="mt-4 text-[16px] leading-relaxed text-text-secondary">
-                One real fragrance auction: 190 comments, 126 of them pure hype, and 60 answerable
-                drafts from 29 distinct buyers — none of which the seller ever sent. That is not a
-                metric, it is twenty-nine people who asked about a specific bottle and left. The
-                follow-up inbox turns them into twenty-nine drafts, one per person, each re-run
+                {/* CONTENT-32: this also said "126 of them pure hype", which
+                    appears in no doc, test or fixture in either repository and
+                    does not add up against the other two figures. The rest is
+                    corroborated at `docs/SURFACES.md:142-145`, and the session
+                    is named here so the next reader can check it. */}
+                One real fragrance auction — session{" "}
+                <span className="num">ebay_47tK1SX0VsiHEXN1</span>: 190 comments produced 60
+                answerable drafts from 29 distinct buyers, and the seller sent none of them. That is
+                not a metric, it is twenty-nine people who asked about a specific bottle and left.
+                The follow-up inbox turns them into twenty-nine drafts, one per person, each re-run
                 through the same guards before it is written down. A blocked one is never stored,
                 and you are the one who sends them.
               </p>
@@ -884,7 +906,7 @@ export function LandingPage() {
             <Shot
               src="/landing/analytics.jpg"
               alt="SideStage analytics across seven finished shows: answered rate, worst p95, comments seen, cache hit rate, block rate, flagged wrong, rolled back and audit chains intact"
-              caption="Analytics across every finished show — answered rate, worst p95, block rate, audit chains verified, GMV booked from lots the copilot watched close. Live numbers from seven real eBay Live shows."
+              caption="Analytics across every finished session — answered rate, worst p95, block rate, audit chains verified, GMV booked from lots the copilot watched close. Live numbers from seven real eBay Live shows."
             />
           </div>
         </div>
@@ -1048,17 +1070,19 @@ export function LandingPage() {
             <Kicker>What it costs</Kicker>
             <H2>One agent, metered by the minute. We show you the meter.</H2>
             <p className="mt-4 max-w-[560px] text-[16px] leading-relaxed text-text-secondary">
-              $0.06 a minute on air — about $3.60 an hour, about $7 for a two-hour show — for the
-              one agent behind every reply. The count of calls is exact; the dollars come from what
-              the wallet actually moved, never from a token-price guess, and the app reports them
-              per hour and per answered question with the basis named. Set a per-show cap and it
+              The one agent behind every reply cost $0.06 a minute on the session we measured — nine
+              minutes of a watch auction — which would be about $7 across two hours if it held. It
+              is an observation and not a rate: nothing in the product quotes one, and the cost page
+              names no price either. The count of calls is exact; the dollars come from what the
+              wallet actually moved, never from a token-price guess, and the app reports them per
+              hour and per answered question with the basis named. Set a per-session cap and it
               stops rather than draining a wallet quietly.
             </p>
           </div>
           <div className="flex gap-10">
             {[
-              ["$0.06", "per minute on air"],
-              ["≈ $7", "a two-hour show"],
+              ["$0.06", "a minute, on the one session we measured"],
+              ["≈ $7", "two hours, if that holds"],
             ].map(([n, l]) => (
               <div key={n}>
                 <p className="num font-[Archivo,Inter,sans-serif] text-[40px] leading-none font-bold">
