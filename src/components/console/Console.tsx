@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { api, API_BASE, USE_MOCKS, ensureSession, tokenQuery } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { isTypingIn, modalOpen, shortcutActs } from "@/lib/keys";
+import { ATTACH_HINT, ATTACH_VERB, LOAD_FAILED, operatorMessage, streamTitle } from "@/lib/copy";
 import { useShowStream } from "@/hooks/useShowStream";
 import {
   capabilitiesOf,
@@ -49,21 +51,6 @@ import { Inspector, inspectorTitle, type InspectorSubject } from "@/components/a
 import { Banner, Button, Card, EmptyState, Skeleton } from "@/components/ui/kit";
 import { ToastRail, useToasts } from "@/components/app/ToastRail";
 
-function isTyping(): boolean {
-  const el = document.activeElement;
-  if (!el) return false;
-  const tag = el.tagName;
-  // A focused button counts too: after clicking Edit or Dismiss, a bare Enter
-  // both re-fired that button and sent the focused proposal.
-  return (
-    tag === "INPUT" ||
-    tag === "TEXTAREA" ||
-    tag === "BUTTON" ||
-    tag === "SELECT" ||
-    (el as HTMLElement).isContentEditable
-  );
-}
-
 export function Console() {
   const store = useShowStream();
   const {
@@ -89,7 +76,7 @@ export function Console() {
   const navigate = useNavigate();
   const toasts = useToasts();
   // Every write goes through here. A 409 (the guards refused), 404 (not your
-  // show), 403 (you cannot write here) or 500 used to be an unhandled
+  // session), 403 (you cannot write here) or 500 used to be an unhandled
   // rejection: the button did nothing and the operator learned nothing.
   const failed = useCallback(
     (what: string) => (e: unknown) => {
@@ -105,7 +92,7 @@ export function Console() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  /** Below 1024 the show rail is a drawer rather than a column. */
+  /** Below 1024 the session rail is a drawer rather than a column. */
   const [railOpen, setRailOpen] = useState(false);
   // Shown once per browser, the first time a card could possibly appear.
   const [legendOpen, setLegendOpen] = useState(() => !legendSeen());
@@ -268,19 +255,34 @@ export function Console() {
       // ⌘J, not ⌘K: ⌘K is the shell's command bar, which every header promises.
       // Research is one thing you can do, not the way into everything.
       if (cmd && e.key.toLowerCase() === "j") {
+        // It may always close itself; it may not open behind the legend.
+        if (!paletteOpen && modalOpen()) return;
         e.preventDefault();
         setPaletteOpen((o) => !o);
         return;
       }
       if (e.key === "Escape") {
-        if (paletteOpen) setPaletteOpen(false);
+        // The legend is first because it is the one that opens by itself, so
+        // it is the one an operator presses Escape at without being asked.
+        if (legendOpen) closeLegend();
+        else if (paletteOpen) setPaletteOpen(false);
         else if (shortcutsOpen) setShortcutsOpen(false);
         else if (editingId) setEditingId(null);
         else if (inspect) setInspect(null);
         else if (costOpen) setCostOpen(false);
         return;
       }
-      if (isTyping() || paletteOpen) return;
+      // `?` is the console's own overlay, so it must be able to close itself
+      // while it is the thing on screen. It is still a character, though.
+      if (e.key === "?" && !isTypingIn(document.activeElement)) {
+        if (!shortcutsOpen && modalOpen()) return;
+        e.preventDefault();
+        setShortcutsOpen((o) => !o);
+        return;
+      }
+      // One rule, in `lib/keys`: no modal up, not typing, and — for Enter
+      // only — no button already claiming the key.
+      if (!shortcutActs(e.key)) return;
 
       const focused = decidable.find((p) => p.id === focusedId);
       switch (e.key) {
@@ -369,21 +371,19 @@ export function Console() {
             );
           }
           break;
-        case "?":
-          e.preventDefault();
-          setShortcutsOpen((o) => !o);
-          break;
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [
     actions,
+    closeLegend,
     costOpen,
     decidable,
     editingId,
     focusedId,
     inspect,
+    legendOpen,
     move,
     openInspect,
     paletteOpen,
@@ -391,7 +391,7 @@ export function Console() {
     shortcutsOpen,
   ]);
 
-  // Detaching is for a surface we hold a connection to. The scripted show is
+  // Detaching is for a surface we hold a connection to. The scripted session is
   // just left where it is, so you can walk back into it.
   const liveSession = Boolean(show) && surfaceId !== "simulated";
 
@@ -404,7 +404,7 @@ export function Console() {
         id: "console_research",
         label: "Research a product",
         hint: "comps, spec diff, a price to say out loud",
-        group: "On this show",
+        group: "On this session",
         icon: Search,
         keys: "⌘J",
         run: () => setPaletteOpen(true),
@@ -413,22 +413,22 @@ export function Console() {
         id: "console_verify",
         label: "Verify the audit chain",
         hint: "re-hash every entry end to end",
-        group: "On this show",
+        group: "On this session",
         icon: ShieldCheck,
         run: () => window.dispatchEvent(new Event("sidestage:verify-chain")),
       },
       {
         id: "console_cost",
-        label: costOpen ? "Hide what this show is costing" : "Show what this show is costing",
-        group: "On this show",
+        label: costOpen ? "Hide what this session is costing" : "Show what this session is costing",
+        group: "On this session",
         icon: Wallet,
         run: toggleCost,
       },
       {
         id: "console_autonomy",
         label: "Change the autonomy level",
-        hint: "the ladder lives in the show bar",
-        group: "On this show",
+        hint: "the ladder lives in the session bar",
+        group: "On this session",
         icon: Sliders,
         run: () => document.getElementById("autonomy-picker")?.click(),
       },
@@ -436,14 +436,14 @@ export function Console() {
         id: "console_legend",
         label: "What the pills mean",
         hint: "how to read a proposal card",
-        group: "On this show",
+        group: "On this session",
         icon: BookOpen,
         run: () => setLegendOpen(true),
       },
       {
         id: "console_shortcuts",
         label: "Keyboard shortcuts",
-        group: "On this show",
+        group: "On this session",
         icon: Keyboard,
         keys: "?",
         run: () => setShortcutsOpen(true),
@@ -452,29 +452,56 @@ export function Console() {
     [costOpen, toggleCost],
   );
 
-  // Attaching to a show is a Shows job now, not a screen the console owns —
+  // Attaching to a session is a Sessions job now, not a screen the console owns —
   // the launcher used to be the only way in and the only way out, which is why
-  // a seeded show could strand the operator inside it. And "is there a session"
+  // a seeded session could strand the operator inside it. And "is there a session"
   // is not a flag in this tab's storage: it is whether the server is streaming
   // one, which is the only version of that question with a true answer.
   // Nothing on air is a real state, and it says so.
   //
-  // It used to be impossible: a seeded show was created on every boot, so the
+  // It used to be impossible: a seeded session was created on every boot, so the
   // console always had a scripted auction to render and a seller could not tell
   // a working product from an idle one. With that gone, an empty console is the
   // honest answer — and it is an answer, not a bounce to another screen, because
   // the operator clicked Console.
   if (!show) {
     // `open` fires before `hello`, so the empty state used to flash for every
-    // real show. Idle means the server answered and there is no show.
-    const idle = Boolean(streamError) || (connection === "open" && greeted);
+    // real session. Idle means the server answered and there is nothing on air.
+    //
+    // CONTENT-22: `streamError` used to be folded into `idle`, so a broken
+    // stream rendered "Nothing is on air." — the console confidently reporting
+    // an empty product while the thing that would have told it otherwise was
+    // the thing that failed. Absent and failed are two states.
+    const failed = Boolean(streamError);
+    const idle = connection === "open" && greeted;
     return (
       <AppShell
         section="console"
         title="Console"
-        subtitle={idle ? "no show is on air" : "connecting to the show stream…"}
+        subtitle={
+          failed
+            ? "the session stream could not be read"
+            : idle
+              ? "no session is on air"
+              : "connecting to the session stream…"
+        }
       >
-        {idle ? (
+        {failed ? (
+          <Card tone="bad" className="mt-6">
+            <EmptyState
+              icon={<AlertTriangle className="size-5 text-bad" aria-hidden />}
+              title={LOAD_FAILED.title}
+              action={
+                <Button variant="secondary" onClick={() => window.location.reload()}>
+                  Reload
+                </Button>
+              }
+            >
+              {operatorMessage(streamError, "The session stream")} This is not the same as nothing
+              being on air — whatever was running is still running.
+            </EmptyState>
+          </Card>
+        ) : idle ? (
           <Card className="mt-6">
             <EmptyState
               icon={<Radio className="size-5" aria-hidden />}
@@ -482,14 +509,13 @@ export function Console() {
               action={
                 <Link to="/">
                   <Button variant="primary">
-                    Monitor a show <ArrowRight className="size-3.5" aria-hidden />
+                    {ATTACH_VERB} a session <ArrowRight className="size-3.5" aria-hidden />
                   </Button>
                 </Link>
               }
             >
-              Paste a show, a channel or a thread on Home and the copilot attaches to it — it builds
-              what it knows from the conversation itself, and this console fills as people start
-              asking.
+              {ATTACH_HINT} It builds what it knows from the conversation itself, and this console
+              fills as people start asking.
             </EmptyState>
           </Card>
         ) : (
@@ -504,7 +530,7 @@ export function Console() {
   }
 
   // The console keeps the rail like every other screen, but no live strip —
-  // it IS the live show — and no content bar, because the show bar below is
+  // it IS the live session — and no content bar, because the session bar below is
   // that bar. `bare` hands it the full column and its own scrolling.
   return (
     <AppShell
@@ -536,13 +562,13 @@ export function Console() {
         connection={connection}
         viewerDelta={viewerDelta}
         onAutonomy={setAutonomy}
-        // Always present. Gating this on `liveSession` meant a seeded show had
+        // Always present. Gating this on `liveSession` meant a seeded session had
         // no way out of the console at all, and once the choice persisted
-        // across reloads the operator was simply stuck in it. Leaving a show is
+        // across reloads the operator was simply stuck in it. Leaving a session is
         // not a live-stream feature, it is how you get back to your shows.
         //
         // Detaching, though, IS live-only: a monitored eBay stream holds a
-        // browser page that should be released, while a seeded show is just
+        // browser page that should be released, while a seeded session is just
         // left where it is so you can walk back into it.
         onEndSession={() => {
           if (liveSession) {
@@ -557,7 +583,7 @@ export function Console() {
             void navigate({ to: "/" });
           }
         }}
-        endSessionLabel={liveSession ? "End session" : "Switch show"}
+        endSessionLabel={liveSession ? "End session" : "Switch session"}
         costOpen={costOpen}
         onToggleCost={toggleCost}
         account={account}
@@ -575,8 +601,8 @@ export function Console() {
           "relative grid min-h-0 flex-1 gap-2 bg-canvas p-2",
           // Three bands, and the order things are given up in is the order they
           // matter least while a buyer is waiting:
-          //   ≥1280  chat · proposals · show rail
-          //   ≥1024  proposals · show rail, chat in a sheet
+          //   ≥1280  chat · proposals · session rail
+          //   ≥1024  proposals · session rail, chat in a sheet
           //   <1024  proposals only, both in sheets
           // The queue is the product; it is the one column that never folds.
           //
@@ -619,6 +645,7 @@ export function Console() {
                 levels={levels}
                 context={store.context}
                 listen={store.listen}
+                surface={surfaceId}
                 bridgeUrl={
                   USE_MOCKS
                     ? null
@@ -655,7 +682,7 @@ export function Console() {
                 onClick={() => setRailOpen((o) => !o)}
                 className="flex h-[22px] shrink-0 items-center gap-1 rounded-sm bg-elevated px-1.5 text-[11px] text-text-muted hover:text-text lg:hidden"
               >
-                <PanelRight className="size-3" aria-hidden /> Show
+                <PanelRight className="size-3" aria-hidden /> Session
               </button>
             }
             live={live}
@@ -708,11 +735,11 @@ export function Console() {
             // rail's first row already carries the lot version, and the two
             // landed on each other.
             <div className="flex h-[26px] shrink-0 items-center justify-between px-3 shadow-[0_1px_0_var(--hairline)] lg:hidden">
-              <span className="section-header">Show</span>
+              <span className="section-header">Session</span>
               <button
                 type="button"
                 onClick={() => setRailOpen(false)}
-                aria-label="Close the show rail"
+                aria-label="Close the session rail"
                 className="text-text-muted hover:text-text"
               >
                 <X className="size-3.5" aria-hidden />
@@ -803,7 +830,7 @@ function IngestBanner({
     return (
       <Banner
         tone="bad"
-        title="This show reached its spend cap — the copilot has stopped drafting"
+        title="This session reached its spend cap — the copilot has stopped drafting"
         icon={<AlertTriangle className="size-3.5" aria-hidden />}
       >
         {money(budget.spentUsd)} of {money(budget.capUsd)}, measured as a wallet delta and so an
@@ -821,19 +848,24 @@ function IngestBanner({
     );
   }
   if (streamError) {
+    // CONTENT-31: this used to title every failure "The server does not know
+    // that show" — a dropped socket, an expired session and a 500 all got the
+    // same confident wrong sentence, with the real one demoted below it. The
+    // title comes from the failure now, and `operatorMessage` is the only
+    // thing allowed to turn a route-and-status into a sentence.
     return (
       <Banner
         tone="bad"
-        title="The server does not know that show"
+        title={streamTitle(streamError)}
         icon={<AlertTriangle className="size-3.5" aria-hidden />}
       >
-        {streamError}
+        {operatorMessage(streamError, "The session stream")}
       </Banner>
     );
   }
   if (connection !== "open") {
     return (
-      <Banner tone="neutral" title="Reconnecting to the show stream…">
+      <Banner tone="neutral" title="Reconnecting to the session stream…">
         Chat and lot changes backfill on reconnect. Nothing is sent while disconnected.
       </Banner>
     );

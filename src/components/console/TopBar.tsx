@@ -114,8 +114,8 @@ function LatencyMeter({ metrics }: { metrics: Metrics }) {
  * The copilot→automation ladder, as a menu.
  *
  * It was five segmented buttons wide enough to need two lines of label, taking
- * a third of the show bar to display four rungs the operator changes maybe
- * twice a session. A menu shows the one that is ACTIVE — which is the thing
+ * a third of the session bar to display four rungs the operator changes maybe
+ * twice a session. A menu sessions the one that is ACTIVE — which is the thing
  * they check at a glance — and puts the rest one click away with room for the
  * definition that makes each rung meaningful.
  *
@@ -297,7 +297,7 @@ export function TopBar({
   connection: ConnectionState;
   viewerDelta: number;
   onAutonomy: (l: AutonomyLevel) => void;
-  /** Leaves the console for the show picker. Always available. */
+  /** Leaves the console for the session picker. Always available. */
   onEndSession?: (() => void) | undefined;
   endSessionLabel?: string;
   onToggleCost: () => void;
@@ -320,13 +320,13 @@ export function TopBar({
     // renders OVER the panes below. No overflow here on purpose: a clipping
     // context would cut that menu off at the header's own edge.
     <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-4 border-b border-hairline bg-panel px-3">
-      {/* The show's name gets the room. Two chips used to sit here saying "eBay
+      {/* The session's name gets the room. Two chips used to sit here saying "eBay
           Live" and "read-only" — one restating the source already implied by the
           title, the other a permanent state that never changes during a session.
           Both are now the title's own tooltip and a single lock glyph, which
-          leaves the one thing that differs between shows actually readable. */}
+          leaves the one thing that differs between sessions actually readable. */}
       {/* Priority order when the bar runs out of room, and it is the reverse of
-          what it used to be: chips held their width while the show's NAME
+          what it used to be: chips held their width while the session's NAME
           shrank to nothing. The name is the one thing that differs between two
           consoles, so it is the last thing dropped — everything measurable is
           also on a screen of its own. */}
@@ -359,7 +359,7 @@ export function TopBar({
           <button
             type="button"
             onClick={onEndSession}
-            title="Leave this show and pick another"
+            title="Leave this session and pick another"
             className="hidden shrink-0 items-center gap-1 rounded-[4px] border border-hairline-strong px-1.5 py-0.5 text-[10px] text-text-muted hover:text-text sm:flex"
           >
             <LogOut className="size-2.5" aria-hidden /> {endSessionLabel ?? "End session"}
@@ -406,14 +406,14 @@ export function TopBar({
 
       <AutonomyLadder level={show.autonomyLevel} onChange={onAutonomy} />
 
-      {/* Cost stays a first-class control on the show bar. It was folded into
-          the account menu, which put the one number that changes while a show
+      {/* Cost stays a first-class control on the session bar. It was folded into
+          the account menu, which put the one number that changes while a session
           runs two clicks away — and made it look absent. */}
       <button
         type="button"
         onClick={onToggleCost}
         aria-pressed={costOpen}
-        title="What this show is costing — balance, gateway calls, latency by purpose"
+        title="What this session is costing — balance, gateway calls, latency by purpose"
         className={cn(
           "flex shrink-0 items-center gap-1.5 rounded-[4px] border px-2 py-1 text-[11px] transition-colors",
           costOpen

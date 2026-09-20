@@ -8,7 +8,9 @@
  * would be the fastest way to lose an agent to a mis-click.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useDialog } from "@/hooks/useDialog";
+import { operatorMessage } from "@/lib/copy";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
 import type { ShowRow } from "@/lib/types";
@@ -41,13 +43,22 @@ export function DeleteShowDialog({
       await api.deleteShow(row.showId);
       onDeleted();
     } catch (e) {
-      setError((e as Error).message);
+      setError(operatorMessage(e));
       setBusy(false);
     }
   }
 
+  // CONTENT-40: this dialog focused nothing at all, so a screen-reader user
+  // got no announcement that a delete confirmation had appeared and the
+  // confirm button was several Tabs away behind whatever had focus before.
+  // The initial target is deliberately Cancel: a destructive dialog should
+  // not open with the destructive control under the operator's thumb.
+  const dialog = useRef<HTMLDivElement | null>(null);
+  useDialog(dialog, true, "[data-dialog-initial]");
+
   return (
     <div
+      ref={dialog}
       className="fixed inset-0 z-[100] grid place-items-center bg-canvas/70 p-6"
       role="dialog"
       aria-modal="true"
@@ -87,7 +98,7 @@ export function DeleteShowDialog({
         ) : null}
 
         <div className="mt-4 flex justify-end gap-2">
-          <Button onClick={onClose} disabled={busy}>
+          <Button onClick={onClose} disabled={busy} data-dialog-initial>
             Cancel
           </Button>
           <Button variant="danger" onClick={() => void confirm()} disabled={busy}>

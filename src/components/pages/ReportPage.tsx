@@ -41,6 +41,16 @@ import type {
   ShowReport,
   Verdict,
 } from "@/lib/types";
+import { capabilitiesOf, guardOrderFor } from "@/lib/surfaces";
+import {
+  HOME,
+  LOAD_FAILED,
+  NOTHING_BLOCKED,
+  READINESS_UNAVAILABLE,
+  SENT_MEANS_REPLIES,
+  SENT_MEANS_SUMMARY,
+  operatorMessage,
+} from "@/lib/copy";
 import { ReportTimeline, pretty } from "./ReportTimeline";
 import { AppShell, type Tab } from "@/components/app/AppShell";
 import {
@@ -57,11 +67,11 @@ import {
 
 /**
  * One vocabulary, the same as the server's and the console's:
- *   signals · what was measured from the show (utterances, frames, audio)
+ *   signals · what was measured from the session (utterances, frames, audio)
  *   proposals · replies drafted; verdicts · what the guards said about them
  *   actions · writes to listings; gaps · questions nothing could ground
  *   conclusion · what the agent concluded; next actions · what to do before
- *   the next show.
+ *   the next session.
  */
 type View = "summary" | "replies" | "blocked" | "actions" | "gaps" | "audit" | "timeline";
 
@@ -102,7 +112,7 @@ export function ReportPage({ showId }: { showId: string }) {
       a.remove();
       setTimeout(() => URL.revokeObjectURL(href), 10_000);
     } catch (e) {
-      setLoadError(`Export failed — ${(e as Error).message}`);
+      setLoadError(`The export failed. ${operatorMessage(e)}`);
     } finally {
       setExporting(false);
     }
@@ -118,14 +128,12 @@ export function ReportPage({ showId }: { showId: string }) {
       .report(showId)
       .then((r) => !stop && setReport(r))
       .catch((e: Error) => !stop && setError(e.message));
-    // The evidence behind the counts, and the rung this show counts toward.
+    // The evidence behind the counts, and the rung this session counts toward.
     // Each is its own read, and neither failing hides the report.
     api
       .record(showId)
       .then((r) => !stop && setRecord(r))
-      .catch(
-        (e) => !stop && setLoadError(`The record could not be read — ${(e as Error).message}`),
-      );
+      .catch((e) => !stop && setLoadError(operatorMessage(e, "The record")));
     api
       .autonomyReadiness()
       .then((r) => !stop && setReadiness(r))
@@ -200,7 +208,8 @@ export function ReportPage({ showId }: { showId: string }) {
             }
           >
             {error}. A report is built when a session ends — if the session ended badly the report
-            may never have generated, and the show is still listed so you can see that it happened.
+            may never have generated, and the session is still listed so you can see that it
+            happened.
           </EmptyState>
         </Card>
       </AppShell>
@@ -230,7 +239,7 @@ export function ReportPage({ showId }: { showId: string }) {
   // A drafted card is a measurement even when nothing was sent.
   const drafted = record?.proposals.length ?? 0;
   // A report written before the PRD metrics shipped has no `prd` block, and a
-  // report is never regenerated — it is a statement about a finished show. So
+  // report is never regenerated — it is a statement about a finished session. So
   // everything that needs it is conditional, and says why it is absent.
   const prd = report.prd ?? null;
   const ended = new Date(report.endedAt);
@@ -264,9 +273,7 @@ export function ReportPage({ showId }: { showId: string }) {
       {view === "summary" || printing ? (
         <>
           {/* did it help --------------------------------------------------- */}
-          <SectionHeading hint="Measured against the targets in the PRD. Answered means the copilot put a sendable reply in front of you; sent means you pressed Enter on it. A question nothing could ground is a gap below, never an answer.">
-            Did it help
-          </SectionHeading>
+          <SectionHeading hint={SENT_MEANS_SUMMARY}>Did it help</SectionHeading>
           <div className="mt-3 grid gap-3 sm:grid-cols-4">
             <StatTile
               label="Answered rate"
@@ -277,7 +284,7 @@ export function ReportPage({ showId }: { showId: string }) {
             />
             <StatTile
               label="Time to answer p95"
-              // Question typed → sendable reply on screen. A show with no
+              // Question typed → sendable reply on screen. A session with no
               // answerable question has no latency, not a zero-millisecond one.
               value={e.answered && e.p95LatencyMs > 0 ? ms(e.p95LatencyMs) : "—"}
               {...(e.answered && e.p95LatencyMs > 0
@@ -370,8 +377,8 @@ export function ReportPage({ showId }: { showId: string }) {
                     />
                   </div>
                   <p className="mt-2.5 text-[11.5px] leading-snug text-text-muted">
-                    A correlation on one show, not a causal claim — which is exactly why the pilot
-                    tracks it across sellers against their own baseline.
+                    A correlation on one session, not a causal claim — which is exactly why the
+                    pilot tracks it across sellers against their own baseline.
                   </p>
                 </Card>
               </div>
@@ -381,9 +388,9 @@ export function ReportPage({ showId }: { showId: string }) {
               <Info className="mt-0.5 size-4 shrink-0 text-text-muted" aria-hidden />
               <p className="text-[12px] leading-relaxed text-text-secondary">
                 This report was written before the PRD metrics were computed, and a report is never
-                regenerated — it is a statement about a show that has finished. GMV, operator load
-                and the trust rates are missing from this one; they are present on every show
-                recorded since.
+                regenerated — it is a statement about a session that has finished. GMV, operator
+                load and the trust rates are missing from this one; they are present on every
+                session recorded since.
               </p>
             </Card>
           )}
@@ -434,7 +441,7 @@ export function ReportPage({ showId }: { showId: string }) {
                   <div className="mt-3 flex flex-col gap-2">
                     {guardRows.length === 0 ? (
                       <p className="text-[12.5px] text-text-muted">
-                        No guard caught anything on this show.
+                        No guard caught anything on this session.
                       </p>
                     ) : (
                       guardRows.map((g) => (
@@ -472,9 +479,7 @@ export function ReportPage({ showId }: { showId: string }) {
                   <div className="section-header">What it stopped, in full</div>
                   <div className="mt-3 flex flex-col gap-3">
                     {report.safety.examples.length === 0 ? (
-                      <p className="text-[12.5px] text-text-muted">
-                        Nothing was blocked on this show.
-                      </p>
+                      <p className="text-[12.5px] text-text-muted">{NOTHING_BLOCKED.session}</p>
                     ) : (
                       report.safety.examples.map((x, i) => (
                         <div key={i} className="border-l-2 border-bad pl-3">
@@ -499,10 +504,10 @@ export function ReportPage({ showId }: { showId: string }) {
           {/* what the agent concluded ----------------------------------------- */}
           <ConclusionSection c={report.conclusion} />
 
-          {/* fix before the next show — the short form; the tab has the list --- */}
+          {/* fix before the next session — the short form; the tab has the list --- */}
           <div className="mt-8">
             <SectionHeading hint="The part worth acting on. The gaps tab has every question and a place to answer it; this is the rung the session counted toward.">
-              Fix before the next show
+              Fix before the next session
             </SectionHeading>
             <div className="mt-3 grid gap-3 lg:grid-cols-[1fr_1fr]">
               <Card className="flex items-center gap-3 px-4 py-3">
@@ -523,13 +528,15 @@ export function ReportPage({ showId }: { showId: string }) {
         </>
       ) : null}
 
-      {view === "replies" || printing ? <Replies record={record} /> : null}
+      {view === "replies" || printing ? (
+        <Replies record={record} surface={report?.source ?? null} />
+      ) : null}
       {view === "actions" || printing ? <Actions record={record} /> : null}
       {view === "audit" || printing ? <Audit record={record} /> : null}
       {view === "timeline" || printing ? (
         <>
           <SectionHeading hint="Every signal the session produced, on one clock: what the host said with the emotion and intent measured on it, what the camera showed and what the agent read from it, and the audio to play it back.">
-            The show, played back
+            The session, played back
           </SectionHeading>
           <div className="mt-3">
             <ReportTimeline showId={showId} />
@@ -553,9 +560,9 @@ export function ReportPage({ showId }: { showId: string }) {
               <Card>
                 <EmptyState
                   icon={<Check className="size-5 text-ok" aria-hidden />}
-                  title="Nothing was blocked"
+                  title={NOTHING_BLOCKED.title}
                 >
-                  Every draft cleared all six guards on this show.
+                  Every draft cleared every guard that ran on this session.
                 </EmptyState>
               </Card>
             ) : (
@@ -581,12 +588,12 @@ export function ReportPage({ showId }: { showId: string }) {
 }
 
 /**
- * How the host worked the show — from the host's own speech.
+ * How the host worked the session — from the host's own speech.
  *
  * The voice head measures the SELLER's delivery: energy, and what kind of
- * speech act each utterance was. That is a style, and over a show it is a
+ * speech act each utterance was. That is a style, and over a session it is a
  * trajectory — not a sentiment about buyers. Every number here is a
- * distribution summed as probability mass over the whole show, never a count
+ * distribution summed as probability mass over the whole session, never a count
  * of top labels: a run of 0.34-confidence "excited" is 34% excited, not
  * "excited 80% of the time". The platform's own account of the same audio
  * session sits beside it when there is one, labelled as a second measurement
@@ -604,7 +611,7 @@ function HostSection({
   return (
     <div className="mt-8">
       <SectionHeading hint="The seller's delivery, measured from their own speech through the audio bridge — energy and the kind of speech act, utterance by utterance. These describe how the session was hosted, not what buyers felt.">
-        How the host worked the show
+        How the host worked the session
       </SectionHeading>
       {!host ? (
         <Card className="mt-3 flex gap-2.5 bg-elevated px-4 py-3">
@@ -678,7 +685,7 @@ function HostSection({
             <Shares title="Energy and delivery · measured from the voice" shares={host.emotion} />
           </div>
           <p className="mt-2 text-[11.5px] text-text-muted">
-            These describe the seller's delivery over the show, not buyer sentiment.
+            These describe the seller's delivery over the session, not buyer sentiment.
           </p>
 
           {platform ? (
@@ -707,7 +714,7 @@ function HostSection({
                 </p>
               ) : null}
               <p className="mt-2 text-[11.5px] text-text-muted">
-                Two measurements of one show, shown as two. The gateway ran its own emotion head
+                Two measurements of one session, shown as two. The gateway ran its own emotion head
                 over the listen-only session; the numbers above are what this app measured utterance
                 by utterance.
               </p>
@@ -741,7 +748,7 @@ const INTENT_FILL: Record<string, string> = {
 };
 
 /**
- * The seller's delivery over the show: energy as a line, the intent mix as
+ * The seller's delivery over the session: energy as a line, the intent mix as
  * thin stacked bars beneath it, one column per two-minute bucket. Inline SVG,
  * scaled to the viewBox, so it reads at any width.
  */
@@ -767,7 +774,7 @@ function Trajectory({ points }: { points: HostTrajectoryPoint[] }) {
   return (
     <Card className="mt-3 px-4 py-3.5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <div className="section-header">Delivery over the show</div>
+        <div className="section-header">Delivery over the session</div>
         <span className="num text-[11px] text-text-muted">
           energy {first.energy.toFixed(2)} → {last.energy.toFixed(2)} · {n} two-minute stretches
         </span>
@@ -894,7 +901,7 @@ const KIND_LABEL: Record<Conclusion["nextActions"][number]["kind"], string> = {
   setup: "setup",
 };
 
-/** What the agent concluded — written by the show's own agent, from this report's evidence and nothing else. */
+/** What the agent concluded — written by the session's own agent, from this report's evidence and nothing else. */
 function ConclusionSection({ c }: { c: Conclusion | null | undefined }) {
   return (
     <div className="mt-8">
@@ -916,7 +923,7 @@ function ConclusionSection({ c }: { c: Conclusion | null | undefined }) {
             <div className="flex items-center gap-2">
               <Badge tone={OUTCOME_TONE[c.outcome]}>{c.outcome}</Badge>
               <span className="text-[11.5px] text-text-muted">
-                by the show's agent · {new Date(c.at).toLocaleTimeString()}
+                by the session's agent · {new Date(c.at).toLocaleTimeString()}
               </span>
             </div>
             <p className="mt-2.5 text-[13px] leading-relaxed">{c.summary}</p>
@@ -933,7 +940,7 @@ function ConclusionSection({ c }: { c: Conclusion | null | undefined }) {
           </Card>
           <Card>
             <div className="px-4 py-2.5 text-[12px] text-text-muted shadow-[0_1px_0_var(--hairline)]">
-              next actions · before the next show
+              next actions · before the next session
             </div>
             {c.nextActions.length === 0 ? (
               <p className="px-4 py-3 text-[12.5px] text-text-muted">
@@ -971,12 +978,12 @@ function ConclusionSection({ c }: { c: Conclusion | null | undefined }) {
   );
 }
 
-/** The rung this show counted toward. Promotion is a decision the seller makes on the console's show bar; this only says whether it is earned. */
+/** The rung this session counted toward. Promotion is a decision the seller makes on the console's session bar; this only says whether it is earned. */
 function NextRung({ r }: { r: PromotionReadiness | null }) {
   if (!r) {
     return (
       <Card className="flex items-center gap-3 px-4 py-3 text-[12.5px] text-text-muted">
-        Readiness for the next rung could not be read.
+        {READINESS_UNAVAILABLE.title} {READINESS_UNAVAILABLE.body}
       </Card>
     );
   }
@@ -995,14 +1002,14 @@ function NextRung({ r }: { r: PromotionReadiness | null }) {
             <span className="block text-[11.5px] text-text-muted">
               {r.ready
                 ? "earned on your own finished sessions — switch it on from the console's session bar"
-                : `${met} of ${r.criteria.length} criteria met on your own finished shows`}
+                : `${met} of ${r.criteria.length} criteria met on your own finished sessions`}
             </span>
           </>
         ) : (
           <>
             <span className="font-medium">At the top of what can be unlocked</span>
             <span className="block text-[11.5px] text-text-muted">
-              L4 unlocks when a show writes to eBay and the rollback criterion holds.
+              L4 unlocks when a session writes to eBay and the rollback criterion holds.
             </span>
           </>
         )}
@@ -1025,15 +1032,18 @@ function Loading({ what }: { what: string }) {
   );
 }
 
-/** Every proposal the show produced, with its verdicts. */
-function Replies({ record }: { record: ShowRecord | null }) {
+/** Every proposal the session produced, with its verdicts. */
+function Replies({ record, surface }: { record: ShowRecord | null; surface?: string | null }) {
+  // CONTENT-20: this iterated the fixed six. A Reddit reply that showed seven
+  // pills in the console showed six here, with the room-rules verdict silently
+  // dropped — the one guard the operator most needs to see on that surface.
+  // Same function the console uses, off the same capability table.
+  const order = guardOrderFor(capabilitiesOf(surface));
   if (!record) return <Loading what="the record" />;
   const rows = [...record.proposals].reverse();
   return (
     <>
-      <SectionHeading hint="Every reply the copilot drafted, newest first, with the six verdicts it received. Sent means it reached a buyer; a strikethrough was blocked; 'edited' is your revealed opinion of the draft.">
-        Replies
-      </SectionHeading>
+      <SectionHeading hint={SENT_MEANS_REPLIES}>Replies</SectionHeading>
       <Card className="mt-3">
         {rows.length === 0 ? (
           <EmptyState title="No replies were drafted.">
@@ -1081,7 +1091,7 @@ function Replies({ record }: { record: ShowRecord | null }) {
                   {p.sentText ?? p.draft}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-1">
-                  {GUARD_ORDER.map((g) => {
+                  {order.map((g) => {
                     const hit = p.guards.find((x) => x.guard === g);
                     return (
                       <GuardPill
@@ -1101,7 +1111,7 @@ function Replies({ record }: { record: ShowRecord | null }) {
   );
 }
 
-/** Every write the show proposed, and what became of it. */
+/** Every write the session proposed, and what became of it. */
 function Actions({ record }: { record: ShowRecord | null }) {
   if (!record) return <Loading what="the record" />;
   const rows = [...record.actions].reverse();
@@ -1121,7 +1131,7 @@ function Actions({ record }: { record: ShowRecord | null }) {
       <Card className="mt-3">
         {rows.length === 0 ? (
           <EmptyState title="No actions were proposed.">
-            The show never called for a listing write.
+            The session never called for a listing write.
           </EmptyState>
         ) : (
           <ul>
@@ -1285,7 +1295,7 @@ function UnmeasurableNote({ report }: { report: ShowReport }) {
           The nearest machine proxy — replies whose grounding a later state change contradicted —
           stands at{" "}
           <span className="num text-text">{report.prd?.trust.sentThenContradicted ?? "—"}</span> for
-          this show, and it is not the same thing. Both are floors.
+          this session, and it is not the same thing. Both are floors.
         </p>
       </div>
     </Card>
@@ -1297,8 +1307,8 @@ function UnmeasurableNote({ report }: { report: ShowReport }) {
  *
  * The list has named every unanswered question since the report was written,
  * and there was nothing to do with one — the fix meant editing catalog JSON by
- * hand. Writing the answer here puts it in the catalog, where the next show
- * picks it up as grounding, and into this show too if it is still on air.
+ * hand. Writing the answer here puts it in the catalog, where the next session
+ * picks it up as grounding, and into this session too if it is still on air.
  */
 function GapRow({
   gap,
@@ -1324,7 +1334,7 @@ function GapRow({
       setOpen(false);
     } catch (e) {
       setState("error");
-      setError((e as Error).message);
+      setError(operatorMessage(e));
     }
   }
 
@@ -1341,7 +1351,7 @@ function GapRow({
             Answer
           </BadgeButton>
         ) : (
-          <Badge title="No catalog to write the answer into — load one in Setup and it becomes the place these answers live.">
+          <Badge title="No catalog to write the answer into. One is made by importing your listings on Settings › eBay, or by preparing a session on Discover — and it becomes the place these answers live.">
             no catalog
           </Badge>
         )}
@@ -1382,7 +1392,7 @@ function GapRow({
 function Gaps({ report }: { report: ShowReport }) {
   const dropped = Object.entries(report.gaps.droppedByGate).sort((a, b) => b[1] - a[1]);
 
-  // A show that ran without a catalog picked still produced gaps worth closing,
+  // A session that ran without a catalog picked still produced gaps worth closing,
   // and the answers have to go somewhere. Rather than disabling the whole
   // section, ask which inventory — it is one question with an obvious default.
   const [catalogs, setCatalogs] = useState<CatalogSummary[]>([]);
@@ -1401,7 +1411,7 @@ function Gaps({ report }: { report: ShowReport }) {
   return (
     <>
       <SectionHeading hint="The part worth acting on: every question the catalog could not ground an answer for, ranked by how many buyers walked into it. Each line is a field your listings should carry.">
-        Fix before the next show
+        Fix before the next session
       </SectionHeading>
 
       {!report.catalogId && catalogs.length > 1 ? (
@@ -1469,7 +1479,7 @@ function Gaps({ report }: { report: ShowReport }) {
         </p>
         <Link to="/">
           <BadgeButton tone="accent">
-            Start the next show <ArrowUpRight className="size-3" aria-hidden />
+            Start the next session <ArrowUpRight className="size-3" aria-hidden />
           </BadgeButton>
         </Link>
       </Card>

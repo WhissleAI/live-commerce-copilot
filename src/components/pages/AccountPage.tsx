@@ -31,7 +31,7 @@ import { Badge, Button, Card, SectionHeading, Skeleton } from "@/components/ui/k
 
 export function AccountPage() {
   // `undefined` is "not read yet", `null` is "the read failed" — so a failed
-  // read shows a retry instead of dashes that look like an empty account.
+  // read sessions a retry instead of dashes that look like an empty account.
   const [account, setAccount] = useState<Account | null | undefined>(undefined);
   const [ebay, setEbay] = useState<EbayStatus | null | undefined>(undefined);
   const [connections, setConnections] = useState<HomeSurfaceRow[] | null>(null);
@@ -72,7 +72,7 @@ export function AccountPage() {
 
   return (
     <AppShell section="account" title="Account" subtitle={account?.email ?? "your account"}>
-      <SectionHeading hint="Every send, approval, eBay consent and deleted show is recorded against this account in the audit chain — which is the only way “who approved that markdown” has an answer.">
+      <SectionHeading hint="Every send, approval, eBay consent and deleted session is recorded against this account in the audit chain — which is the only way “who approved that markdown” has an answer.">
         You
       </SectionHeading>
       <Card className="mt-3 divide-y divide-hairline">

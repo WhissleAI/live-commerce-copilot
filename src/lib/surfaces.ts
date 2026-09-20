@@ -422,17 +422,56 @@ export const CORPUS_BLURB: Record<CorpusKind, string> = {
   schedule: "When you are on, and what is planned. A stream answers “when is the next one”.",
   sponsor: "What a sponsor requires said, and what they forbid. The sponsor guard reads this.",
   product: "Specs, manuals and spec sheets for things you did not list yourself.",
+  // CONTENT-16: this said "retrieved per subreddit or channel before a reply
+  // is drafted", which the app claimed and the landing page deliberately
+  // refused to. The Reddit adapter fetches a subreddit's rules once, at
+  // attach, and uses the result only to build a status string
+  // (`reddit/adapter.ts:170-176`); the facts never reach the retriever, so
+  // `pipeline.ts:369` finds none and `communityRuleGuard` answers n/a. The
+  // guard is built. It is not yet fed.
   community:
-    "The rules of each room, retrieved per subreddit or channel before a reply is drafted.",
+    "The rules of each room. Read once when you attach a room, and shown there — not yet used to check a draft.",
   qa: "Questions already answered, and the answer that was approved.",
 };
 
-/** Which surfaces are grounded by one kind of corpus. */
+/**
+ * Surfaces this build has no adapter for.
+ *
+ * `youtubelive` is a capability row and nothing else: the backend's
+ * `src/surfaces/registry.ts` registers seven adapters and it is not among
+ * them. The row exists so the shape of the next surface is written down, which
+ * is useful — but anything that offers a surface to an operator has to ask
+ * whether they could actually use it, and `SURFACE_CAPABILITIES` does not
+ * answer that question. Nothing else in this file should grow a hard-coded id;
+ * when the adapter lands, this set empties.
+ */
+export const NO_ADAPTER: ReadonlySet<SurfaceId> = new Set<SurfaceId>(["youtubelive"]);
+
+export function isAttachable(id: SurfaceId): boolean {
+  return id !== "simulated" && !NO_ADAPTER.has(id);
+}
+
+/**
+ * Which surfaces are grounded by one kind of corpus.
+ *
+ * CONTENT-17. This filtered on the capability table alone, so YouTube Live —
+ * which declares five corpora and has no adapter — was printed in the Grounds
+ * column of five of the Knowledge page's seven rows, offering a surface
+ * nobody can attach as a reason to load a corpus.
+ *
+ * `community` is narrower still: eBay Live declares the corpus but
+ * `communityRules: false`, which is the backend saying it has no per-room
+ * rules to retrieve — `communityRuleGuard` returns n/a there before it looks
+ * at anything. Printing it under a column headed "Community rules" said the
+ * opposite.
+ */
 export function surfacesForCorpus(
   kind: CorpusKind,
   remote?: readonly SurfaceInfo[] | null,
 ): SurfaceId[] {
   return withRemote(remote)
-    .filter((s) => s.id !== "simulated" && s.capabilities.corpora.includes(kind))
+    .filter((s) => isAttachable(s.id))
+    .filter((s) => s.capabilities.corpora.includes(kind))
+    .filter((s) => kind !== "community" || s.capabilities.communityRules)
     .map((s) => s.id);
 }

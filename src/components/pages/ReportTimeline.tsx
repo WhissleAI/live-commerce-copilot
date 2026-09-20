@@ -1,13 +1,13 @@
 /**
- * The show, played back.
+ * The session, played back.
  *
- * During the show the host-audio panel showed one strip and the latest
+ * During the session the host-audio panel showed one strip and the latest
  * utterance; scrubbing back was deliberately left for here, where there is
  * room. This puts the three kept signals on ONE clock and ONE feed: the audio
  * chunks drive a player, and the utterances and the frames the agent read are
  * interleaved in time order below it, so a frame sits beside what the host was
  * saying when it was taken. Click any row to hear that moment; click a frame
- * to see it large, with the fuller reading the agent wrote after the show.
+ * to see it large, with the fuller reading the agent wrote after the session.
  *
  * Audio is a sequence of ~10 s chunks, each independently playable. One
  * <audio> element plays them in order; seeking picks the chunk that contains
@@ -65,7 +65,7 @@ export function ReportTimeline({ showId }: { showId: string }) {
       <Card>
         <EmptyState icon={<Mic className="size-5" aria-hidden />} title="Nothing was kept for this session.">
           The timeline is built from host audio and camera frames, which arrive through the audio
-          bridge. Open it next show and this page fills with what was said and shown.
+          bridge. Open it next session and this page fills with what was said and shown.
         </EmptyState>
       </Card>
     );
@@ -93,13 +93,13 @@ function Player({ t, showId, onDescribe }: { t: ShowTimeline; showId: string; on
   const feed = useRef<HTMLDivElement | null>(null);
   const [chunkIx, setChunkIx] = useState(0);
   const [playing, setPlaying] = useState(false);
-  /** Milliseconds from show start, updated while playing. */
+  /** Milliseconds from session start, updated while playing. */
   const [pos, setPos] = useState(0);
   const [follow, setFollow] = useState(true);
   const [allFrames, setAllFrames] = useState(false);
   const [open, setOpen] = useState<number | null>(null);
 
-  // Chunks in show order. The server numbers them, but a show recorded before
+  // Chunks in session order. The server numbers them, but a session recorded before
   // that had bridge numbers that restart per page load; time is the truth.
   const chunks = useMemo(() => [...t.audio].sort((a, b) => a.offsetMs - b.offsetMs), [t.audio]);
   const end = useMemo(() => {
@@ -465,7 +465,7 @@ function Lightbox({
   );
 }
 
-/** A strip of the whole show: audio coverage, utterances as ticks, frames as dots. */
+/** A strip of the whole session: audio coverage, utterances as ticks, frames as dots. */
 function Scrub({
   t,
   chunks,

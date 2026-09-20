@@ -3,7 +3,7 @@
  *
  * This replaces a page called Shows whose front door was an eBay readiness
  * checklist: "Signed in to eBay Live", "eBay account connected", "Your catalog
- * loaded", "Next show prepared". Every one of those is true — of ONE surface.
+ * loaded", "Next session prepared". Every one of those is true — of ONE surface.
  * They were drawn as the product's readiness because when they were written a
  * session could only be an eBay Live show, and the multi-surface paste box
  * ended up shoved underneath them as a consolation.
@@ -11,7 +11,7 @@
  * Two facts broke that shape:
  *
  *   1. An async surface has NO session. Reddit is a standing watch and a queue
- *      of drafts; there is nothing to list under "your shows" and nothing to
+ *      of drafts; there is nothing to list under "your sessions" and nothing to
  *      start. A list of sessions cannot be the spine of a product where three
  *      of seven surfaces never have one.
  *   2. Every phase is per-surface. Twitch's Before is an OAuth app and a
@@ -63,6 +63,7 @@ import type {
   SurfaceId,
   SurfaceInfo,
 } from "@/lib/types";
+import { ATTACH_INPUT, ATTACH_VERB, HOME, NO_FINISHED_SESSIONS } from "@/lib/copy";
 import { AppShell, type Tab } from "@/components/app/AppShell";
 import { Badge, Button, Card, SectionHeading, Skeleton } from "@/components/ui/kit";
 import { DiscoverView } from "./DiscoverView";
@@ -197,7 +198,7 @@ export function HomePage({ view = "today" }: { view?: View }) {
   );
 
   /**
-   * The scripted show, started the same way anything else is.
+   * The scripted session, started the same way anything else is.
    *
    * `demo` is what the simulated adapter's own pattern accepts, and the attach
    * route resolves it through the registry before Twitch gets a look at the
@@ -255,7 +256,7 @@ export function HomePage({ view = "today" }: { view?: View }) {
   ];
 
   return (
-    <AppShell section="home" title="Today" subtitle={subtitle(model, loading)} tabs={tabs}>
+    <AppShell section="home" title={HOME} subtitle={subtitle(model, loading)} tabs={tabs}>
       {tab === "discover" ? (
         <DiscoverView onAttach={(u) => void start(u)} />
       ) : (
@@ -303,7 +304,7 @@ export function HomePage({ view = "today" }: { view?: View }) {
                             : ""}
                       </>
                     ) : (
-                      "we do not recognise that — paste a session link, a channel, or a thread"
+                      `we do not recognise that — paste ${ATTACH_INPUT}`
                     )
                   ) : (
                     ""
@@ -321,7 +322,7 @@ export function HomePage({ view = "today" }: { view?: View }) {
                 ) : (
                   <ArrowRight className="size-3.5" aria-hidden />
                 )}
-                {starting ? "attaching…" : "Start monitoring"}
+                {starting ? "attaching…" : ATTACH_VERB}
               </Button>
             </div>
 
@@ -561,8 +562,7 @@ export function BehindBand({
           <Skeleton className="h-[52px]" />
         ) : reports.length === 0 ? (
           <Card className="px-4 py-3 text-[12.5px] text-text-muted">
-            Nothing has finished yet. A session's report is written when it ends, and the gaps it
-            found are carried into the next one.
+            {NO_FINISHED_SESSIONS.title} {NO_FINISHED_SESSIONS.home}
           </Card>
         ) : (
           reports.map((r) => (
@@ -823,7 +823,7 @@ function Phase({ label, children }: { label: string; children: ReactNode }) {
  * The way in for an operator who has connected nothing.
  *
  * Six surfaces that all want a key and a Discover grid that wants an eBay
- * session is a product nobody can watch work. The scripted show needs nothing
+ * session is a product nobody can watch work. The scripted session needs nothing
  * — no account, no catalog, no consent — and it runs the real pipeline: the
  * same retrieval, the same six guards, the same approve-or-edit.
  *

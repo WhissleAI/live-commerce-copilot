@@ -1,21 +1,27 @@
 /**
- * Analytics — how the copilot is doing, across every show it has run.
+ * Analytics — how the copilot is doing, across every session it has run.
  *
  * This page used to read one live runtime and, with nothing on air, said "no
- * show is being monitored". That is the wrong answer to "how is it doing": the
- * answer is mostly in the shows that already happened, and those are persisted.
+ * session is being monitored". That is the wrong answer to "how is it doing": the
+ * answer is mostly in the sessions that already happened, and those are persisted.
  *
  * Three tabs, in the order a seller asks:
  *
- *   Overview   sums and rates over every finished show in the window — the
+ *   Overview   sums and rates over every finished session in the window — the
  *              numbers the PRD promises, measured, and the same tomorrow.
  *   Autonomy   the ladder: what is unlocked, and each criterion's progress.
  *              Computed server-side since the ladder shipped; rendered here for
  *              the first time.
- *   Live       the show on air right now, by the second. Only when there is one.
+ *   Live       the session on air right now, by the second. Only when there is one.
  */
 
 import { useCallback, useEffect, useState } from "react";
+import {
+  NOTHING_BLOCKED,
+  NO_FINISHED_SESSIONS,
+  READINESS_UNAVAILABLE,
+  operatorMessage,
+} from "@/lib/copy";
 import {
   AlertTriangle,
   Check,
@@ -68,7 +74,7 @@ export function AnalyticsPage() {
       setO(await api.analyticsOverview(days));
       setError(null);
     } catch (e) {
-      setError((e as Error).message);
+      setError(operatorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -147,9 +153,9 @@ function Overview({ o }: { o: AnalyticsOverview | null }) {
   if (o.shows.finished === 0) {
     return (
       <Card>
-        <EmptyState title={`No shows finished in the last ${o.window.days} days.`}>
-          Analytics is built from the report each session leaves behind. Monitor a show, end it, and
-          this fills in.
+        <EmptyState title={NO_FINISHED_SESSIONS.title}>
+          {`No session has ended in the last ${o.window.days} days. `}
+          {NO_FINISHED_SESSIONS.analytics}
         </EmptyState>
       </Card>
     );
@@ -182,7 +188,7 @@ function Overview({ o }: { o: AnalyticsOverview | null }) {
           targetMet={e.worstP95Ms < 2000}
           hint={
             e.medianOfMediansMs
-              ? `median of per-show medians ${ms(e.medianOfMediansMs)}`
+              ? `median of per-session medians ${ms(e.medianOfMediansMs)}`
               : "no per-session medians recorded yet"
           }
         />
@@ -260,7 +266,7 @@ function Overview({ o }: { o: AnalyticsOverview | null }) {
           <StatTile
             label="Gross GMV"
             value={formatMoney(o.gmv.grossCents)}
-            hint={`${o.gmv.lotsSold} lots closed across ${o.gmv.showsWithGmv} shows`}
+            hint={`${o.gmv.lotsSold} lots closed across ${o.gmv.showsWithGmv} sessions`}
           />
           <StatTile
             label="Per session hour"
@@ -292,14 +298,14 @@ function Overview({ o }: { o: AnalyticsOverview | null }) {
 
       <div className="mt-8">
         <SectionHeading hint="Newest first. A session without a report is listed — that is the one to open.">
-          By show
+          By session
         </SectionHeading>
         <Card className="mt-3 overflow-hidden">
           <div className="scroll-thin overflow-x-auto">
             <table className="w-full min-w-[720px] text-[12.5px]">
               <thead>
                 <tr className="text-left text-[11px] text-text-muted">
-                  <th className="px-4 py-2 font-medium">Show</th>
+                  <th className="px-4 py-2 font-medium">Session</th>
                   <th className="px-3 py-2 text-right font-medium">On air</th>
                   <th className="px-3 py-2 text-right font-medium">Answered</th>
                   <th className="px-3 py-2 text-right font-medium">p95</th>
@@ -383,7 +389,7 @@ function Topics({ o }: { o: AnalyticsOverview | null }) {
     return (
       <Card>
         <EmptyState title="No proposals in this window.">
-          Topics are counted from the replies the copilot drafted on finished shows.
+          Topics are counted from the replies the copilot drafted on finished sessions.
         </EmptyState>
       </Card>
     );
@@ -462,10 +468,7 @@ function Autonomy({ r, loaded }: { r: PromotionReadiness | null; loaded: boolean
   if (!r) {
     return (
       <Card>
-        <EmptyState title="Readiness could not be computed.">
-          The ladder is scored from your own finished shows. Finish one, and the criteria are judged
-          against its numbers.
-        </EmptyState>
+        <EmptyState title={READINESS_UNAVAILABLE.title}>{READINESS_UNAVAILABLE.body}</EmptyState>
       </Card>
     );
   }
@@ -480,8 +483,8 @@ function Autonomy({ r, loaded }: { r: PromotionReadiness | null; loaded: boolean
           <span className="text-[12.5px]">
             {r.next
               ? r.ready
-                ? `Eligible for ${r.next} — switch it on from the console's show bar.`
-                : `Not yet eligible for ${r.next}. Every criterion below has to be met on your own finished shows.`
+                ? `Eligible for ${r.next} — switch it on from the console's session bar.`
+                : `Not yet eligible for ${r.next}. Every criterion below has to be met on your own finished sessions.`
               : "At the top of what can be unlocked. L4 unlocks when a session writes to eBay (Settings · eBay) and the rollback criterion holds."}
           </span>
           {r.ready ? (
@@ -494,7 +497,7 @@ function Autonomy({ r, loaded }: { r: PromotionReadiness | null; loaded: boolean
           {r.criteria.map((c) => {
             const met = c.state === "met";
             const unknown = c.state === "unknown";
-            // Evidence first: a criterion cannot be met on too few shows, and
+            // Evidence first: a criterion cannot be met on too few sessions, and
             // "0 of 3 sessions" is a more useful reason than "not met".
             const evidence = Math.min(1, c.showsRequired ? c.showsSeen / c.showsRequired : 1);
             return (
@@ -527,7 +530,7 @@ function Autonomy({ r, loaded }: { r: PromotionReadiness | null; loaded: boolean
                       />
                     </span>
                     <span className="num shrink-0 text-[11px] text-text-muted">
-                      {c.showsSeen}/{c.showsRequired} shows
+                      {c.showsSeen}/{c.showsRequired} sessions
                     </span>
                   </div>
                 </div>
@@ -540,7 +543,7 @@ function Autonomy({ r, loaded }: { r: PromotionReadiness | null; loaded: boolean
   );
 }
 
-/** The show on air, by the second — the original page, scoped to one show. */
+/** The session on air, by the second — the original page, scoped to one session. */
 function LiveShowAnalytics({ showId }: { showId: string }) {
   const [d, setD] = useState<Analytics | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -550,7 +553,7 @@ function LiveShowAnalytics({ showId }: { showId: string }) {
       api
         .analytics(7, showId)
         .then((a) => !stop && setD(a))
-        .catch((e) => !stop && setError((e as Error).message));
+        .catch((e) => !stop && setError(operatorMessage(e)));
     void read();
     const t = setInterval(read, 10_000);
     return () => {
@@ -648,9 +651,7 @@ function LiveShowAnalytics({ showId }: { showId: string }) {
             </div>
           </div>
         ) : (
-          <p className="mt-3 text-[11px] text-text-muted">
-            No guard has blocked a reply in this show yet.
-          </p>
+          <p className="mt-3 text-[11px] text-text-muted">{NOTHING_BLOCKED.session}</p>
         )}
 
         <div className="mt-3 flex items-start gap-2 rounded-[6px] border border-hairline bg-panel px-3 py-2">
@@ -674,7 +675,7 @@ function LiveShowAnalytics({ showId }: { showId: string }) {
         hint="Per turn, from the Whissle session trace: which provider and model answered, whether it failed over, and what it cost in tokens."
       >
         {!d.agent ? (
-          <p className="text-[11px] text-text-muted">This show has no agent configured.</p>
+          <p className="text-[11px] text-text-muted">This session has no agent configured.</p>
         ) : d.agent.error ? (
           <div className="flex items-start gap-2 rounded-[6px] border border-warn/40 bg-warn/5 px-3 py-2">
             <AlertTriangle className="mt-[2px] size-3.5 shrink-0 text-warn" aria-hidden />

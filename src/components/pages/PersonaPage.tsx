@@ -2,7 +2,7 @@
  * Persona — who the copilot is speaking as, and what it will not say.
  *
  * The seller profile answered this for one surface by accident: `about` and
- * `voice` came out of the catalog, and every reply was for a show, so nobody
+ * `voice` came out of the catalog, and every reply was for a session, so nobody
  * had to ask whether a reply on Reddit should sound like a reply on air. It
  * should not. The same person writes shorter and flatter in a subreddit than
  * they talk on a live auction, and a copilot that does not know that is
@@ -23,6 +23,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { LOAD_FAILED, operatorMessage } from "@/lib/copy";
 import { AlertTriangle, PenLine, Plus, Save, Sparkles, Trash2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -110,7 +111,7 @@ export function PersonaPage() {
       setVoice(view.voice);
       setError(null);
     } catch (e) {
-      setError((e as Error).message);
+      setError(operatorMessage(e, "Your persona"));
       const blank = emptyPersona();
       setSaved(blank);
       setDraft(structuredClone(blank));
@@ -181,7 +182,7 @@ export function PersonaPage() {
       setDraft(structuredClone(merged));
       setVoice(view.voice);
     } catch (e) {
-      setError((e as Error).message);
+      setError(operatorMessage(e));
     } finally {
       setBusy(false);
     }
@@ -210,7 +211,7 @@ export function PersonaPage() {
         if (!dirty) setDraft(structuredClone(merged));
       }
     } catch (e) {
-      setError((e as Error).message);
+      setError(operatorMessage(e));
     } finally {
       setLearning(false);
     }
@@ -223,9 +224,11 @@ export function PersonaPage() {
       section="persona"
       title="Persona"
       subtitle={
-        saved?.updatedAt
-          ? `last saved ${new Date(saved.updatedAt).toLocaleString()}`
-          : "not written yet — every field below is empty"
+        error
+          ? "could not be read — this form is blank because nothing loaded, not because nothing is saved"
+          : saved?.updatedAt
+            ? `last saved ${new Date(saved.updatedAt).toLocaleString()}`
+            : "not written yet — every field below is empty"
       }
       actions={
         <Button variant="primary" onClick={() => void save()} disabled={busy || !dirty}>
@@ -236,7 +239,9 @@ export function PersonaPage() {
       {error ? (
         <Card tone="bad" className="mb-6 flex items-start gap-2 px-3 py-2.5">
           <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-bad" aria-hidden />
-          <span className="text-[12.5px]">{error}</span>
+          <span className="text-[12.5px]">
+            {error} {LOAD_FAILED.body}
+          </span>
         </Card>
       ) : null}
 
@@ -356,8 +361,8 @@ export function PersonaPage() {
               icon={<PenLine className="size-5" aria-hidden />}
               title="Nothing learned yet."
             >
-              Learn reads the replies you have actually sent — from your shows, and from drafts you
-              marked sent — and keeps them as examples of how you write. Nothing is invented and
+              Learn reads the replies you have actually sent — from your sessions, and from drafts
+              you marked sent — and keeps them as examples of how you write. Nothing is invented and
               nothing is sent anywhere.
             </EmptyState>
           </Card>

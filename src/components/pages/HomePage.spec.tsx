@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { ATTACH_VERB, NO_FINISHED_SESSIONS } from "@/lib/copy";
 import { fireEvent, screen } from "@testing-library/react";
 import { renderWithRouter } from "@/test/router";
 import { BehindBand, HomePage, NowBand, RehearsalCard, SurfaceRow, SurfaceTable } from "./HomePage";
@@ -185,7 +186,9 @@ describe("the BEHIND YOU band", () => {
 
   it("says nothing has finished rather than drawing an empty list", async () => {
     await renderWithRouter(<BehindBand reports={[]} followups={{ total: 0, ready: 0 }} />);
-    expect(screen.getByText(/Nothing has finished yet\./)).toBeInTheDocument();
+    // One sentence for this state, shared with Analytics and Cost — see
+    // `lib/copy`. Three pages used to say it three ways.
+    expect(screen.getByText(new RegExp(NO_FINISHED_SESSIONS.title))).toBeInTheDocument();
   });
 });
 
@@ -389,7 +392,9 @@ describe("home with the backend down", () => {
     fireEvent.change(box, { target: { value: "https://reddit.com/r/mechmarket" } });
     // Recognised before anything is committed: the surface, then what it is.
     expect(screen.getByText("· r/mechmarket")).toBeInTheDocument();
-    expect(screen.getByText("Start monitoring")).toBeEnabled();
+    // One verb for this action, shared with the console, Setup and Discover —
+    // it was four different words on four screens. See `lib/copy`.
+    expect(screen.getByText(ATTACH_VERB)).toBeEnabled();
   });
 });
 

@@ -91,6 +91,13 @@ function proposal(over: Partial<ReplyProposal> = {}): ReplyProposal {
   };
 }
 
+/** What a sighted operator reads off an element — the sr-only half removed. */
+function visibleText(el: HTMLElement): string {
+  const clone = el.cloneNode(true) as HTMLElement;
+  clone.querySelectorAll(".sr-only").forEach((n) => n.remove());
+  return clone.textContent ?? "";
+}
+
 const queueProps = {
   recent: [],
   focusedId: null,
@@ -149,10 +156,58 @@ describe("an eBay Live show renders every column it renders today", () => {
         deliverable={layout.deliverable}
       />,
     );
-    const pills = screen.getByRole("list", { name: "Guardrail results" });
-    expect(pills.textContent).toBe("–price✓stock–policy–grounding–tone–pii");
+    // The visible half only. Each pill also carries an sr-only sentence now
+    // (CONTENT-38) — it announced "✕ price" and nothing else before, so the
+    // verdict and the reason were mouse-only on the one screen that matters.
+    expect(visibleText(screen.getByRole("list", { name: "Guardrail results" }))).toBe(
+      "–price✓stock–policy–grounding–tone–pii",
+    );
     expect(screen.getByText("Send")).toBeInTheDocument();
-    expect(screen.queryByText("Copy")).not.toBeInTheDocument();
+  });
+
+  it("says the verdict and the reason out loud, not just the glyph", () => {
+    render(
+      <ProposalQueue {...queueProps} live={[proposal()]} guardOrder={guardOrderFor(caps)} />,
+    );
+    const pills = screen.getByRole("list", { name: "Guardrail results" });
+    const spoken = [...pills.querySelectorAll(".sr-only")].map((n) => n.textContent ?? "");
+    expect(spoken.join(" ")).toMatch(/stock passed/);
+    expect(spoken.join(" ")).toMatch(/price did not apply/);
+  });
+
+  /**
+   * CONTENT-19. The copy affordance rendered only on draft-only surfaces, so
+   * eBay Live — the surface the landing page names when it says an approved
+   * reply is "handed back to you to paste" — had a button labelled Send, a
+   * status that read `sent`, and nowhere to copy from. Nothing is delivered on
+   * any surface: `send()` re-checks the draft, marks it and appends an audit
+   * entry, and there is no platform call on any path. So the copy is the
+   * operator's real next step here too, beside Send rather than instead of it.
+   */
+  it("offers the paste affordance the product promises, on the api surface too", () => {
+    render(
+      <ProposalQueue
+        {...queueProps}
+        live={[proposal()]}
+        guardOrder={guardOrderFor(caps)}
+        deliverable={layout.deliverable}
+      />,
+    );
+    expect(layout.deliverable).toBe(true);
+    expect(screen.getByText("Copy")).toBeInTheDocument();
+  });
+
+  it("makes copy the only action on a draft-only surface", () => {
+    render(
+      <ProposalQueue
+        {...queueProps}
+        live={[proposal()]}
+        guardOrder={guardOrderFor(caps)}
+        deliverable={false}
+      />,
+    );
+    expect(screen.queryByText("Send")).not.toBeInTheDocument();
+    expect(screen.getByText("Copy")).toBeInTheDocument();
   });
 
   it("does not grow a room-rule or sponsor pill", () => {
@@ -259,10 +314,13 @@ describe("the guard hover", () => {
     // The hover opens on focus — what an operator reaching for it with a
     // keyboard does. `focusIn` rather than `focus`, because that is the event
     // React's onFocus actually listens for.
-    fireEvent.focusIn(screen.getByText(GUARD_LABEL.community_rule));
-    expect(
-      screen.getByText(/the room's own rules are constraints on the reply/i),
-    ).toBeInTheDocument();
+    const pills = screen.getByRole("list", { name: "Guardrail results" });
+    const pill = [...pills.querySelectorAll('[aria-hidden="true"]')].find(
+      (n) => n.textContent === GUARD_LABEL.community_rule,
+    )!;
+    fireEvent.focusIn(pill);
+    const tip = screen.getByRole("tooltip");
+    expect(tip.textContent).toMatch(/the room's own rules are constraints on the reply/i);
   });
 });
 

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { SITE_TITLE, siteMeta } from "@/lib/meta";
 import { useEffect, useState } from "react";
 import { LandingPage } from "@/components/pages/LandingPage";
 import { HomePage } from "@/components/pages/HomePage";
@@ -9,22 +10,11 @@ export const Route = createFileRoute("/")({
   // surface table's eBay Live steps and the command palette need.
   validateSearch: (s: Record<string, unknown>): { view?: "discover" } =>
     s["view"] === "discover" ? { view: "discover" } : {},
+  // One description constant, shared with the root head — see `lib/meta`.
+  // These were two divergent copies and the older one was the one most link
+  // previews resolved.
   head: () => ({
-    meta: [
-      { title: "SideStage — Live Selling Copilot" },
-      {
-        name: "description",
-        content:
-          "A copilot for eBay Live sellers: it watches the show, drafts every reply behind six guards, proposes bounded actions, and reports afterwards. You keep the last word.",
-      },
-      { property: "og:title", content: "SideStage — Live Selling Copilot" },
-      {
-        property: "og:description",
-        content: "It watches the show. It answers the room. You keep the last word.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
+    meta: [{ title: SITE_TITLE }, ...siteMeta()],
   }),
   component: function Home() {
     // The front door. A visitor sees the landing page; a signed-in seller

@@ -315,7 +315,14 @@ describe("the fallback, for a server without the index", () => {
     const signedOut = legacyDiscover(
       home({ discovery: { ...home().discovery, reason: "no-session" } }),
     );
-    expect(sourceFor(signedOut.sources, "ebaylive")?.unavailable?.reason).toMatch(/ebay:signin/);
+    // CONTENT-21: this used to assert the sentence named `npm run ebay:signin`
+    // — a shell command, in a repository the seller does not have, answering
+    // the blocking step of the primary Before workflow. It says what the state
+    // is and who can change it now, and says the same thing whichever side
+    // produced the refusal.
+    const reason = sourceFor(signedOut.sources, "ebaylive")?.unavailable?.reason ?? "";
+    expect(reason).not.toMatch(/npm run/);
+    expect(reason).toMatch(/access to the machine/);
     const blocked = legacyDiscover(home({ discovery: { ...home().discovery, reason: "blocked" } }));
     expect(sourceFor(blocked.sources, "ebaylive")?.unavailable?.reason).toMatch(/refused/);
     // Nobody on air is a fact about the world, not a fault, and gets no

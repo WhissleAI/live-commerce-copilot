@@ -10,6 +10,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
+import { SITE_NAME, siteMeta } from "../lib/meta";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
 function NotFoundComponent() {
@@ -77,16 +78,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "SideStage" },
-      { name: "description", content: "A copilot for eBay Live sellers." },
+      { title: SITE_NAME },
       { name: "author", content: "Whissle" },
-      { property: "og:title", content: "SideStage" },
-      {
-        property: "og:description",
-        content: "It watches the show. It answers the room. You keep the last word.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
+      ...siteMeta(),
     ],
     links: [
       {

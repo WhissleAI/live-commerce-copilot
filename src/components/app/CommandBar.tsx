@@ -1,5 +1,5 @@
 /**
- * ⌘K — go somewhere, do something, find a show.
+ * ⌘K — go somewhere, do something, find a session.
  *
  * The shell advertised "Search or run a command ⌘K" in every header while ⌘K
  * opened a product-research box that only existed on the console. Two different
@@ -7,7 +7,7 @@
  * that did not exist.
  *
  * So: ⌘K is the product's command surface — every rail destination, the actions
- * of whatever screen you are on, and a search over your shows that goes to the
+ * of whatever screen you are on, and a search over your sessions that goes to the
  * console for a live one and the report for a finished one. Research keeps its
  * own palette on ⌘J, where a research box belongs.
  *
@@ -17,6 +17,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useDialog } from "@/hooks/useDialog";
 import { useNavigate } from "@tanstack/react-router";
 import {
   ArrowRight,
@@ -87,6 +88,10 @@ export function CommandBar({
   const [cursor, setCursor] = useState(0);
   const [shows, setShows] = useState<ShowRow[] | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const dialog = useRef<HTMLDivElement | null>(null);
+  // CONTENT-40: it focused its input and then let Tab walk the page behind it,
+  // and dropped focus on <body> when it closed.
+  useDialog(dialog, true, "input");
   const listRef = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
@@ -170,6 +175,7 @@ export function CommandBar({
 
   return (
     <div
+      ref={dialog}
       className="fixed inset-0 z-100 flex items-start justify-center bg-canvas/75 pt-[12vh]"
       onClick={onClose}
       role="dialog"
@@ -206,7 +212,7 @@ export function CommandBar({
               }
             }}
             spellCheck={false}
-            placeholder="Go to a screen, run a command, find a show…"
+            placeholder="Go to a screen, run a command, find a session…"
             aria-label="Command"
             className="h-11 min-w-0 flex-1 bg-transparent text-[13px] text-text placeholder:text-text-faint focus:outline-none"
           />

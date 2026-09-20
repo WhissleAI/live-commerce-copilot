@@ -64,8 +64,8 @@ export type Section =
  *
  *  · Home is what needs the operator now, what they are preparing, what
  *    finished, and the per-surface phase table underneath. It replaced
- *    "Shows", which could only describe a product where a conversation was
- *    always a live commerce show.
+ *    "Sessions", which could only describe a product where a conversation was
+ *    always a live commerce session.
  *  · Console only exists while a session is on air. A rail button that opens
  *    "nothing is on air" is a button that lies about having somewhere to go.
  *  · Reports is not a destination: every finished session on Home carries its
@@ -406,9 +406,14 @@ export function AppShell({
               </button>
             }
           >
-            {API_BASE} — {health.detail ?? "no response"}. A session that is on air keeps running on
-            its surface; this console is simply not attached to it. Retrying every 5 s; nothing is
-            sent while disconnected.
+            {/* CONTENT-23: this led with {API_BASE}. The address of a server
+                is not an answer to "what do I do", and on the one banner that
+                appears on every page it was the first thing an operator read. */}
+            A session that is on air keeps running on its surface; this console is simply not
+            attached to it. Retrying every 5 s; nothing is sent while disconnected.
+            <span className="mt-1 block text-[11.5px] text-text-muted">
+              {API_BASE} — {health.detail ?? "no response"}
+            </span>
           </Banner>
         ) : null}
         {banner}

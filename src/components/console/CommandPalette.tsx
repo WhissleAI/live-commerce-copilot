@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
+import { operatorMessage } from "@/lib/copy";
 import { Loader2, Search, ShieldCheck, Sliders, Tag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatMoney, formatMs } from "@/lib/format";
 import type { ResearchCard } from "@/lib/types";
+import { useDialog } from "@/hooks/useDialog";
 import { Hover } from "./primitives";
 
 export function CommandPalette({
@@ -23,6 +25,10 @@ export function CommandPalette({
   const [card, setCard] = useState<ResearchCard | null>(null);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const dialog = useRef<HTMLDivElement | null>(null);
+  // It already focuses its input; what it did not do was keep Tab inside
+  // itself or give focus back on close. See CONTENT-40 in `useDialog`.
+  useDialog(dialog, true, "input");
 
   useEffect(() => {
     if (open) {
@@ -45,7 +51,7 @@ export function CommandPalette({
       setCard(await onResearch(q.trim()));
     } catch (e) {
       // A failed lookup used to clear the spinner and render nothing at all.
-      setError(e instanceof Error ? e.message : String(e));
+      setError(operatorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -63,9 +69,11 @@ export function CommandPalette({
 
   return (
     <div
+      ref={dialog}
       className="fixed inset-0 z-100 flex items-start justify-center bg-canvas/75 pt-[12vh]"
       onClick={onClose}
       role="dialog"
+      aria-modal="true"
       aria-label="Research command palette"
     >
       <div

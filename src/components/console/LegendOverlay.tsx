@@ -1,10 +1,10 @@
 /**
- * What the pills mean — once, on the first show, and on demand after that.
+ * What the pills mean — once, on the first session, and on demand after that.
  *
  * The console is dense by design: six guard pills, a topic badge, a confidence
  * bar and a latency figure on every card. Each is legible once you know it and
  * opaque before that, and nothing in the product ever said what they were. A
- * seller's first show is the worst possible time to be guessing whether a grey
+ * seller's first session is the worst possible time to be guessing whether a grey
  * "– price" means passed, skipped or broken.
  *
  * Shown automatically once (remembered per browser), and after that it is a
@@ -12,12 +12,13 @@
  * an explainer that reappears is a nag.
  */
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { useDialog } from "@/hooks/useDialog";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Badge, Button, GuardPill, Key } from "@/components/ui/kit";
+import { Badge, Button, GUARD_MARK, GUARD_PILL_CLASS, GuardPill, Key } from "@/components/ui/kit";
 import { GUARD_MEANS, GUARD_ORDER } from "@/lib/format";
-import type { GuardName } from "@/lib/types";
+import type { GuardName, Verdict } from "@/lib/types";
 
 /**
  * The two guards that do not run everywhere.
@@ -56,34 +57,38 @@ export function markLegendSeen(): void {
   }
 }
 
-const GUARDS: { mark: string; tone: string; name: string; means: string }[] = [
+// CONTENT-42: this duplicated the console's failing copy of the pill, so the
+// overlay that teaches an operator to read the pill taught them the version
+// that does not meet contrast. Both read from `kit.tsx` now.
+const GUARDS: { verdict: Verdict | "n/a"; name: string; means: string }[] = [
   {
-    mark: "✓",
-    tone: "border-ok/45 bg-ok/12 text-ok",
+    verdict: "allow",
     name: "passed",
     means: "the guard ran on this draft and had no objection",
   },
   {
-    mark: "!",
-    tone: "border-warn/45 bg-warn/12 text-warn",
+    verdict: "revise",
     name: "revised",
     means: "it sent the draft back once; what you see is the re-grounded version",
   },
   {
-    mark: "✕",
-    tone: "border-bad/50 bg-bad/12 text-bad",
+    verdict: "block",
     name: "blocked",
     means: "the reply cannot be sent — the card says which claim failed and why",
   },
   {
-    mark: "–",
-    tone: "border-hairline-strong bg-canvas text-text-muted",
+    verdict: "n/a",
     name: "not applicable",
     means: "nothing in this reply for that guard to check, so it did not run",
   },
 ];
 
 export function LegendOverlay({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const dialog = useRef<HTMLDivElement | null>(null);
+  // This is the one that opens by itself on a new browser, so it is the one
+  // where taking focus matters most: until it did, Enter went past it to the
+  // queue. See `lib/keys`.
+  useDialog(dialog, open, "[data-dialog-initial]");
   useEffect(() => {
     if (!open) return;
     const esc = (e: KeyboardEvent) => {
@@ -97,6 +102,7 @@ export function LegendOverlay({ open, onClose }: { open: boolean; onClose: () =>
 
   return (
     <div
+      ref={dialog}
       className="fixed inset-0 z-100 flex items-center justify-center bg-canvas/80 p-6"
       onClick={onClose}
       role="dialog"
@@ -131,11 +137,14 @@ export function LegendOverlay({ open, onClose }: { open: boolean; onClose: () =>
                 <li key={g.name} className="flex items-center gap-2.5">
                   <span
                     className={cn(
-                      "inline-flex shrink-0 items-center gap-1 rounded-[4px] border px-1.5 py-0.5 text-[10px]",
-                      g.tone,
+                      "inline-flex shrink-0 items-center gap-1 rounded-[4px] px-1.5 py-0.5 text-[11px]",
+                      GUARD_PILL_CLASS[g.verdict],
                     )}
                   >
-                    <span className="num">{g.mark}</span> price
+                    <span className="num" aria-hidden>
+                      {GUARD_MARK[g.verdict]}
+                    </span>{" "}
+                    price
                   </span>
                   <span className="w-[88px] shrink-0 text-[12px] font-medium">{g.name}</span>
                   <span className="min-w-0 flex-1 text-[12px] text-text-secondary">{g.means}</span>
@@ -206,7 +215,7 @@ export function LegendOverlay({ open, onClose }: { open: boolean; onClose: () =>
           <span className="flex-1 text-[11.5px] text-text-muted">
             This is shown once. <Key>⌘K</Key> brings it back.
           </span>
-          <Button variant="primary" onClick={onClose}>
+          <Button variant="primary" onClick={onClose} data-dialog-initial>
             Got it
           </Button>
         </div>

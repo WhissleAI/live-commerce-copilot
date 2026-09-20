@@ -26,6 +26,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { LOAD_FAILED, operatorMessage } from "@/lib/copy";
 import {
   AlertTriangle,
   Check,
@@ -70,8 +71,10 @@ export function DraftsPage() {
     } catch (e) {
       // An endpoint that refused and an account with nothing waiting are
       // different facts. Neither of them is "you have no drafts".
-      setError((e as Error).message);
-      setDrafts([]);
+      setError(operatorMessage(e, "Your drafts"));
+      // Not `[]`. An empty array is the answer to "nothing is waiting", which
+      // is the one thing we do not know.
+      setDrafts(null);
     }
   }, []);
 
@@ -133,7 +136,7 @@ export function DraftsPage() {
       if (what === "sent") await api.markDraftSent(id);
       else await api.dismissDraft(id);
     } catch (e) {
-      setError((e as Error).message);
+      setError(operatorMessage(e));
       await load();
     }
   };
@@ -153,15 +156,22 @@ export function DraftsPage() {
         Written for you to send
       </SectionHeading>
 
-      {error ? (
-        <Card tone="warn" className="mt-3 flex items-start gap-2 px-3 py-2.5">
-          <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-warn" aria-hidden />
-          <span className="text-[12.5px]">{error}</span>
-        </Card>
-      ) : null}
-
       <div className="mt-3 flex flex-col gap-2.5">
-        {drafts === null ? (
+        {error ? (
+          <Card tone="bad">
+            <EmptyState
+              icon={<AlertTriangle className="size-5 text-bad" aria-hidden />}
+              title={LOAD_FAILED.title}
+              action={
+                <Button variant="secondary" onClick={() => void load()}>
+                  Try again
+                </Button>
+              }
+            >
+              {error} {LOAD_FAILED.body}
+            </EmptyState>
+          </Card>
+        ) : drafts === null ? (
           <>
             <Skeleton className="h-[160px]" />
             <Skeleton className="h-[160px]" />
@@ -172,11 +182,11 @@ export function DraftsPage() {
               icon={<SquarePen className="size-5" aria-hidden />}
               title="Nothing to send."
             >
-              Two things fill this queue. A room you watch — add a subreddit or a channel on
-              Rooms — puts a draft here whenever the copilot reads a thread and writes a reply
-              for it. And a session that ends leaves one reply per buyer who asked and did not
-              buy, re-checked against your knowledge as it stands now. Either way you are the
-              sender: Reddit drafts are never posted by us, not as a setting, in the code.
+              Two things fill this queue. A room you watch — add a subreddit or a channel on Rooms —
+              puts a draft here whenever the copilot reads a thread and writes a reply for it. And a
+              session that ends leaves one reply per buyer who asked and did not buy, re-checked
+              against your knowledge as it stands now. Either way you are the sender: Reddit drafts
+              are never posted by us, not as a setting, in the code.
             </EmptyState>
           </Card>
         ) : (
