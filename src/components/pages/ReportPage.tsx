@@ -43,10 +43,13 @@ import type {
 } from "@/lib/types";
 import { capabilitiesOf, guardOrderFor } from "@/lib/surfaces";
 import {
+  HOME,
+  LOAD_FAILED,
   NOTHING_BLOCKED,
   READINESS_UNAVAILABLE,
   SENT_MEANS_REPLIES,
   SENT_MEANS_SUMMARY,
+  operatorMessage,
 } from "@/lib/copy";
 import { ReportTimeline, pretty } from "./ReportTimeline";
 import { AppShell, type Tab } from "@/components/app/AppShell";
@@ -109,7 +112,7 @@ export function ReportPage({ showId }: { showId: string }) {
       a.remove();
       setTimeout(() => URL.revokeObjectURL(href), 10_000);
     } catch (e) {
-      setLoadError(`Export failed — ${(e as Error).message}`);
+      setLoadError(`The export failed. ${operatorMessage(e)}`);
     } finally {
       setExporting(false);
     }
@@ -130,9 +133,7 @@ export function ReportPage({ showId }: { showId: string }) {
     api
       .record(showId)
       .then((r) => !stop && setRecord(r))
-      .catch(
-        (e) => !stop && setLoadError(`The record could not be read — ${(e as Error).message}`),
-      );
+      .catch((e) => !stop && setLoadError(operatorMessage(e, "The record")));
     api
       .autonomyReadiness()
       .then((r) => !stop && setReadiness(r))
@@ -207,7 +208,8 @@ export function ReportPage({ showId }: { showId: string }) {
             }
           >
             {error}. A report is built when a session ends — if the session ended badly the report
-            may never have generated, and the session is still listed so you can see that it happened.
+            may never have generated, and the session is still listed so you can see that it
+            happened.
           </EmptyState>
         </Card>
       </AppShell>
@@ -271,9 +273,7 @@ export function ReportPage({ showId }: { showId: string }) {
       {view === "summary" || printing ? (
         <>
           {/* did it help --------------------------------------------------- */}
-          <SectionHeading hint={SENT_MEANS_SUMMARY}>
-            Did it help
-          </SectionHeading>
+          <SectionHeading hint={SENT_MEANS_SUMMARY}>Did it help</SectionHeading>
           <div className="mt-3 grid gap-3 sm:grid-cols-4">
             <StatTile
               label="Answered rate"
@@ -377,8 +377,8 @@ export function ReportPage({ showId }: { showId: string }) {
                     />
                   </div>
                   <p className="mt-2.5 text-[11.5px] leading-snug text-text-muted">
-                    A correlation on one session, not a causal claim — which is exactly why the pilot
-                    tracks it across sellers against their own baseline.
+                    A correlation on one session, not a causal claim — which is exactly why the
+                    pilot tracks it across sellers against their own baseline.
                   </p>
                 </Card>
               </div>
@@ -388,9 +388,9 @@ export function ReportPage({ showId }: { showId: string }) {
               <Info className="mt-0.5 size-4 shrink-0 text-text-muted" aria-hidden />
               <p className="text-[12px] leading-relaxed text-text-secondary">
                 This report was written before the PRD metrics were computed, and a report is never
-                regenerated — it is a statement about a session that has finished. GMV, operator load
-                and the trust rates are missing from this one; they are present on every session
-                recorded since.
+                regenerated — it is a statement about a session that has finished. GMV, operator
+                load and the trust rates are missing from this one; they are present on every
+                session recorded since.
               </p>
             </Card>
           )}
@@ -1043,9 +1043,7 @@ function Replies({ record, surface }: { record: ShowRecord | null; surface?: str
   const rows = [...record.proposals].reverse();
   return (
     <>
-      <SectionHeading hint={SENT_MEANS_REPLIES}>
-        Replies
-      </SectionHeading>
+      <SectionHeading hint={SENT_MEANS_REPLIES}>Replies</SectionHeading>
       <Card className="mt-3">
         {rows.length === 0 ? (
           <EmptyState title="No replies were drafted.">
@@ -1336,7 +1334,7 @@ function GapRow({
       setOpen(false);
     } catch (e) {
       setState("error");
-      setError((e as Error).message);
+      setError(operatorMessage(e));
     }
   }
 

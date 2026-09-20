@@ -29,6 +29,7 @@ import {
   draftOnly,
 } from "@/lib/surfaces";
 import type { SurfaceCapabilities, SurfaceId, SurfaceInfo, SurfaceRoom } from "@/lib/types";
+import { LOAD_FAILED, operatorMessage } from "@/lib/copy";
 import { AppShell } from "@/components/app/AppShell";
 import { Section } from "./PageShell";
 import { Badge, Button, Card, EmptyState, Skeleton } from "@/components/ui/kit";
@@ -52,16 +53,36 @@ export function RoomsPage() {
   const [surfaces, setSurfaces] = useState<SurfaceInfo[] | null>(null);
   const [rooms, setRooms] = useState<Record<string, SurfaceRoom[]> | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** A failed read, as distinct from an account that watches nothing. */
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const infos = await api.surfaces().catch(() => null);
+    // CONTENT-22: both reads swallowed into `null` and `[]`, so a failed read
+    // of the rooms you watch rendered as "you watch no rooms" — which on this
+    // page is a safety statement, because a room that is not listed is a room
+    // whose posting switch you cannot see.
+    let failed: unknown = null;
+    const infos = await api.surfaces().catch((e: unknown) => {
+      failed = e;
+      return null;
+    });
     setSurfaces(infos);
     const wanted = roomSurfaces(infos);
     const entries = await Promise.all(
-      wanted.map(async (s) => [s.id, await api.rooms(s.id).catch(() => [])] as const),
+      wanted.map(
+        async (s) =>
+          [
+            s.id,
+            await api.rooms(s.id).catch((e: unknown) => {
+              failed ??= e;
+              return [] as SurfaceRoom[];
+            }),
+          ] as const,
+      ),
     );
     setRooms(Object.fromEntries(entries));
+    setLoadError(failed ? operatorMessage(failed, "Your rooms") : null);
   }, []);
 
   useEffect(() => {
@@ -77,7 +98,7 @@ export function RoomsPage() {
       const next = await work();
       setRooms((prev) => ({ ...(prev ?? {}), [surface]: next }));
     } catch (e) {
-      setError((e as Error).message);
+      setError(operatorMessage(e, "That room"));
     } finally {
       setBusy(null);
     }
@@ -114,6 +135,16 @@ export function RoomsPage() {
         <Card tone="bad" className="mb-6 flex items-start gap-2 px-3 py-2.5">
           <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-bad" aria-hidden />
           <span className="text-[12.5px]">{error}</span>
+        </Card>
+      ) : null}
+
+      {loadError ? (
+        <Card tone="bad" className="mb-6 flex items-start gap-2 px-3 py-2.5">
+          <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-bad" aria-hidden />
+          <span className="text-[12.5px]">
+            {loadError} {LOAD_FAILED.body} Until then this page is not a complete list of the rooms
+            you watch.
+          </span>
         </Card>
       ) : null}
 

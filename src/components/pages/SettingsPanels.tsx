@@ -13,6 +13,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { operatorMessage } from "@/lib/copy";
 import { AlertTriangle, Download, ExternalLink, Loader2, Trash2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { GUARD_ORDER } from "@/lib/format";
@@ -298,7 +299,7 @@ export function DryRunPanel() {
     try {
       setResult(await api.dryRun(q));
     } catch (e) {
-      setError((e as Error).message);
+      setError(operatorMessage(e));
       setResult(null);
     } finally {
       setBusy(false);
@@ -476,7 +477,7 @@ export function EbayPanel() {
       setStatusError(null);
       if (s.write.connected) setConnecting(false);
     } catch (e) {
-      setStatusError((e as Error).message);
+      setStatusError(operatorMessage(e));
     }
   }, []);
   useEffect(() => {
@@ -503,7 +504,7 @@ export function EbayPanel() {
     try {
       return await fn();
     } catch (e) {
-      setError((e as Error).message);
+      setError(operatorMessage(e));
       return null;
     } finally {
       setBusy(null);

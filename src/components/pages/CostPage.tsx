@@ -20,7 +20,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { NO_FINISHED_SESSIONS } from "@/lib/copy";
+import { NO_FINISHED_SESSIONS, operatorMessage } from "@/lib/copy";
 import { Info, RefreshCw } from "lucide-react";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -55,7 +55,8 @@ const DOOR_LABEL: Record<string, string> = {
 };
 
 const BASIS_TITLE: Record<"wallet-exclusive" | "metered" | "none", string> = {
-  "wallet-exclusive": "Priced by the wallet's movement while this session ran alone — its real spend.",
+  "wallet-exclusive":
+    "Priced by the wallet's movement while this session ran alone — its real spend.",
   metered:
     "Priced from this session's calls at the average cost per call measured on sessions that ran alone.",
   none: "Nothing to price this session on.",
@@ -151,7 +152,7 @@ export function CostPage() {
       setData(await api.cost(days));
       setError(null);
     } catch (e) {
-      setError((e as Error).message);
+      setError(operatorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -174,7 +175,9 @@ export function CostPage() {
       section="cost"
       title="Cost"
       subtitle={
-        data ? `Your sessions · ${t?.shows ?? 0} sessions · last ${days} days` : "reading the meter…"
+        data
+          ? `Your sessions · ${t?.shows ?? 0} sessions · last ${days} days`
+          : "reading the meter…"
       }
       tabs={tabs}
       actions={
@@ -245,9 +248,7 @@ export function CostPage() {
           {!data ? (
             <Skeleton className="h-[160px]" />
           ) : data.shows.length === 0 ? (
-            <EmptyState title={NO_FINISHED_SESSIONS.title}>
-              {NO_FINISHED_SESSIONS.cost}
-            </EmptyState>
+            <EmptyState title={NO_FINISHED_SESSIONS.title}>{NO_FINISHED_SESSIONS.cost}</EmptyState>
           ) : (
             <div className="scroll-thin overflow-x-auto">
               <table className="w-full text-[12.5px]">

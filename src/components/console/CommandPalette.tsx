@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { operatorMessage } from "@/lib/copy";
 import { Loader2, Search, ShieldCheck, Sliders, Tag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatMoney, formatMs } from "@/lib/format";
@@ -45,7 +46,7 @@ export function CommandPalette({
       setCard(await onResearch(q.trim()));
     } catch (e) {
       // A failed lookup used to clear the spinner and render nothing at all.
-      setError(e instanceof Error ? e.message : String(e));
+      setError(operatorMessage(e));
     } finally {
       setLoading(false);
     }

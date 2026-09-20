@@ -16,7 +16,12 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { NOTHING_BLOCKED, NO_FINISHED_SESSIONS, READINESS_UNAVAILABLE } from "@/lib/copy";
+import {
+  NOTHING_BLOCKED,
+  NO_FINISHED_SESSIONS,
+  READINESS_UNAVAILABLE,
+  operatorMessage,
+} from "@/lib/copy";
 import {
   AlertTriangle,
   Check,
@@ -69,7 +74,7 @@ export function AnalyticsPage() {
       setO(await api.analyticsOverview(days));
       setError(null);
     } catch (e) {
-      setError((e as Error).message);
+      setError(operatorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -548,7 +553,7 @@ function LiveShowAnalytics({ showId }: { showId: string }) {
       api
         .analytics(7, showId)
         .then((a) => !stop && setD(a))
-        .catch((e) => !stop && setError((e as Error).message));
+        .catch((e) => !stop && setError(operatorMessage(e)));
     void read();
     const t = setInterval(read, 10_000);
     return () => {

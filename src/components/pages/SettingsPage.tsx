@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { operatorMessage } from "@/lib/copy";
 import { AlertTriangle, Check, Plus, RotateCcw, Save, ShieldCheck, Trash2 } from "lucide-react";
 import { api, ensureSession } from "@/lib/api";
 import type {
@@ -104,7 +105,7 @@ export function SettingsPage({ initialTab }: { initialTab?: SettingsTab | undefi
       setDraft(structuredClone(v.policy));
       setSavedAt(Date.now());
     } catch (e) {
-      setError((e as Error).message);
+      setError(operatorMessage(e));
     } finally {
       setBusy(false);
     }
@@ -119,7 +120,7 @@ export function SettingsPage({ initialTab }: { initialTab?: SettingsTab | undefi
       setDraft(structuredClone(v.policy));
       setSavedAt(Date.now());
     } catch (e) {
-      setError((e as Error).message);
+      setError(operatorMessage(e));
     } finally {
       setBusy(false);
     }

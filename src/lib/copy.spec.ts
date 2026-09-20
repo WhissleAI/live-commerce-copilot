@@ -112,7 +112,9 @@ describe("streamTitle", () => {
    */
   it("keeps the not-found diagnosis where it is actually the diagnosis", () => {
     expect(streamTitle("no show shw_412")).toMatch(/does not have that session/i);
-    expect(streamTitle(new Error("/api/stream failed: 404"))).toMatch(/does not have that session/i);
+    expect(streamTitle(new Error("/api/stream failed: 404"))).toMatch(
+      /does not have that session/i,
+    );
   });
 
   it("calls an auth failure an auth failure", () => {
@@ -130,5 +132,35 @@ describe("streamTitle", () => {
     for (const e of ["no show s1", "HTTP 401", "boom"]) {
       expect(streamTitle(e).toLowerCase()).not.toMatch(/\bshow\b/);
     }
+  });
+});
+
+describe("operatorMessage and the backend's API-contract copy", () => {
+  /**
+   * `src/api/routes.ts` ships these as 400 bodies and every one of them was
+   * rendered to a seller verbatim. They describe a contract the operator has
+   * no part in and cannot act on.
+   */
+  it("does not show a seller a wire-format complaint", () => {
+    for (const m of [
+      "seq must be a non-negative integer",
+      "durationMs must be between 1 and 120000",
+      "frame must be an image data URL",
+      "send { interests: [{ term }] }",
+    ]) {
+      const out = operatorMessage(new Error(m));
+      expect(out).not.toContain(m);
+      expect(out.length).toBeGreaterThan(20);
+    }
+  });
+
+  it("prefers the status the api client attached to the error", () => {
+    const e = Object.assign(new Error("seq must be a non-negative integer"), { status: 400 });
+    expect(operatorMessage(e)).toMatch(/malformed/i);
+  });
+
+  it("still leaves a refusal written for an operator alone", () => {
+    const written = "the eBay Live session is old enough that eBay may have ended it";
+    expect(operatorMessage(new Error(written))).toBe(written);
   });
 });

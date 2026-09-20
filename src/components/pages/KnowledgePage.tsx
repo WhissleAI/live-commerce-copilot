@@ -26,6 +26,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { LOAD_FAILED, operatorMessage } from "@/lib/copy";
 import { Link } from "@tanstack/react-router";
 import {
   AlertTriangle,
@@ -64,6 +65,8 @@ type View = "lineup" | "corpora" | "search";
 
 export function KnowledgePage({ initialId }: { initialId?: string | undefined } = {}) {
   const [catalogs, setCatalogs] = useState<CatalogSummary[] | null>(null);
+  /** A failed read of the catalog list. Absent and failed are different states. */
+  const [listError, setListError] = useState<string | null>(null);
   const [chosen, setChosen] = useState<string | null>(initialId ?? null);
   const [market, setMarket] = useState<CatalogMarket | null>(null);
   const [marketError, setMarketError] = useState<string | null>(null);
@@ -77,7 +80,10 @@ export function KnowledgePage({ initialId }: { initialId?: string | undefined } 
         // A deep link to a catalog that no longer exists falls back to the first.
         setChosen((cur) => (cur && c.some((x) => x.id === cur) ? cur : (c[0]?.id ?? null)));
       })
-      .catch(() => setCatalogs([]));
+      // Not `[]`. "You have no catalogs" is a claim, and a failed read is not
+      // in a position to make it — the empty state below sends people off to
+      // import listings they may already have.
+      .catch((e: unknown) => setListError(operatorMessage(e, "Your knowledge")));
   }, []);
 
   const current = useMemo(() => catalogs?.find((c) => c.id === chosen) ?? null, [catalogs, chosen]);
@@ -90,7 +96,7 @@ export function KnowledgePage({ initialId }: { initialId?: string | undefined } 
         setMarketError(null);
       } catch (e) {
         // A failed read used to leave the skeletons up forever.
-        setMarketError((e as Error).message);
+        setMarketError(operatorMessage(e));
       }
     },
     [chosen],
@@ -170,7 +176,17 @@ export function KnowledgePage({ initialId }: { initialId?: string | undefined } 
     >
       {view === "search" ? <EbaySearch /> : null}
       {view === "corpora" ? <CorpusGrid catalogs={catalogs} /> : null}
-      {view === "lineup" && catalogs && catalogs.length === 0 ? (
+      {listError ? (
+        <Card tone="bad" className="mt-2">
+          <EmptyState
+            icon={<AlertTriangle className="size-5 text-bad" aria-hidden />}
+            title={LOAD_FAILED.title}
+          >
+            {listError} {LOAD_FAILED.body}
+          </EmptyState>
+        </Card>
+      ) : null}
+      {!listError && view === "lineup" && catalogs && catalogs.length === 0 ? (
         <Card className="mt-2">
           <EmptyState
             icon={<PackageSearch className="size-5" aria-hidden />}
@@ -266,7 +282,8 @@ export function KnowledgePage({ initialId }: { initialId?: string | undefined } 
                   icon={<PackageSearch className="size-5" aria-hidden />}
                   title="This catalog has no items."
                 >
-                  Import your eBay listings from Settings › eBay, or prepare a session on Discover. Those are the two places a catalog is made.
+                  Import your eBay listings from Settings › eBay, or prepare a session on Discover.
+                  Those are the two places a catalog is made.
                 </EmptyState>
               ) : (
                 <div className="scroll-thin overflow-x-auto">
@@ -504,7 +521,7 @@ function EbaySearch() {
     try {
       setResult(await api.ebaySearch(q.trim(), { sold, limit: 20 }));
     } catch (e) {
-      setError((e as Error).message);
+      setError(operatorMessage(e));
       setResult(null);
     } finally {
       setBusy(false);
@@ -634,9 +651,7 @@ export function CorpusGrid({ catalogs }: { catalogs: CatalogSummary[] | null }) 
   // distinction. Name which one the reader is looking at.
   const demoOnly = own.length === 0 && (catalogs ?? []).length > 0;
   const nothingYet = (what: string) =>
-    demoOnly
-      ? `only the demo catalog so far — ${what}`
-      : `nothing loaded — ${what}`;
+    demoOnly ? `only the demo catalog so far — ${what}` : `nothing loaded — ${what}`;
 
   const state: Record<CorpusKind, { has: boolean; line: string; demo?: boolean }> = {
     listing: {

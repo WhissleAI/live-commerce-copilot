@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { operatorMessage } from "@/lib/copy";
 import { AlertTriangle, RefreshCw, X } from "lucide-react";
 import { api } from "@/lib/api";
 import type { BillingSnapshot, DoorReport, GatewayDoor } from "@/lib/types";
@@ -78,8 +79,10 @@ function ReadFailure({
     <div className="flex items-start gap-2 rounded-[4px] border border-warn/40 bg-warn/5 px-2 py-1.5">
       <AlertTriangle className="mt-[2px] size-3 shrink-0 text-warn" aria-hidden />
       <p className="text-[11px] leading-relaxed text-text-secondary">
-        <span className="text-warn">{what} unavailable</span>
-        {error.status ? ` (${error.status})` : ""} — {error.message}
+        {/* CONTENT-23: this printed "{what} unavailable (403) — {message}".
+            A status code is for whoever is reading the network tab. */}
+        <span className="text-warn">{what} unavailable</span> —{" "}
+        {operatorMessage(error.message ? new Error(error.message) : undefined, what)}
       </p>
     </div>
   );

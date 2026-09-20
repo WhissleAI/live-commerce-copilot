@@ -119,6 +119,19 @@ const STATUS_SENTENCE: Record<number, string> = {
 const GENERATED = /^(?:(\S+)\s+failed:\s*(\d{3})|HTTP\s+(\d{3}))\s*$/;
 
 /**
+ * Copy written for whoever is calling the API, not for whoever is selling.
+ *
+ * `src/api/routes.ts` ships "seq must be a non-negative integer", "durationMs
+ * must be between 1 and 120000", "frame must be an image data URL" and
+ * `send { interests: [{ term }] }` as 400 bodies, and every one of them was
+ * rendered to the operator verbatim. They describe a contract the operator
+ * has no part in and cannot act on; the right sentence is that the app sent
+ * something wrong, which is true and is ours.
+ */
+const API_CONTRACT =
+  /^(?:send \{|expected |[A-Za-z][A-Za-z0-9_.[\]]* (?:must be|is required|should be)\b)/;
+
+/**
  * A thrown error, as a sentence for the person looking at the screen.
  *
  * `what` names the thing that failed in the operator's words — "The drafts",
@@ -127,11 +140,16 @@ const GENERATED = /^(?:(\S+)\s+failed:\s*(\d{3})|HTTP\s+(\d{3}))\s*$/;
  */
 export function operatorMessage(e: unknown, what?: string): string {
   const raw = e instanceof Error ? e.message : typeof e === "string" ? e : "";
-  const m = raw.match(GENERATED);
-  if (m) {
-    const status = Number(m[2] ?? m[3]);
-    const sentence =
-      STATUS_SENTENCE[status] ?? `The server answered ${status}, which it should not have.`;
+  // `api.ts` puts the response status on the error it throws.
+  const status =
+    e && typeof e === "object" && typeof (e as { status?: unknown }).status === "number"
+      ? (e as { status: number }).status
+      : Number(raw.match(GENERATED)?.[2] ?? raw.match(GENERATED)?.[3]) || null;
+
+  if (GENERATED.test(raw) || API_CONTRACT.test(raw)) {
+    const sentence = status
+      ? (STATUS_SENTENCE[status] ?? `The server answered ${status}, which it should not have.`)
+      : "The app sent the server something it could not accept. That is ours to fix, not yours.";
     return what ? `${what} could not be read. ${sentence}` : sentence;
   }
   if (!raw) {

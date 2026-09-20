@@ -406,9 +406,14 @@ export function AppShell({
               </button>
             }
           >
-            {API_BASE} — {health.detail ?? "no response"}. A session that is on air keeps running on
-            its surface; this console is simply not attached to it. Retrying every 5 s; nothing is
-            sent while disconnected.
+            {/* CONTENT-23: this led with {API_BASE}. The address of a server
+                is not an answer to "what do I do", and on the one banner that
+                appears on every page it was the first thing an operator read. */}
+            A session that is on air keeps running on its surface; this console is simply not
+            attached to it. Retrying every 5 s; nothing is sent while disconnected.
+            <span className="mt-1 block text-[11.5px] text-text-muted">
+              {API_BASE} — {health.detail ?? "no response"}
+            </span>
           </Banner>
         ) : null}
         {banner}

@@ -33,7 +33,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { operatorRefusal } from "@/lib/copy";
+import { operatorMessage, operatorRefusal } from "@/lib/copy";
 import { Link } from "@tanstack/react-router";
 import {
   AlertTriangle,
@@ -158,7 +158,7 @@ export function DiscoverView({ onAttach }: { onAttach: (url: string) => void }) 
     try {
       await read(true);
     } catch (e) {
-      setError((e as Error).message);
+      setError(operatorMessage(e));
     } finally {
       setBusy(false);
     }
@@ -185,7 +185,7 @@ export function DiscoverView({ onAttach }: { onAttach: (url: string) => void }) 
         await read(false);
       } catch (e) {
         setPayload((p) => (p ? { ...p, interests: before } : p));
-        setError((e as Error).message);
+        setError(operatorMessage(e));
       }
     },
     [interests, read],
@@ -252,7 +252,7 @@ export function DiscoverView({ onAttach }: { onAttach: (url: string) => void }) 
         }
         if (hit.url) window.open(hit.url, "_blank", "noopener,noreferrer");
       } catch (e) {
-        setError((e as Error).message);
+        setError(operatorMessage(e));
       }
     },
     [onAttach, read],
@@ -364,7 +364,7 @@ export function DiscoverView({ onAttach }: { onAttach: (url: string) => void }) 
                   void api
                     .dropPrepared(p.eventId)
                     .then(() => read(false))
-                    .catch((e) => setError((e as Error).message))
+                    .catch((e) => setError(operatorMessage(e)))
                 }
                 onAttach={() =>
                   onAttach(`https://www.ebay.com/ebaylive/events/${p.eventId}/stream`)
@@ -944,8 +944,8 @@ function PreparedRow({
       {p.warnings.length === 0 && p.items > 0 ? (
         <p className="pl-1 text-[11.5px] text-text-muted">
           Built from {p.sellerHandle ? `@${p.sellerHandle}` : "this seller"}&apos;s active listings
-          {p.tags.length ? ` · ${p.tags.join(" · ")}` : ""}. Prices are re-read live when the session
-          starts.
+          {p.tags.length ? ` · ${p.tags.join(" · ")}` : ""}. Prices are re-read live when the
+          session starts.
         </p>
       ) : null}
     </Card>

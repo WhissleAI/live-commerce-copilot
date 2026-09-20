@@ -9,6 +9,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { operatorMessage } from "@/lib/copy";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
 import type { ShowRow } from "@/lib/types";
@@ -41,7 +42,7 @@ export function DeleteShowDialog({
       await api.deleteShow(row.showId);
       onDeleted();
     } catch (e) {
-      setError((e as Error).message);
+      setError(operatorMessage(e));
       setBusy(false);
     }
   }
