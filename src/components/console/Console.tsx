@@ -17,7 +17,14 @@ import {
 import { api, API_BASE, USE_MOCKS, ensureSession, tokenQuery } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { isTypingIn, modalOpen, shortcutActs } from "@/lib/keys";
-import { ATTACH_HINT, ATTACH_VERB, LOAD_FAILED, operatorMessage, streamTitle } from "@/lib/copy";
+import {
+  ATTACH_HINT,
+  ATTACH_VERB,
+  LOAD_FAILED,
+  heldReplyAdvice,
+  operatorMessage,
+  streamTitle,
+} from "@/lib/copy";
 import { useShowStream } from "@/hooks/useShowStream";
 import {
   capabilitiesOf,
@@ -326,9 +333,12 @@ export function Console() {
           move(-1);
           break;
         case "Enter":
-          // Bare Enter sends only a reply the guards allowed outright. A
+          // Bare Enter accepts only a reply the guards allowed outright. A
           // needs_review card's button says "Send anyway" for a reason: that
-          // decision takes a click, not a reflex.
+          // decision takes a click, not a reflex. And a held card does nothing
+          // — but it now SAYS so, and says what does work: pressing Enter on
+          // one used to be silence, on the card whose own copy tells the
+          // operator to act.
           if (focused && focused.status === "ready") {
             e.preventDefault();
             send(focused.id);
@@ -338,6 +348,9 @@ export function Console() {
               tone: "warn",
               text: "This reply was revised by a guard — use Send anyway to send it",
             });
+          } else if (focused && focused.status === "blocked") {
+            e.preventDefault();
+            toasts.push({ tone: "warn", text: heldReplyAdvice(focused.guards) });
           }
           break;
         case "e":
@@ -356,7 +369,10 @@ export function Console() {
           break;
         case "r":
         case "R":
-          if (focused && focused.status !== "blocked") {
+          // Every card, held ones included. The server never refused a
+          // regenerate — this gate was the console's own, and it removed the
+          // obvious move from the one card that needs it most.
+          if (focused) {
             e.preventDefault();
             void api.regenerateProposal(focused.id).catch(failed("Not regenerated"));
           }

@@ -45,6 +45,31 @@ export const SENT_MEANS_REPLIES =
   SENT_MEANS +
   " A strikethrough was blocked; 'edited' is your revealed opinion of the draft.";
 
+// ── the held reply ──────────────────────────────────────────────────────────
+
+/**
+ * What a held card says when the operator reaches for it with the keyboard.
+ *
+ * Bare Enter does not send a blocked draft — the server refuses one unchanged
+ * whatever the client asks — and for as long as that was all it did, pressing
+ * it was SILENCE: no movement, no error, no reason, on the card whose own copy
+ * tells the operator to act on it. Silence is the worst answer available,
+ * because it is indistinguishable from a broken key.
+ *
+ * The guard's own words, never a paraphrase: the reason is the one thing on
+ * the card the console did not write, and re-wording it here would put two
+ * accounts of the same refusal in the product.
+ */
+export function heldReplyAdvice(
+  guards: readonly { guard: string; verdict: string; reason?: string }[],
+): string {
+  const why = guards.find((g) => g.verdict === "block");
+  const tail = "Press E to edit it; your edit is checked on its own words.";
+  return why?.reason
+    ? `Held by the ${why.guard} guard — ${why.reason} ${tail}`
+    : `This reply was held by a guardrail. ${tail}`;
+}
+
 // ── states that three pages each named differently ──────────────────────────
 //
 // CONTENT-29. "Nothing has finished yet." · "No shows finished in the last 30

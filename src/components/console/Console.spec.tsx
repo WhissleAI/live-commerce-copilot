@@ -14,7 +14,7 @@
  */
 
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { SURFACE_CAPABILITIES, consoleLayout, guardOrderFor } from "@/lib/surfaces";
 import { GUARD_LABEL } from "@/lib/format";
 import type { Listing, ReplyProposal } from "@/lib/types";
@@ -163,9 +163,7 @@ describe("an eBay Live show renders every column it renders today", () => {
   });
 
   it("says the verdict and the reason out loud, not just the glyph", () => {
-    render(
-      <ProposalQueue {...queueProps} live={[proposal()]} guardOrder={guardOrderFor(caps)} />,
-    );
+    render(<ProposalQueue {...queueProps} live={[proposal()]} guardOrder={guardOrderFor(caps)} />);
     const pills = screen.getByRole("list", { name: "Guardrail results" });
     const spoken = [...pills.querySelectorAll(".sr-only")].map((n) => n.textContent ?? "");
     expect(spoken.join(" ")).toMatch(/stock passed/);
@@ -296,9 +294,7 @@ describe("who sends the reply is read off the card, not off the surface", () => 
   it("treats a missing delivery field as the operator's to send", () => {
     // `delivery` is optional on the wire precisely so this case is expressible.
     const { delivery: _absent, ...noField } = proposal();
-    render(
-      <ProposalQueue {...queueProps} live={[noField]} guardOrder={guardOrderFor(caps)} />,
-    );
+    render(<ProposalQueue {...queueProps} live={[noField]} guardOrder={guardOrderFor(caps)} />);
     expect(screen.queryByText("Send")).not.toBeInTheDocument();
     expect(screen.getByText("Copy")).toBeInTheDocument();
   });
@@ -323,11 +319,7 @@ describe("copying a reply the operator posts themselves", () => {
     withClipboard(() => Promise.resolve());
     const onCopy = vi.fn();
     render(
-      <ProposalQueue
-        {...queueProps}
-        onCopy={onCopy}
-        live={[proposal({ delivery: "human" })]}
-      />,
+      <ProposalQueue {...queueProps} onCopy={onCopy} live={[proposal({ delivery: "human" })]} />,
     );
     fireEvent.click(screen.getByText("Copy"));
     await waitFor(() => expect(onCopy).toHaveBeenCalledWith("p_1", undefined));
@@ -337,11 +329,7 @@ describe("copying a reply the operator posts themselves", () => {
     withClipboard(() => Promise.reject(new Error("denied")));
     const onCopy = vi.fn();
     render(
-      <ProposalQueue
-        {...queueProps}
-        onCopy={onCopy}
-        live={[proposal({ delivery: "human" })]}
-      />,
+      <ProposalQueue {...queueProps} onCopy={onCopy} live={[proposal({ delivery: "human" })]} />,
     );
     fireEvent.click(screen.getByText("Copy"));
     await screen.findByText("Could not copy");
@@ -445,5 +433,162 @@ describe("evidence from a corpus this build has never seen", () => {
     );
     expect(screen.getByText("whatever")).toBeInTheDocument();
     spy.mockRestore();
+  });
+});
+
+/**
+ * The held card, which the product's own copy has always described correctly
+ * and the console refused to allow.
+ *
+ * The server restored the repair pass and made an edit judgeable on its own
+ * words: `Pipeline.send` refuses a blocked draft UNCHANGED, and re-guards an
+ * edited one as human-authored text — if it clears, it sends (backend
+ * `src/pipeline/pipeline.ts`). Three separate client-side gates meant there
+ * was no path, UI or keyboard, to the second half of that sentence.
+ */
+describe("a held reply can be fixed by editing it", () => {
+  const blocked = (over: Partial<ReplyProposal> = {}) =>
+    proposal({
+      status: "blocked",
+      verdict: "block",
+      guards: [
+        {
+          guard: "price",
+          verdict: "block",
+          reason: "Reply quotes a price from listing version 12; the live listing is version 13.",
+          detail: { expected: "$370.00 (v13)", found: "$412.00" },
+        },
+      ],
+      delivery: "api",
+      ...over,
+    });
+
+  it("offers no send control while the draft stands as it is", () => {
+    render(<ProposalQueue {...queueProps} live={[blocked()]} />);
+    expect(screen.queryByText("Send")).not.toBeInTheDocument();
+    expect(screen.queryByText("Send edit")).not.toBeInTheDocument();
+  });
+
+  it("offers a secondary send once the operator is editing it", () => {
+    render(<ProposalQueue {...queueProps} editingId="p_1" live={[blocked()]} />);
+    expect(screen.getByText("Send edit")).toBeInTheDocument();
+  });
+
+  it("sends the edited words, not the ones the guard held", () => {
+    const onSend = vi.fn();
+    render(<ProposalQueue {...queueProps} onSend={onSend} editingId="p_1" live={[blocked()]} />);
+    const box = screen.getByLabelText("Edit reply");
+    fireEvent.change(box, { target: { value: "The Chicagos are $370 after tonight's markdown." } });
+    fireEvent.click(screen.getByText("Send edit"));
+    expect(onSend).toHaveBeenCalledWith("p_1", "The Chicagos are $370 after tonight's markdown.");
+  });
+
+  /** The keystroke was gated on the verdict of the text it replaced, so ⌘⏎ in
+   *  the box did nothing at all — no button, no error, no reason. */
+  it("lets the edit shortcut through, and leaves the refusal to the server", () => {
+    const onSend = vi.fn();
+    render(<ProposalQueue {...queueProps} onSend={onSend} editingId="p_1" live={[blocked()]} />);
+    const box = screen.getByLabelText("Edit reply");
+    fireEvent.change(box, { target: { value: "Still $412 tonight." } });
+    fireEvent.keyDown(box, { key: "Enter", metaKey: true });
+    expect(onSend).toHaveBeenCalledWith("p_1", "Still $412 tonight.");
+  });
+
+  /** On a surface the operator posts from, taking the words IS accepting the
+   *  reply — so the held card's edit route there is the copy, and it records. */
+  it("routes the edit through the copy where the operator is the sender", async () => {
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText: () => Promise.resolve() },
+      configurable: true,
+    });
+    const onCopy = vi.fn();
+    render(
+      <ProposalQueue
+        {...queueProps}
+        onCopy={onCopy}
+        editingId="p_1"
+        live={[blocked({ delivery: "human" })]}
+      />,
+    );
+    const box = screen.getByLabelText("Edit reply");
+    fireEvent.change(box, { target: { value: "It's $370 now." } });
+    fireEvent.click(screen.getByText("Copy"));
+    await waitFor(() => expect(onCopy).toHaveBeenCalledWith("p_1", "It's $370 now."));
+  });
+
+  /** `POST /api/proposals/:id/regenerate` never looked at the verdict. This
+   *  gate was the console's own, on the card most likely to want another go. */
+  it("offers Regenerate, which the server never refused", () => {
+    const onRegenerate = vi.fn();
+    render(<ProposalQueue {...queueProps} onRegenerate={onRegenerate} live={[blocked()]} />);
+    fireEvent.click(screen.getByText("Regenerate"));
+    expect(onRegenerate).toHaveBeenCalledWith("p_1");
+  });
+
+  it("still says which guard held it, in the guard's own words", () => {
+    render(<ProposalQueue {...queueProps} live={[blocked()]} />);
+    // Scoped to the panel: the same sentence is also read out by the pill's
+    // sr-only half, which is the point of both of them.
+    const panel = screen.getByText(/Held by the price guard/).parentElement!;
+    expect(within(panel).getByText(/the live listing is version 13/)).toBeInTheDocument();
+  });
+});
+
+/**
+ * `needs_review` is the COMMON state now — a `revise` verdict aggregates to
+ * `revise` again (backend `src/guardrails/chain.ts`), earns one repair pass,
+ * and reaches the operator sendable. It had a stripe and no words, so which of
+ * eight checks spoke, and what it said, was a guess.
+ */
+describe("a reply a guard asked to revise", () => {
+  const revised = (over: Partial<ReplyProposal> = {}) =>
+    proposal({
+      status: "needs_review",
+      verdict: "revise",
+      guards: [
+        {
+          guard: "tone",
+          verdict: "revise",
+          reason: "Closing line reads as pressure selling; softer phrasing recommended.",
+          detail: { expected: "no urgency claims", found: '"gone by the next show"' },
+        },
+      ],
+      ...over,
+    });
+
+  it("names the guard that asked, and quotes its reason", () => {
+    render(<ProposalQueue {...queueProps} live={[revised()]} />);
+    const panel = screen.getByText(/The tone guard asked for a revision/).parentElement!;
+    expect(within(panel).getByText(/pressure selling/)).toBeInTheDocument();
+  });
+
+  it("reads the revising guard, not whichever guard happens to be first", () => {
+    render(
+      <ProposalQueue
+        {...queueProps}
+        live={[
+          revised({
+            guards: [
+              { guard: "price", verdict: "allow", reason: "Price matches listing v13." },
+              { guard: "policy", verdict: "revise", reason: "Shipping claim cites no policy." },
+            ],
+          }),
+        ]}
+      />,
+    );
+    const panel = screen.getByText(/The policy guard asked for a revision/).parentElement!;
+    expect(within(panel).getByText(/Shipping claim cites no policy/)).toBeInTheDocument();
+  });
+
+  /** Nothing here is blocked, so nothing is taken away. */
+  it("keeps the accept control it has always had", () => {
+    render(<ProposalQueue {...queueProps} live={[revised({ delivery: "api" })]} />);
+    expect(screen.getByText("Send anyway")).toBeInTheDocument();
+  });
+
+  it("invents no reason when no guard gave one", () => {
+    render(<ProposalQueue {...queueProps} live={[revised({ guards: [] })]} />);
+    expect(screen.getByText(/Needs your eyes before it goes out/)).toBeInTheDocument();
+    expect(screen.getByText(/No guard gave a reason/)).toBeInTheDocument();
   });
 });

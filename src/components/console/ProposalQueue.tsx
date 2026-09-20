@@ -166,8 +166,7 @@ function GuardStrip({ guards, order }: { guards: GuardResult[]; order: GuardName
                   it. On the one screen the product exists for, a blocked
                   reply could not be understood without a mouse. */}
               <span className="sr-only">
-                {GUARD_LABEL[name]} {VERDICT_WORD[verdict]}.{" "}
-                {g?.reason ?? GUARD_MEANS[name]}
+                {GUARD_LABEL[name]} {VERDICT_WORD[verdict]}. {g?.reason ?? GUARD_MEANS[name]}
                 {g?.detail?.expected || g?.detail?.found
                   ? ` Expected ${g.detail.expected ?? "—"}, found ${g.detail.found ?? "—"}.`
                   : ""}
@@ -403,6 +402,10 @@ function ProposalCard({
   const blocked = p.status === "blocked";
   const needsReview = p.status === "needs_review";
   const blockingGuard = p.guards.find((g) => g.verdict === "block");
+  /** The guard that asked for a revision — `needs_review`'s equivalent of the
+   *  one that blocked, and the only one with anything to say about why the
+   *  draft is on this card rather than sendable outright. */
+  const revisingGuard = p.guards.find((g) => g.verdict === "revise");
   /**
    * Who sends this one — the server's answer, on this proposal.
    *
@@ -512,9 +515,14 @@ function ProposalCard({
               }
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
                 e.preventDefault();
-                // The Send button is hidden on a blocked card; the shortcut
-                // must not be a way around that.
-                if (!blocked) onSend(value);
+                // Unconditionally, held card included. An edit is a NEW draft
+                // and is judged on its own words: the server re-guards what
+                // was typed here and refuses with the guard's own reason if it
+                // still fails (`Pipeline.send`, backend
+                // `src/pipeline/pipeline.ts`). Gating the keystroke on the
+                // verdict the REPLACED text earned is what made the card's own
+                // instruction — "edit it and send" — impossible to follow.
+                onSend(value);
               }
             }}
             rows={3}
@@ -537,26 +545,45 @@ function ProposalCard({
 
         {!drafting ? (
           <>
-            {blocked ? (
+            {/* Why this card is not simply sendable.
+                Two states, one panel, and `needs_review` had only a stripe:
+                it is the common one — a guard asking for a revision, a repair
+                pass that did not fully clear — and an amber edge with no words
+                beside it leaves the operator to guess which of eight checks
+                spoke and what it said. Both read the SERVER's reason; neither
+                invents one. */}
+            {blocked || needsReview ? (
               <div className="flex items-start gap-2 rounded-[4px] border border-warn/40 bg-warn/[0.07] px-2.5 py-2 text-[12px]">
                 <ShieldAlert className="mt-0.5 size-3.5 shrink-0 text-warn" aria-hidden />
                 <div className="min-w-0">
                   <p className="font-medium text-text">
-                    Held by the {blockingGuard ? GUARD_LABEL[blockingGuard.guard] : "guardrail"}{" "}
-                    guard
+                    {blocked ? (
+                      <>
+                        Held by the {blockingGuard ? GUARD_LABEL[blockingGuard.guard] : "guardrail"}{" "}
+                        guard
+                      </>
+                    ) : revisingGuard ? (
+                      <>The {GUARD_LABEL[revisingGuard.guard]} guard asked for a revision</>
+                    ) : (
+                      <>Needs your eyes before it goes out</>
+                    )}
                   </p>
                   <p className="mt-0.5 leading-snug text-text-secondary">
-                    {blockingGuard?.reason ??
-                      "This draft did not pass the checks a reply must pass before it can be sent."}
+                    {(blocked ? blockingGuard : revisingGuard)?.reason ??
+                      (blocked
+                        ? "This draft did not pass the checks a reply must pass before it can be sent."
+                        : "No guard gave a reason — this one was not cleared to go out on its own.")}
                   </p>
-                  {blockingGuard?.detail ? (
+                  {(blocked ? blockingGuard : revisingGuard)?.detail ? (
                     <p className="num mt-0.5 text-[11px] text-text-muted">
-                      expected {blockingGuard.detail.expected} · found {blockingGuard.detail.found}
+                      expected {(blocked ? blockingGuard : revisingGuard)?.detail?.expected} · found{" "}
+                      {(blocked ? blockingGuard : revisingGuard)?.detail?.found}
                     </p>
                   ) : null}
                   <p className="mt-1 text-[11px] text-text-muted">
-                    What to do: edit it and send — the edit is checked again — or dismiss it.
-                    Nothing went wrong; the reply was stopped on purpose.
+                    {blocked
+                      ? "What to do: edit it and send — your edit is a new draft and is checked again, on its own words — or dismiss it. Nothing went wrong; this one was stopped on purpose."
+                      : "What to do: take it as it stands, edit it first, or regenerate. Nothing is blocked here — the reply is yours to decide on."}
                   </p>
                 </div>
               </div>
@@ -567,24 +594,36 @@ function ProposalCard({
             <StyleRef styleRef={p.styleRef} />
 
             <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-              {blocked ? null : delivers ? (
+              {/* Accepting it.
+                  A held draft cannot go out AS IT STANDS, and the server is
+                  where that refusal lives — a keystroke and a curl are not
+                  this console. But an edit is a new draft: while the operator
+                  is rewriting a held card the accept control comes back, as a
+                  secondary, and the server judges what they typed. Hiding it
+                  here was the last of the three locks that made the card's own
+                  instruction impossible to follow. */}
+              {blocked && !editing ? null : delivers ? (
                 <ConsoleButton
-                  variant={needsReview ? "secondary" : "primary"}
+                  variant={blocked || needsReview ? "secondary" : "primary"}
                   onClick={() => onSend(editing ? value : undefined)}
                 >
-                  {needsReview ? "Send anyway" : "Send"}
-                  <Kbd
-                    className={
-                      needsReview
-                        ? ""
-                        : "border-accent-foreground/40 bg-transparent text-accent-foreground/80"
-                    }
-                  >
-                    ⏎
-                  </Kbd>
+                  {blocked ? "Send edit" : needsReview ? "Send anyway" : "Send"}
+                  {/* Bare ⏎ does not send a held card — it says what to do
+                      instead — so the key is only claimed where it works. */}
+                  {blocked ? null : (
+                    <Kbd
+                      className={
+                        needsReview
+                          ? ""
+                          : "border-accent-foreground/40 bg-transparent text-accent-foreground/80"
+                      }
+                    >
+                      ⏎
+                    </Kbd>
+                  )}
                 </ConsoleButton>
               ) : null}
-              {blocked ? null : (
+              {blocked && !editing ? null : (
                 <CopyDraft
                   text={editing ? value : p.draft}
                   variant={delivers ? "secondary" : "primary"}
@@ -598,11 +637,14 @@ function ProposalCard({
               <ConsoleButton variant="ghost" onClick={onDismiss}>
                 Dismiss <Kbd>X</Kbd>
               </ConsoleButton>
-              {blocked ? null : (
-                <ConsoleButton variant="ghost" onClick={onRegenerate}>
-                  Regenerate <Kbd>R</Kbd>
-                </ConsoleButton>
-              )}
+              {/* Regenerate was hidden on a held card by this console alone:
+                  `POST /api/proposals/:id/regenerate` has never once looked at
+                  the verdict (backend `src/api/routes.ts`), and asking for
+                  another draft is the obvious move when the guards refused the
+                  first one. */}
+              <ConsoleButton variant="ghost" onClick={onRegenerate}>
+                Regenerate <Kbd>R</Kbd>
+              </ConsoleButton>
             </div>
           </>
         ) : null}

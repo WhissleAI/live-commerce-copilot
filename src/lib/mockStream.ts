@@ -995,9 +995,31 @@ export class MockDriver {
 
   /* ---------------- REST surface ---------------- */
 
+  /**
+   * Accept a reply — and refuse the one the guards held, as the server does.
+   *
+   * `Pipeline.send` (backend `src/pipeline/pipeline.ts`) has exactly two rules
+   * here, and the mock has to keep both or it is a looser product than the one
+   * it stands in for. A blocked draft is never sent AS IT STANDS, whatever the
+   * client asks — the refusal names the guard, and reaches the console as a
+   * 409. An EDITED draft is a new draft and is judged on its own words, so it
+   * is accepted; the real re-guard can still refuse it, which is a thing only
+   * the server can decide and this fiction should not pretend to.
+   */
   async sendProposal(id: string, text?: string): Promise<ReplyProposal> {
     const p = this.proposals.find((x) => x.id === id)!;
-    const next: ReplyProposal = { ...p, status: "sent", sentText: text ?? p.draft };
+    const sentText = (text ?? p.draft).trim();
+    const edited = text !== undefined && sentText !== p.draft.trim();
+    if ((p.status === "blocked" || p.verdict === "block") && !edited) {
+      const why = p.guards
+        .filter((g) => g.verdict === "block")
+        .map((g) => `${g.guard}: ${g.reason ?? "blocked"}`)
+        .join("; ");
+      throw new Error(
+        `this reply was blocked and cannot be sent unedited — ${why || "a guard blocked it"}`,
+      );
+    }
+    const next: ReplyProposal = { ...p, status: "sent", sentText };
     this.upsertProposal(next);
     this.metrics = { ...this.metrics, sent: this.metrics.sent + 1 };
     this.emit({ type: "metrics", data: this.metrics });
