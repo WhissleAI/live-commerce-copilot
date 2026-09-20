@@ -49,7 +49,8 @@ const DOOR_LABEL: Record<string, string> = {
   chat_turn: "Buyer replies",
   utility_turn: "Session context",
   voice_start: "Host audio",
-  kb_upload: "Catalog sync",
+  // It is a knowledge-base upload, and the rail calls that page Knowledge.
+  kb_upload: "Knowledge sync",
   visual_read: "Camera reads",
   billing: "This page",
 };

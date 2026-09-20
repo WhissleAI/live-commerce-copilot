@@ -27,7 +27,8 @@ const DOOR_LABEL: Record<GatewayDoor, string> = {
   chat_turn: "Buyer replies",
   utility_turn: "Session context",
   voice_start: "Host audio",
-  kb_upload: "Catalog sync",
+  // It is a knowledge-base upload, and the rail calls that page Knowledge.
+  kb_upload: "Knowledge sync",
   // Metered since visual perception shipped, rendered nowhere until now.
   visual_read: "Camera reads",
   billing: "This panel",
