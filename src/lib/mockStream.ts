@@ -493,6 +493,11 @@ export class MockDriver {
         repaired: false,
         spans: spans(1240),
         createdAt: at,
+        // The scripted show wires no deliverer, which is also true of every
+        // real surface in this build — so the server would answer "human" here
+        // and the mock must not be the one place the console is told a reply
+        // sends itself.
+        delivery: "human",
         ...p,
       };
     };
@@ -829,6 +834,8 @@ export class MockDriver {
       repaired: Math.random() < 0.18,
       spans: spans(total, false, Math.random() < 0.4),
       createdAt: nowIso(),
+      // Nothing delivers on the scripted show either. See `mk`.
+      delivery: "human",
     };
     this.proposals = [...this.proposals, base];
     this.emit({ type: "proposal", data: base });
@@ -861,20 +868,14 @@ export class MockDriver {
           `Reply blocked by price guard — ${listing.title}`,
           { proposalId: id },
         );
-      if (
-        this.show.autonomyLevel === "L3_AUTO_REPLY" ||
-        this.show.autonomyLevel === "L4_AUTO_ACT"
-      ) {
-        if (finalStatus === "ready")
-          this.after(600, () => {
-            this.upsertProposal({ ...done, status: "auto_sent", sentText: text });
-            this.metrics = { ...this.metrics, autoSent: this.metrics.autoSent + 1 };
-            this.emit({ type: "metrics", data: this.metrics });
-            this.pushAudit("reply_sent", "copilot", `Auto-sent reply to @${message.author}`, {
-              proposalId: id,
-            });
-          });
-      }
+      // No auto-send here, at any rung.
+      //
+      // `decideReply` (backend `src/autonomy/ladder.ts:100`) returns `suggest`
+      // — "pre-approved, yours to send" — rather than `auto_send` whenever
+      // delivery is not `"api"`, and nothing in this build delivers. A mock
+      // that flipped a card to `auto_sent` would be showing the operator the
+      // one state the ladder refuses to produce, on the one screen where
+      // "nobody sent this" is the fact that matters.
     });
   }
 
@@ -1000,10 +1001,14 @@ export class MockDriver {
     this.upsertProposal(next);
     this.metrics = { ...this.metrics, sent: this.metrics.sent + 1 };
     this.emit({ type: "metrics", data: this.metrics });
-    this.pushAudit("reply_sent", "seller", `Reply sent to @${p.message.author}`, {
-      proposalId: id,
-      text: next.sentText,
-    });
+    // The server's own wording on a surface with no reply API: what happened
+    // is that the answer was approved and recorded, and a human posts it.
+    this.pushAudit(
+      "reply_sent",
+      "seller",
+      `Answer for @${p.message.author} approved and recorded — you post it`,
+      { proposalId: id, text: next.sentText, delivery: next.delivery ?? "human" },
+    );
     return next;
   }
 

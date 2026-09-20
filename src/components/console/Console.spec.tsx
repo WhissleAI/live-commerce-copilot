@@ -14,7 +14,7 @@
  */
 
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { SURFACE_CAPABILITIES, consoleLayout, guardOrderFor } from "@/lib/surfaces";
 import { GUARD_LABEL } from "@/lib/format";
 import type { Listing, ReplyProposal } from "@/lib/types";
@@ -111,6 +111,7 @@ const queueProps = {
   onRegenerate: () => {},
   onFlag: () => {},
   onInspect: () => {},
+  onCopy: () => {},
 };
 
 const railProps = {
@@ -134,7 +135,6 @@ describe("an eBay Live show renders every column it renders today", () => {
     expect(layout.latencyMeter).toBe(true);
     expect(layout.hostAudio).toBe(true);
     expect(layout.actionRail).toBe(true);
-    expect(layout.deliverable).toBe(true);
     // And not the one it never had.
     expect(layout.threadPanel).toBe(false);
   });
@@ -147,22 +147,19 @@ describe("an eBay Live show renders every column it renders today", () => {
     expect(screen.getByText("Audit")).toBeInTheDocument();
   });
 
-  it("draws exactly the six guard pills, in order, and a Send button", () => {
-    render(
-      <ProposalQueue
-        {...queueProps}
-        live={[proposal()]}
-        guardOrder={guardOrderFor(caps)}
-        deliverable={layout.deliverable}
-      />,
-    );
+  it("draws exactly the six guard pills, in order, and the control that matches what accepting does", () => {
+    render(<ProposalQueue {...queueProps} live={[proposal()]} guardOrder={guardOrderFor(caps)} />);
     // The visible half only. Each pill also carries an sr-only sentence now
     // (CONTENT-38) — it announced "✕ price" and nothing else before, so the
     // verdict and the reason were mouse-only on the one screen that matters.
     expect(visibleText(screen.getByRole("list", { name: "Guardrail results" }))).toBe(
       "–price✓stock–policy–grounding–tone–pii",
     );
-    expect(screen.getByText("Send")).toBeInTheDocument();
+    // eBay Live publishes no chat-post API and nothing wires a deliverer, so
+    // the server answers `delivery: "human"` — and a Send button here would be
+    // the console promising a delivery the backend has just declined to make.
+    expect(screen.queryByText("Send")).not.toBeInTheDocument();
+    expect(screen.getByText("Copy")).toBeInTheDocument();
   });
 
   it("says the verdict and the reason out loud, not just the glyph", () => {
@@ -184,26 +181,24 @@ describe("an eBay Live show renders every column it renders today", () => {
    * entry, and there is no platform call on any path. So the copy is the
    * operator's real next step here too, beside Send rather than instead of it.
    */
-  it("offers the paste affordance the product promises, on the api surface too", () => {
+  it("offers the paste affordance the product promises, beside a Send that can send", () => {
     render(
       <ProposalQueue
         {...queueProps}
-        live={[proposal()]}
+        live={[proposal({ delivery: "api" })]}
         guardOrder={guardOrderFor(caps)}
-        deliverable={layout.deliverable}
       />,
     );
-    expect(layout.deliverable).toBe(true);
+    expect(screen.getByText("Send")).toBeInTheDocument();
     expect(screen.getByText("Copy")).toBeInTheDocument();
   });
 
-  it("makes copy the only action on a draft-only surface", () => {
+  it("makes copy the only action where the reply is the operator's to post", () => {
     render(
       <ProposalQueue
         {...queueProps}
-        live={[proposal()]}
+        live={[proposal({ delivery: "human" })]}
         guardOrder={guardOrderFor(caps)}
-        deliverable={false}
       />,
     );
     expect(screen.queryByText("Send")).not.toBeInTheDocument();
@@ -254,13 +249,115 @@ describe("a draft-only surface", () => {
     render(
       <ProposalQueue
         {...queueProps}
-        live={[proposal()]}
+        live={[proposal({ delivery: "human" })]}
         guardOrder={guardOrderFor(SURFACE_CAPABILITIES.reddit)}
-        deliverable={consoleLayout(SURFACE_CAPABILITIES.reddit).deliverable}
       />,
     );
     expect(screen.getByText("Copy")).toBeInTheDocument();
     expect(screen.queryByText("Send")).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * Delivery is a SERVER contract now, decided per proposal from the surface and
+ * from whether a delivery path is wired (backend `Pipeline.deliveryFor`,
+ * `src/pipeline/pipeline.ts`). The console used to decide it here, from the
+ * capability table, and the table said eBay Live delivered by API — so the
+ * reference surface's primary button was a Send over a reply nothing sends.
+ */
+describe("who sends the reply is read off the card, not off the surface", () => {
+  const caps = SURFACE_CAPABILITIES.ebaylive;
+
+  it("offers Send when the server says this proposal is delivered by us", () => {
+    render(
+      <ProposalQueue
+        {...queueProps}
+        live={[proposal({ delivery: "api" })]}
+        guardOrder={guardOrderFor(caps)}
+      />,
+    );
+    expect(screen.getByText("Send")).toBeInTheDocument();
+  });
+
+  it("offers no Send for the same surface when the server says a human delivers", () => {
+    render(
+      <ProposalQueue
+        {...queueProps}
+        live={[proposal({ delivery: "human" })]}
+        guardOrder={guardOrderFor(caps)}
+      />,
+    );
+    expect(screen.queryByText("Send")).not.toBeInTheDocument();
+  });
+
+  /** A server too old to send the field is a server that cannot be promising
+   *  a delivery. The costly failure is a Send button over a reply nothing
+   *  sends; a Copy over a reply that could have been sent costs a paste. */
+  it("treats a missing delivery field as the operator's to send", () => {
+    // `delivery` is optional on the wire precisely so this case is expressible.
+    const { delivery: _absent, ...noField } = proposal();
+    render(
+      <ProposalQueue {...queueProps} live={[noField]} guardOrder={guardOrderFor(caps)} />,
+    );
+    expect(screen.queryByText("Send")).not.toBeInTheDocument();
+    expect(screen.getByText("Copy")).toBeInTheDocument();
+  });
+});
+
+/**
+ * Copying IS accepting, where the reply is the operator's to post.
+ *
+ * The copy control never called the API, so on every surface in the build the
+ * only offered action recorded nothing at all: no audit entry, no answered
+ * rate, no Recent line — for a reply the operator had actually used.
+ */
+describe("copying a reply the operator posts themselves", () => {
+  const withClipboard = (writeText: () => Promise<void>) => {
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText },
+      configurable: true,
+    });
+  };
+
+  it("records it through the same endpoint Send uses", async () => {
+    withClipboard(() => Promise.resolve());
+    const onCopy = vi.fn();
+    render(
+      <ProposalQueue
+        {...queueProps}
+        onCopy={onCopy}
+        live={[proposal({ delivery: "human" })]}
+      />,
+    );
+    fireEvent.click(screen.getByText("Copy"));
+    await waitFor(() => expect(onCopy).toHaveBeenCalledWith("p_1", undefined));
+  });
+
+  it("records nothing when the clipboard refused — the operator has no words in hand", async () => {
+    withClipboard(() => Promise.reject(new Error("denied")));
+    const onCopy = vi.fn();
+    render(
+      <ProposalQueue
+        {...queueProps}
+        onCopy={onCopy}
+        live={[proposal({ delivery: "human" })]}
+      />,
+    );
+    fireEvent.click(screen.getByText("Copy"));
+    await screen.findByText("Could not copy");
+    expect(onCopy).not.toHaveBeenCalled();
+  });
+
+  /** Where the copilot is the sender, Send is the accept and a copy is a copy. */
+  it("does not record a copy on a surface that delivers for us", async () => {
+    withClipboard(() => Promise.resolve());
+    const onCopy = vi.fn();
+    render(
+      <ProposalQueue {...queueProps} onCopy={onCopy} live={[proposal({ delivery: "api" })]} />,
+    );
+    fireEvent.click(screen.getByText("Copy"));
+    await screen.findByText("Copied");
+    expect(onCopy).not.toHaveBeenCalled();
   });
 });
 

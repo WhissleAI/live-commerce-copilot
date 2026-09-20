@@ -22,6 +22,7 @@ import { useShowStream } from "@/hooks/useShowStream";
 import {
   capabilitiesOf,
   consoleLayout,
+  deliveryOf,
   guardOrderFor,
   surfaceLabel,
   surfaceOf,
@@ -199,18 +200,44 @@ export function Console() {
     [decidable, focusedId],
   );
 
+  /**
+   * Accept a reply, and say afterwards what actually happened to it.
+   *
+   * The server decides that, per proposal, and says so in `delivery` — so the
+   * confirmation is read off the answer rather than assumed by the button that
+   * asked. On every surface in the build today the answer is `"human"`: the
+   * reply was composed, guarded, recorded and written into the audit chain,
+   * and the operator posts it. "Reply sent to @buyer" was the console's most
+   * frequent sentence and it described a delivery that never happened.
+   *
+   * `via` is how the operator took it, which changes only the wording: copying
+   * puts the words in their hand, pressing Enter does not.
+   */
   const send = useCallback(
-    (id: string, text?: string) => {
+    (id: string, text?: string, via: "send" | "copy" = "send") => {
       setEditingId(null);
       void api
         .sendProposal(id, text)
         .then((p) => {
-          toasts.push({ tone: "ok", text: `Reply sent to ${p.message.author}` });
+          const who = p.message.author;
+          toasts.push({
+            tone: "ok",
+            text:
+              deliveryOf(p) === "api"
+                ? `Reply sent to ${who}`
+                : via === "copy"
+                  ? `Copied and recorded — post it to ${who} yourself`
+                  : `Recorded — the reply to ${who} is yours to post`,
+          });
         })
-        .catch(failed("Not sent"));
+        .catch(failed(via === "copy" ? "Not recorded" : "Not sent"));
     },
     [toasts],
   );
+
+  /** The operator copied the draft on a surface where that is how a reply goes
+   *  out. Same endpoint, same audit entry — see `CopyDraft`. */
+  const copied = useCallback((id: string, text?: string) => send(id, text, "copy"), [send]);
 
   /** The PRD's unmeasurable metric, made measurable by the only person who can
    *  see it. A floor, and the report says so. */
@@ -692,6 +719,7 @@ export function Console() {
             highlightedId={highlightedId}
             onFocus={setFocusedId}
             onSend={send}
+            onCopy={copied}
             onEdit={setEditingId}
             onCancelEdit={() => setEditingId(null)}
             onDismiss={(id) => void api.dismissProposal(id).catch(failed("Not dismissed"))}
@@ -699,7 +727,6 @@ export function Console() {
             onFlag={flagWrong}
             onInspect={(id) => openInspect({ kind: "proposal", id })}
             guardOrder={guardOrder}
-            deliverable={layout.deliverable}
           />
           {drawerOpen ? (
             <div

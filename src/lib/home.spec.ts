@@ -190,7 +190,11 @@ const sources = (over: Partial<HomeSources> = {}): HomeSources => ({
 
 describe("what a surface does during and after", () => {
   it("separates acting from answering from drafting", () => {
-    expect(duringLabel(SURFACE_CAPABILITIES.ebaylive)).toBe("answers and acts");
+    // Two independent axes, and eBay Live is why they cannot be collapsed: it
+    // cannot deliver a reply (there is no chat-post API) and it genuinely does
+    // act (five listing writes against the seller's own catalog). Word for
+    // word the backend's `duringPhrase` — `src/surfaces/readiness.ts`.
+    expect(duringLabel(SURFACE_CAPABILITIES.ebaylive)).toBe("answers you send, and acts");
     expect(duringLabel(SURFACE_CAPABILITIES.twitch)).toBe("answers and acts");
     // Reddit is draft-only AND has no room to be in: a queue, and you send it.
     expect(duringLabel(SURFACE_CAPABILITIES.reddit)).toBe("drafts only");

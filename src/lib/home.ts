@@ -50,38 +50,46 @@ import { SURFACE_LABEL, capabilitiesOf, isSurfaceId, withRemote } from "./surfac
 
 // ── the three phases, in words ──────────────────────────────────────────────
 
-/** Actions that change something a buyer can see. */
-const WRITE_ACTIONS = new Set([
-  "push_listing",
-  "swap_pinned",
-  "markdown_price",
-  "adjust_stock",
-  "end_listing",
-  "create_clip",
-  "run_poll",
-  "pin_message",
-]);
+/**
+ * Actions that write only to records we own.
+ *
+ * Mirrors `OWN_RECORDS_ONLY` in the backend's `src/surfaces/readiness.ts`, and
+ * is the same question asked from the other side: a surface whose whole action
+ * set is in here does not ACT in the sense the During column claims. Marking a
+ * highlight and handing a question to a human touch our own rows; a reply is a
+ * reply, not an act.
+ */
+const OWN_RECORDS_ONLY = new Set(["mark_highlight", "flag_for_human", "post_reply"]);
 
 /**
  * What this surface does DURING a conversation.
  *
- * Three answers, and the difference between them is the whole product:
+ * Word for word the backend's `duringPhrase` (`src/surfaces/readiness.ts`),
+ * because the server sends this string and this is the fallback rendered until
+ * it answers — two spellings of the same fact is how a column ends up saying
+ * one thing on a cold load and another a second later.
+ *
+ * Four answers, on two independent axes:
  *
  *  · "answers and acts" — we can deliver the reply AND change something a
  *    buyer sees, because we hold credentials for this marketplace.
- *  · "answers, you send" — there is a live room and an answer for it, and a
- *    human is the one who puts it in the chat. Whatnot and TikTok Live are
- *    read through a browser; we hold nothing that could post there.
+ *  · "answers you send, and acts" — eBay Live, and the reason the two axes
+ *    cannot be collapsed: there is no chat-post API, so a human sends every
+ *    reply, and there genuinely are five listing writes against the seller's
+ *    own catalog. "answers, you send" would hide half the product; "answers
+ *    and acts" claimed the half that does not happen.
+ *  · "answers, you send" — a live room, an answer for it, and a human puts it
+ *    in the chat. Whatnot and TikTok Live are read through a browser; we hold
+ *    nothing that could post there.
  *  · "drafts only" — no room to be in. A queue of replies, and you send them.
- *
- * Tempo is what separates the last two: a live draft-only surface is answering
- * a room in real time, and calling that "drafts only" would read as an inbox.
  */
 export function duringLabel(caps: SurfaceCapabilities): string {
+  const acts = caps.actions.some((a) => !OWN_RECORDS_ONLY.has(a));
   if (caps.delivery === "draft-only") {
-    return caps.tempo === "async" ? "drafts only" : "answers, you send";
+    if (caps.tempo === "async") return "drafts only";
+    return acts ? "answers you send, and acts" : "answers, you send";
   }
-  return caps.actions.some((a) => WRITE_ACTIONS.has(a)) ? "answers and acts" : "answers, you send";
+  return acts ? "answers and acts" : "answers, you send";
 }
 
 /**

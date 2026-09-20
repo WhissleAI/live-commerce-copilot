@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { GUARD_LABEL, GUARD_MEANS, GUARD_ORDER, formatMs, timeAgo } from "@/lib/format";
+import { deliveryOf } from "@/lib/surfaces";
 import type { Evidence, GuardName, GuardResult, ReplyProposal } from "@/lib/types";
 import { ConsoleButton, Dots, Hover, IntentBadge, Kbd, SectionHeader } from "./primitives";
 import {
@@ -221,19 +222,38 @@ export function StyleRef({ styleRef }: { styleRef: ReplyProposal["styleRef"] | u
   );
 }
 
-/** The one control a draft-only surface has. The clipboard can be refused (an
- *  insecure origin, a denied permission) and the button says so rather than
- *  looking like it worked. */
 /**
- * CONTENT-19: this rendered only on draft-only surfaces, so eBay Live — the
- * one surface the landing page says by name "hands an approved reply back to
- * you to paste" — had a button labelled Send, a status that read `sent`, and
- * nowhere to copy from. Nothing is actually delivered anywhere (`send()` marks
- * the proposal and appends an audit entry; there is no platform call on any
- * path), so the copy is the operator's real next step on every surface. It is
- * the primary action where there is nothing else, and secondary beside Send.
+ * Taking the reply.
+ *
+ * CONTENT-19 made this render on every surface rather than only the draft-only
+ * ones, because nothing is delivered anywhere: `send()` re-checks the draft,
+ * records it and writes it into the audit chain, and no code path posts a
+ * character to any platform. So the copy is the operator's real next step.
+ *
+ * `onCopied` is what makes it more than a clipboard button. Where the reply is
+ * the operator's to post, copying it IS accepting it — it is the moment they
+ * take the words — so the copy records it through the same endpoint the Send
+ * button uses, and the reply stops being an open proposal. Until this existed,
+ * the only control offered on those surfaces never called the API at all, so
+ * the answered-rate, the audit chain and the Recent list all had nothing to
+ * say about a reply the operator had actually used.
+ *
+ * It records only after the clipboard ACCEPTED the text. A copy the browser
+ * refused (an insecure origin, a denied permission) leaves the operator with
+ * nothing in hand, and recording "I took this" on top of that would be the
+ * same false statement in a smaller place.
  */
-function CopyDraft({ text, variant = "primary" }: { text: string; variant?: "primary" | "secondary" }) {
+function CopyDraft({
+  text,
+  variant = "primary",
+  onCopied,
+}: {
+  text: string;
+  variant?: "primary" | "secondary";
+  /** Called once the text is really on the clipboard. Absent where the reply
+   *  is ours to deliver: there, Send is the accept and a copy is a copy. */
+  onCopied?: (() => void) | undefined;
+}) {
   const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
   return (
     <ConsoleButton
@@ -241,12 +261,19 @@ function CopyDraft({ text, variant = "primary" }: { text: string; variant?: "pri
       onClick={() => {
         void navigator.clipboard
           ?.writeText(text)
-          .then(() => setState("copied"))
+          .then(() => {
+            setState("copied");
+            onCopied?.();
+          })
           .catch(() => setState("failed"));
         if (!navigator.clipboard) setState("failed");
         window.setTimeout(() => setState("idle"), 2000);
       }}
-      title="The reply is yours to post — nothing is delivered for you"
+      title={
+        onCopied
+          ? "The reply is yours to post — copying it records that you took it"
+          : "Put the reply on the clipboard"
+      }
     >
       {state === "copied" ? "Copied" : state === "failed" ? "Could not copy" : "Copy"}
     </ConsoleButton>
@@ -319,9 +346,9 @@ function ProposalCard({
   highlighted,
   editing,
   guardOrder,
-  deliverable,
   onFocus,
   onSend,
+  onCopy,
   onEdit,
   onCancelEdit,
   onDismiss,
@@ -333,11 +360,11 @@ function ProposalCard({
   highlighted: boolean;
   editing: boolean;
   guardOrder: GuardName[];
-  /** False on a draft-only surface: the reply is the operator's to send, and a
-   *  Send button that cannot send is a lie the console must not tell. */
-  deliverable: boolean;
   onFocus: () => void;
   onSend: (text?: string) => void;
+  /** The operator took the words. Only offered where the reply is theirs to
+   *  post; see `CopyDraft`. */
+  onCopy: (text?: string) => void;
   onEdit: () => void;
   onCancelEdit: () => void;
   onDismiss: () => void;
@@ -376,6 +403,16 @@ function ProposalCard({
   const blocked = p.status === "blocked";
   const needsReview = p.status === "needs_review";
   const blockingGuard = p.guards.find((g) => g.verdict === "block");
+  /**
+   * Who sends this one — the server's answer, on this proposal.
+   *
+   * Not the surface's capability row. The row is what a platform would permit;
+   * this is what the backend will actually do, having also asked whether a
+   * delivery path is wired into the process that drafted it. They disagree on
+   * every surface in the build today, and the console rendered a Send button
+   * and a "Reply sent" toast off the optimistic half of the disagreement.
+   */
+  const delivers = deliveryOf(p) === "api";
 
   return (
     <li
@@ -530,7 +567,7 @@ function ProposalCard({
             <StyleRef styleRef={p.styleRef} />
 
             <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-              {blocked ? null : deliverable ? (
+              {blocked ? null : delivers ? (
                 <ConsoleButton
                   variant={needsReview ? "secondary" : "primary"}
                   onClick={() => onSend(editing ? value : undefined)}
@@ -550,7 +587,8 @@ function ProposalCard({
               {blocked ? null : (
                 <CopyDraft
                   text={editing ? value : p.draft}
-                  variant={deliverable ? "secondary" : "primary"}
+                  variant={delivers ? "secondary" : "primary"}
+                  onCopied={delivers ? undefined : () => onCopy(editing ? value : undefined)}
                 />
               )}
               <ConsoleButton variant="secondary" onClick={editing ? onCancelEdit : onEdit}>
@@ -581,6 +619,7 @@ export function ProposalQueue({
   highlightedId,
   onFocus,
   onSend,
+  onCopy,
   onEdit,
   onCancelEdit,
   onDismiss,
@@ -590,7 +629,6 @@ export function ProposalQueue({
   leading,
   trailing,
   guardOrder = GUARD_ORDER,
-  deliverable = true,
 }: {
   live: ReplyProposal[];
   recent: ReplyProposal[];
@@ -599,6 +637,9 @@ export function ProposalQueue({
   highlightedId: string | null;
   onFocus: (id: string) => void;
   onSend: (id: string, text?: string) => void;
+  /** The operator copied the reply on a surface where that is how it goes out.
+   *  Recorded through the same endpoint Send uses — see `CopyDraft`. */
+  onCopy: (id: string, text?: string) => void;
   onEdit: (id: string) => void;
   onCancelEdit: () => void;
   onDismiss: (id: string) => void;
@@ -615,8 +656,6 @@ export function ProposalQueue({
   /** Which guards this surface runs, in order. The base six by default, which
    *  is every live-commerce surface and every card rendered before surfaces. */
   guardOrder?: GuardName[];
-  /** Can we deliver a reply here, or is the operator the sender? */
-  deliverable?: boolean;
 }) {
   const [filter, setFilter] = useState<"all" | "blocked">("all");
   // An abstention is not a suggestion. When retrieval found nothing, the draft
@@ -704,9 +743,9 @@ export function ProposalQueue({
                 highlighted={highlightedId === p.id}
                 editing={editingId === p.id}
                 guardOrder={guardOrder}
-                deliverable={deliverable}
                 onFocus={() => onFocus(p.id)}
                 onSend={(text) => onSend(p.id, text)}
+                onCopy={(text) => onCopy(p.id, text)}
                 onEdit={() => onEdit(p.id)}
                 onCancelEdit={onCancelEdit}
                 onDismiss={() => onDismiss(p.id)}

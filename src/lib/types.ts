@@ -46,6 +46,18 @@ export type Tempo = "live" | "async";
 export type CorpusKind =
   "listing" | "policy" | "schedule" | "sponsor" | "product" | "community" | "qa";
 
+/**
+ * Who puts one particular reply in front of the person who asked.
+ *
+ * NOT the same question as `SurfaceCapabilities.delivery`. That one is what a
+ * surface would permit; this is what the server will actually do with THIS
+ * proposal, having also asked whether a delivery path is wired into the
+ * process that drafted it. The backend's `Pipeline.deliveryFor`
+ * (`src/pipeline/pipeline.ts`) is the only place it is decided, and today it
+ * answers `"human"` everywhere, because nothing wires a deliverer.
+ */
+export type ReplyDelivery = "api" | "human";
+
 /** What a surface can do, so the UI and the guards stop guessing. */
 export interface SurfaceCapabilities {
   tempo: Tempo;
@@ -334,6 +346,21 @@ export interface ReplyProposal {
   repaired: boolean;
   spans: SpanBreakdown;
   createdAt: string;
+  /**
+   * What accepting this reply will DO — the server's answer, per proposal.
+   *
+   * Decided by the backend from the surface AND from whether a delivery path
+   * is wired (`Pipeline.deliveryFor`), never by this client from the
+   * capability table: eBay Live declared `delivery: "api"` for months with no
+   * code anywhere posting a character to eBay, and the console rendered a
+   * primary Send and a "Reply sent to @buyer" toast off that declaration.
+   *
+   * Optional because a backend older than the field says nothing — and ABSENT
+   * READS AS `"human"`. The costly failure is a Send button over a reply
+   * nothing delivers; a Copy button over a reply that could have been sent
+   * costs a paste.
+   */
+  delivery?: ReplyDelivery;
   sentText?: string;
   /** One of the operator's own past answers, cited as a STYLE reference and
    *  never as grounding. Rendered muted, below the guards it must not compete

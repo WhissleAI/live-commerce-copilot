@@ -4,6 +4,8 @@ import {
   SURFACE_CAPABILITIES,
   capabilitiesOf,
   consoleLayout,
+  deliveredForUs,
+  deliveryOf,
   guardOrderFor,
   normalizeCapabilities,
   recognise,
@@ -56,7 +58,39 @@ describe("normalizeCapabilities", () => {
 
   it("survives null, which is what a 500 deserialises to", () => {
     expect(() => normalizeCapabilities(null)).not.toThrow();
-    expect(normalizeCapabilities(null).delivery).toBe("api");
+  });
+
+  /** Every other field falls back to eBay Live's, because a wrong answer there
+   *  costs a layout. This one decides whether the console offers to speak on
+   *  the operator's behalf, so a server that did not say cannot be read as
+   *  "we may post here". */
+  it("reads an unstated delivery as draft-only rather than as an API we have", () => {
+    expect(normalizeCapabilities(null).delivery).toBe("draft-only");
+    expect(normalizeCapabilities({ tempo: "live" }).delivery).toBe("draft-only");
+    expect(normalizeCapabilities({ delivery: "api" }).delivery).toBe("api");
+  });
+});
+
+/**
+ * Who sends ONE reply — a different question from what a surface permits.
+ *
+ * The backend decides it per proposal, from the surface and from whether a
+ * delivery path is wired into the process that drafted it
+ * (`Pipeline.deliveryFor`, `src/pipeline/pipeline.ts`), and puts the answer on
+ * the proposal. A client that re-derived it from the capability table would be
+ * answering the question the server has already answered, with the half of the
+ * information that says "api" on a surface where nothing is wired.
+ */
+describe("deliveryOf", () => {
+  it("takes the server's word when it gave one", () => {
+    expect(deliveryOf({ delivery: "api" })).toBe("api");
+    expect(deliveryOf({ delivery: "human" })).toBe("human");
+  });
+
+  it("reads a missing field as human, never as sendable", () => {
+    expect(deliveryOf({})).toBe("human");
+    expect(deliveryOf({ delivery: null })).toBe("human");
+    expect(deliveredForUs({})).toBe(false);
   });
 });
 
@@ -82,7 +116,6 @@ describe("consoleLayout", () => {
       hostAudio: true,
       threadPanel: false,
       actionRail: true,
-      deliverable: true,
     });
   });
 
@@ -102,7 +135,6 @@ describe("consoleLayout", () => {
     expect(reddit.latencyMeter).toBe(false);
     expect(reddit.threadPanel).toBe(true);
     expect(reddit.hostAudio).toBe(false);
-    expect(reddit.deliverable).toBe(false);
   });
 
   it("keeps the host-audio panel only where the surface carries audio", () => {
@@ -224,15 +256,17 @@ describe("the capability mirror matches the backend, field for field", () => {
   const BACKEND: Record<string, SurfaceCapabilities> = {
     simulated: {
       tempo: "live",
-      delivery: "api",
+      delivery: "draft-only",
       perception: { audio: true, video: true },
       actions: ["push_listing", "swap_pinned", "markdown_price", "adjust_stock", "end_listing"],
       corpora: ["listing", "policy", "qa", "community"],
       communityRules: false,
     },
+    // No chat-post API exists for an eBay Live event — that absence is the
+    // reason the surface is read through a scraped browser session at all.
     ebaylive: {
       tempo: "live",
-      delivery: "api",
+      delivery: "draft-only",
       perception: { audio: true, video: true },
       actions: ["push_listing", "swap_pinned", "markdown_price", "adjust_stock", "end_listing"],
       corpora: ["listing", "policy", "qa", "community"],
