@@ -17,13 +17,7 @@ import {
 import { api, API_BASE, USE_MOCKS, ensureSession, tokenQuery } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { isTypingIn, modalOpen, shortcutActs } from "@/lib/keys";
-import {
-  ATTACH_HINT,
-  ATTACH_VERB,
-  LOAD_FAILED,
-  operatorMessage,
-  streamTitle,
-} from "@/lib/copy";
+import { ATTACH_HINT, ATTACH_VERB, LOAD_FAILED, operatorMessage, streamTitle } from "@/lib/copy";
 import { useShowStream } from "@/hooks/useShowStream";
 import {
   capabilitiesOf,
@@ -503,8 +497,8 @@ export function Console() {
                 </Button>
               }
             >
-              {operatorMessage(streamError, "The session stream")} This is not the same as
-              nothing being on air — whatever was running is still running.
+              {operatorMessage(streamError, "The session stream")} This is not the same as nothing
+              being on air — whatever was running is still running.
             </EmptyState>
           </Card>
         ) : idle ? (
@@ -520,8 +514,8 @@ export function Console() {
                 </Link>
               }
             >
-              {ATTACH_HINT} It builds what it knows from the conversation itself, and this
-              console fills as people start asking.
+              {ATTACH_HINT} It builds what it knows from the conversation itself, and this console
+              fills as people start asking.
             </EmptyState>
           </Card>
         ) : (
@@ -651,6 +645,7 @@ export function Console() {
                 levels={levels}
                 context={store.context}
                 listen={store.listen}
+                surface={surfaceId}
                 bridgeUrl={
                   USE_MOCKS
                     ? null

@@ -12,17 +12,11 @@
  * an explainer that reappears is a nag.
  */
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { useDialog } from "@/hooks/useDialog";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  Badge,
-  Button,
-  GUARD_MARK,
-  GUARD_PILL_CLASS,
-  GuardPill,
-  Key,
-} from "@/components/ui/kit";
+import { Badge, Button, GUARD_MARK, GUARD_PILL_CLASS, GuardPill, Key } from "@/components/ui/kit";
 import { GUARD_MEANS, GUARD_ORDER } from "@/lib/format";
 import type { GuardName, Verdict } from "@/lib/types";
 
@@ -90,6 +84,11 @@ const GUARDS: { verdict: Verdict | "n/a"; name: string; means: string }[] = [
 ];
 
 export function LegendOverlay({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const dialog = useRef<HTMLDivElement | null>(null);
+  // This is the one that opens by itself on a new browser, so it is the one
+  // where taking focus matters most: until it did, Enter went past it to the
+  // queue. See `lib/keys`.
+  useDialog(dialog, open, "[data-dialog-initial]");
   useEffect(() => {
     if (!open) return;
     const esc = (e: KeyboardEvent) => {
@@ -103,6 +102,7 @@ export function LegendOverlay({ open, onClose }: { open: boolean; onClose: () =>
 
   return (
     <div
+      ref={dialog}
       className="fixed inset-0 z-100 flex items-center justify-center bg-canvas/80 p-6"
       onClick={onClose}
       role="dialog"
@@ -215,7 +215,7 @@ export function LegendOverlay({ open, onClose }: { open: boolean; onClose: () =>
           <span className="flex-1 text-[11.5px] text-text-muted">
             This is shown once. <Key>⌘K</Key> brings it back.
           </span>
-          <Button variant="primary" onClick={onClose}>
+          <Button variant="primary" onClick={onClose} data-dialog-initial>
             Got it
           </Button>
         </div>

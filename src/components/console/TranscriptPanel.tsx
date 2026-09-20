@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { Mic, MicOff, ExternalLink, Eye } from "lucide-react";
-import type { ListenHealth, ShowContext, SignalDistribution, TranscriptSegment } from "@/lib/types";
+import type {
+  ListenHealth,
+  ShowContext,
+  SignalDistribution,
+  SurfaceId,
+  TranscriptSegment,
+} from "@/lib/types";
+import { surfaceLabel } from "@/lib/surfaces";
 import { cn } from "@/lib/utils";
 
 /**
@@ -52,12 +59,15 @@ export function TranscriptPanel({
   context,
   bridgeUrl,
   listen,
+  surface = "ebaylive",
 }: {
   transcript: TranscriptSegment[];
   levels: number[];
   context: ShowContext | null;
   bridgeUrl: string | null;
   listen?: ListenHealth | null;
+  /** Which surface this session is on, for the one sentence that names a tab. */
+  surface?: SurfaceId;
 }) {
   const canvas = useRef<HTMLCanvasElement | null>(null);
   const wrap = useRef<HTMLDivElement | null>(null);
@@ -213,9 +223,12 @@ export function TranscriptPanel({
           </>
         ) : (
           <p className="text-[11px] leading-relaxed text-text-muted">
-            Nothing heard yet. Open the bridge, pick the eBay Live tab and tick{" "}
-            <strong className="text-text">Share tab audio</strong> — the host's speech then grounds
-            replies alongside the catalog and the chat.
+            {/* CONTENT-31: this hard-coded "pick the eBay Live tab" on a
+                panel that also runs for Twitch sessions, where the tab the
+                operator has to pick is a Twitch one. */}
+            Nothing heard yet. Open the bridge, pick the {surfaceLabel(surface)} tab and tick{" "}
+            <strong className="text-text">Share tab audio</strong> — the host&apos;s speech then
+            grounds replies alongside the catalog and the chat.
           </p>
         )}
 

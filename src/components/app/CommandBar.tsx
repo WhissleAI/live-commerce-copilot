@@ -17,6 +17,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useDialog } from "@/hooks/useDialog";
 import { useNavigate } from "@tanstack/react-router";
 import {
   ArrowRight,
@@ -87,6 +88,10 @@ export function CommandBar({
   const [cursor, setCursor] = useState(0);
   const [shows, setShows] = useState<ShowRow[] | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const dialog = useRef<HTMLDivElement | null>(null);
+  // CONTENT-40: it focused its input and then let Tab walk the page behind it,
+  // and dropped focus on <body> when it closed.
+  useDialog(dialog, true, "input");
   const listRef = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
@@ -170,6 +175,7 @@ export function CommandBar({
 
   return (
     <div
+      ref={dialog}
       className="fixed inset-0 z-100 flex items-start justify-center bg-canvas/75 pt-[12vh]"
       onClick={onClose}
       role="dialog"

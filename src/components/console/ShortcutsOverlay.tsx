@@ -1,3 +1,5 @@
+import { useRef } from "react";
+import { useDialog } from "@/hooks/useDialog";
 import { Kbd } from "./primitives";
 
 const ROWS: [string, string][] = [
@@ -19,12 +21,16 @@ const ROWS: [string, string][] = [
 ];
 
 export function ShortcutsOverlay({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const dialog = useRef<HTMLDivElement | null>(null);
+  useDialog(dialog, open);
   if (!open) return null;
   return (
     <div
+      ref={dialog}
       className="fixed inset-0 z-100 flex items-center justify-center bg-canvas/80"
       onClick={onClose}
       role="dialog"
+      aria-modal="true"
       aria-label="Keyboard shortcuts"
     >
       <div
