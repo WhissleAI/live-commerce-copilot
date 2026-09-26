@@ -226,7 +226,18 @@ export function DiscoverView({ onAttach }: { onAttach: (url: string) => void }) 
       setError(null);
       try {
         if (hit.action === "prepare") {
+          // Already prepared: the button under the finger says Monitor, and it
+          // means it. Attaching is the next step and it is instant — the agent
+          // and the catalog are the thing preparing built.
+          if (preparedBy.has(hit.id)) {
+            onAttach(hit.url || hit.id);
+            return;
+          }
           const legacy = hit.legacy;
+          // The id is the only field the server needs; the rest is what the
+          // legacy payload happens to carry, and it fills in only where the
+          // server's own grid has nothing. Sending `sellerHandle: null` no
+          // longer erases the handle a preparation is entirely built from.
           await api.prepareShow({
             eventId: hit.id,
             title: hit.title,
@@ -255,7 +266,7 @@ export function DiscoverView({ onAttach }: { onAttach: (url: string) => void }) 
         setError(operatorMessage(e));
       }
     },
-    [onAttach, read],
+    [onAttach, preparedBy, read],
   );
 
   const sources = payload?.sources ?? [];
@@ -263,23 +274,45 @@ export function DiscoverView({ onAttach }: { onAttach: (url: string) => void }) 
   const total = hitsFor(sources, "all").length;
   const selected = filter === "all" ? null : sourceFor(sources, filter);
 
-  // Interests are the question every source was asked. With none, there is no
-  // question — and a grid of strangers is exactly what this screen stopped
-  // being. The index says so; the fallback never had interests to begin with.
+  // Interests are the question every source was asked. With none there is no
+  // question — and the screen used to stop there, on all five surfaces at
+  // once, under a heading promising what is live on what you sell. A seller
+  // opening this on their first day read that as a broken product, and they
+  // were not wrong: nothing on the page moved, and nothing said why.
+  //
+  // So the server now answers the only honest question left — what is simply
+  // live — and marks it `unmatched`. This screen draws the explanation ABOVE
+  // that list rather than instead of it. The rule the audits were about is
+  // untouched: no card claims a reason, because none of them have one.
   const noInterests = mode === "index" && interests.length === 0;
 
   return (
     <div className="mb-10">
       <div className="flex flex-wrap items-baseline gap-2">
-        <SectionHeading hint="Every surface asked the same question: given what you sell, what is worth your attention right now — and why. The terms come from your catalogs; each card names the ones it matched.">
-          Live right now, on what you sell
+        {/* The heading is a claim about the list under it, so it cannot be a
+            constant. With no terms nothing below was matched against anything,
+            and "on what you sell" would be the single most misleading sentence
+            on the page. */}
+        <SectionHeading
+          hint={
+            noInterests
+              ? "No terms yet, so nothing below has been matched against anything — it is what the surfaces we can read have on air. Add a term, or load a catalog, and every card starts naming the terms it matched."
+              : "Every surface asked the same question: given what you sell, what is worth your attention right now — and why. The terms come from your catalogs; each card names the ones it matched."
+          }
+        >
+          {noInterests ? "Live right now" : "Live right now, on what you sell"}
         </SectionHeading>
         <span className="ml-auto flex items-center gap-2">
           {busy ? (
             <span className="text-[12px] text-text-muted">asking every surface…</span>
           ) : refreshed ? (
             <span className="anim-fade text-[12px] text-text-muted" key={refreshed.at.getTime()}>
-              {refreshed.hits} match{refreshed.hits === 1 ? "" : "es"} · read{" "}
+              {/* "12 matches" over a list matched against nothing is the same
+                  false claim as the heading, in smaller type. */}
+              {refreshed.hits}{" "}
+              {noInterests
+                ? `live · read `
+                : `match${refreshed.hits === 1 ? "" : "es"} · read `}
               {refreshed.at.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
             </span>
           ) : null}
@@ -334,17 +367,24 @@ export function DiscoverView({ onAttach }: { onAttach: (url: string) => void }) 
             <Skeleton className="h-[150px]" />
             <Skeleton className="h-[150px]" />
           </div>
-        ) : noInterests ? (
-          <NoInterests catalogs={payload?.catalogs ?? null} />
         ) : (
-          <SourceResults
-            sources={shown}
-            all={filter === "all"}
-            preparedBy={preparedBy}
-            preparing={home?.preparing ?? []}
-            isWatched={(h) => isWatched(rooms, h)}
-            onAct={(h) => void act(h)}
-          />
+          <>
+            {/* The explanation goes ABOVE the list, not instead of it. An
+                operator with no terms still gets to see what is on air and
+                prepare one — that is the whole first-run path — and the one
+                thing that must not happen is the grid being passed off as a
+                match, which is what the note and the empty `why` on every
+                card between them prevent. */}
+            {noInterests ? <NoInterests catalogs={payload?.catalogs ?? null} /> : null}
+            <SourceResults
+              sources={shown}
+              all={filter === "all"}
+              preparedBy={preparedBy}
+              preparing={home?.preparing ?? []}
+              isWatched={(h) => isWatched(rooms, h)}
+              onAct={(h) => void act(h)}
+            />
+          </>
         )}
       </div>
 
@@ -503,7 +543,7 @@ export function InterestRail({
 export function NoInterests({ catalogs }: { catalogs: number | null }) {
   const emptied = catalogs != null && catalogs > 0;
   return (
-    <Card className="border-dashed">
+    <Card className="mb-4 border-dashed">
       <EmptyState
         icon={<Sparkles className="size-5" aria-hidden />}
         title={emptied ? "Every term has been removed." : "We do not know what you sell yet."}
@@ -521,14 +561,16 @@ export function NoInterests({ catalogs }: { catalogs: number | null }) {
           <>
             Your {catalogs} catalog{catalogs === 1 ? "" : "s"} are loaded, and every term derived
             from them has been removed — which sticks: importing again will not bring them back. Add
-            one above and Discover has a question to ask again.
+            one above and Discover can go back to ranking what is below by how much of it you
+            actually sell. Until then it is simply what is on air.
           </>
         ) : (
           <>
             Discovery asks every surface one question — given what you sell, what is worth your
-            attention right now — and the terms come from your listings. Load a catalog, or add a
-            term above, and this fills in. A grid of whatever happens to be live would not be worth
-            your attention.
+            attention right now — and the terms come from your listings. Below is everything the
+            surfaces we can read have on air, in no particular order and matched against nothing:
+            none of it is a recommendation. You can prepare any of it. Load a catalog, or add a term
+            above, and these become the shows that have something to do with you.
           </>
         )}
       </EmptyState>
@@ -805,12 +847,14 @@ export function HitCard({
   // What "already done" means is a property of the ACTION, not of the surface.
   // An `open` hit is a link: it is never done, and a card that said "Watching"
   // over a Reddit thread would be claiming a watch nothing is holding.
-  const done =
-    hit.action === "prepare"
-      ? Boolean(prepared)
-      : hit.action === "watch-room"
-        ? Boolean(watching)
-        : false;
+  //
+  // Preparing is the exception, because it is not an end. A prepared show has
+  // an agent and a catalog and the only thing left to do with it is WATCH it —
+  // so the card that said "Prepared" and went grey was a dead end at the exact
+  // moment the operator had somewhere to go, with the way there parked in a
+  // list further down the page. It offers the next step instead.
+  const readyToWatch = hit.action === "prepare" && Boolean(prepared);
+  const done = hit.action === "watch-room" ? Boolean(watching) : false;
 
   return (
     <Card className="flex flex-col gap-2 p-3">
@@ -882,16 +926,12 @@ export function HitCard({
             <Loader2 className="size-3 animate-spin" aria-hidden />
           ) : done ? (
             <Check className="size-3" aria-hidden />
+          ) : readyToWatch ? (
+            <Radio className="size-3" aria-hidden />
           ) : (
             <Sparkles className="size-3" aria-hidden />
           )}
-          {preparing
-            ? "Preparing…"
-            : done
-              ? hit.action === "prepare"
-                ? "Prepared"
-                : "Watching"
-              : actionLabel(hit)}
+          {preparing ? "Preparing…" : done ? "Watching" : readyToWatch ? "Monitor" : actionLabel(hit)}
         </Button>
       </div>
     </Card>

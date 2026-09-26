@@ -253,16 +253,71 @@ describe("Discover against a server that has the index", () => {
 
   // No catalog, no interests, and therefore no honest question to ask any
   // surface — so a door to Knowledge rather than a grid of strangers.
-  it("points at Knowledge when there are no interests, and draws no grid", async () => {
+  // No interests used to end the screen here: the note, and nothing under it,
+  // on all five surfaces at once, under a heading promising what is live on
+  // what you sell. That is what a brand-new operator met on their first day
+  // and it reads as a broken product. The note still points at Knowledge —
+  // loading a catalog is still the thing that makes this screen good — but it
+  // sits ABOVE what the server could answer rather than instead of it.
+  it("points at Knowledge when there are no interests, and still shows what is live", async () => {
     backend({
-      "/api/discover": { body: { interests: [], catalogs: 0, sources: INDEX.sources } },
+      "/api/discover": {
+        body: {
+          interests: [],
+          catalogs: 0,
+          sources: INDEX.sources.map((s) => ({ ...s, unmatched: true })),
+        },
+      },
       "/api/home": { body: HOME },
     });
     await renderWithRouter(<DiscoverView onAttach={noop} />);
 
     expect(await screen.findByText("We do not know what you sell yet.")).toBeInTheDocument();
     expect(screen.getByText("Open Knowledge")).toBeInTheDocument();
-    expect(screen.queryByText("Watch collecting, all night")).not.toBeInTheDocument();
+    expect(screen.getByText("Watch collecting, all night")).toBeInTheDocument();
+  });
+
+  // The heading is a claim about the list under it. With nothing matched
+  // against anything, "on what you sell" is the most misleading sentence that
+  // could be on the page, so it is not a constant.
+  it("does not claim the unmatched grid is on what you sell", async () => {
+    backend({
+      "/api/discover": {
+        body: {
+          interests: [],
+          catalogs: 0,
+          sources: INDEX.sources.map((s) => ({ ...s, unmatched: true })),
+        },
+      },
+      "/api/home": { body: HOME },
+    });
+    await renderWithRouter(<DiscoverView onAttach={noop} />);
+
+    expect(await screen.findByText("Live right now")).toBeInTheDocument();
+    expect(screen.queryByText("Live right now, on what you sell")).not.toBeInTheDocument();
+  });
+
+  // The other half of the same rule, and the one two audits were about: a card
+  // in an unmatched list must not carry a reason it does not have.
+  it("draws no matched terms on a card that matched nothing", async () => {
+    backend({
+      "/api/discover": {
+        body: {
+          interests: [],
+          catalogs: 0,
+          sources: INDEX.sources.map((s) => ({
+            ...s,
+            unmatched: true,
+            hits: (s.hits ?? []).map((h) => ({ ...h, why: [] })),
+          })),
+        },
+      },
+      "/api/home": { body: HOME },
+    });
+    await renderWithRouter(<DiscoverView onAttach={noop} />);
+
+    expect(await screen.findByText("Watch collecting, all night")).toBeInTheDocument();
+    expect(screen.queryByText("matched")).not.toBeInTheDocument();
   });
 
   // Two different facts wanting two different things. Catalogs with no terms
