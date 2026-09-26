@@ -730,16 +730,33 @@ export function SourceResults({
   const blocks = all ? withHits : sources;
 
   if (all && withHits.length === 0) {
+    // Nothing was asked of anything, so nothing failed to match: the silence
+    // belongs to the surfaces, not to the operator's terms. Saying otherwise
+    // would blame a catalog they have not loaded yet for an empty night.
+    const unmatched = sources.every((s) => s.unmatched);
     return (
       <>
         <Card className="border-dashed">
           <EmptyState
             icon={<Radio className="size-5" aria-hidden />}
-            title="Nothing on any surface matches what you sell right now."
+            title={
+              unmatched
+                ? "Nothing is live on any surface we can read right now."
+                : "Nothing on any surface matches what you sell right now."
+            }
           >
-            Every surface was asked; none of them has anything live against your terms this minute.
-            Pasting a link still attaches, and sellers you follow are checked against these same
-            sources.
+            {unmatched ? (
+              <>
+                Every surface was asked and none of them has anything on air this minute. Pasting a
+                link still attaches, and the surfaces that need a key say so above.
+              </>
+            ) : (
+              <>
+                Every surface was asked; none of them has anything live against your terms this
+                minute. Pasting a link still attaches, and sellers you follow are checked against
+                these same sources.
+              </>
+            )}
           </EmptyState>
         </Card>
         <QuietSources sources={quiet} />
@@ -758,7 +775,10 @@ export function SourceResults({
                   nothing. "0 matches" is a measurement nobody made. */}
               {s.unavailable ? null : (
                 <span className="num text-[11.5px] text-text-muted">
-                  {s.hits.length} match{s.hits.length === 1 ? "" : "es"}
+                  {/* "12 matches" over a list that was matched against nothing
+                      is the same false claim as the heading, per surface. */}
+                  {s.hits.length}{" "}
+                  {s.unmatched ? "live" : `match${s.hits.length === 1 ? "" : "es"}`}
                 </span>
               )}
             </div>
@@ -768,7 +788,12 @@ export function SourceResults({
             {s.hits.length === 0 ? (
               s.unavailable ? null : (
                 <p className="mt-2 text-[12.5px] text-text-muted">
-                  Nothing live here matches your terms right now.
+                  {/* With no terms there is nothing for a room to fail to
+                      match, so the absence is the surface's, not the
+                      operator's. */}
+                  {s.unmatched
+                    ? "Nothing is live here right now."
+                    : "Nothing live here matches your terms right now."}
                 </p>
               )
             ) : (
