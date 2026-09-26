@@ -47,7 +47,13 @@ import {
 import { api, surfaceUnavailable } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { recognise, surfaceLabel } from "@/lib/surfaces";
-import { homeModel, missingLine, watchingLine, type HomeModel } from "@/lib/home";
+import {
+  homeModel,
+  missingLine,
+  waitForPreparation,
+  watchingLine,
+  type HomeModel,
+} from "@/lib/home";
 import { timeAgo } from "@/lib/format";
 import { useNow } from "@/hooks/useNow";
 import type {
@@ -165,20 +171,30 @@ export function HomePage({ view = "today" }: { view?: View }) {
             return;
           }
           // A session that was never prepared has no catalog and no agent.
-          // Prepare it here (about a minute) and attach once that lands.
+          // Prepare it here and attach ONCE THAT LANDS.
+          //
+          // Those four words are the fix. `prepareShow` answers the moment the
+          // work is queued — it is a minute of Browse calls and an agent
+          // creation, deliberately detached — and this used to attach on the
+          // next line. The row that makes an attach legal is written at the
+          // very end of that minute, so the attach hit the same `prepare-first`
+          // 409 it was recovering from, every single time. The paste box could
+          // not get past it, which is "cannot prepare an agent and then
+          // monitor" in full.
+          //
+          // Nothing is sent but the id: the seller handle and the show's real
+          // title live on the server's own grid, and inventing "eBay Live
+          // <id>" here is what put that string on five finished reports.
           if (!/prepare the agent/i.test((e as Error).message)) throw e;
           const eventId =
             value.match(/\/ebaylive\/events\/([A-Za-z0-9]{10,})/)?.[1] ??
             (/^[A-Za-z0-9]{16}$/.test(value) ? value : null);
           if (!eventId) throw e;
           setError("Preparing this session's agent and knowledge first — about a minute…");
-          await api.prepareShow({
-            eventId,
-            title: `eBay Live ${eventId}`,
-            host: "",
-            sellerHandle: null,
-            tags: [],
-            thumbnailUrl: null,
+          await api.prepareShow({ eventId });
+          await waitForPreparation(eventId, {
+            read: () => api.prepared(),
+            sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
           });
           setError(null);
           res = await api.startSession(attach);
