@@ -147,6 +147,10 @@ export function normalizeSource(raw: unknown): DiscoverSourceResult | null {
     // A surface that could not answer has nothing to show, whatever it sent.
     hits: unavailable ? [] : hits,
     unavailable,
+    // Only `true` counts. An older server omits the field entirely, and
+    // reading an absent field as "unmatched" would put a disclaimer over a
+    // list that was in fact matched.
+    unmatched: o["unmatched"] === true,
   };
 }
 
@@ -173,6 +177,7 @@ export function foldSources(raw: unknown): DiscoverSourceResult[] {
         surface: id,
         method: METHOD_UNKNOWN,
         hits: [],
+        unmatched: false,
         unavailable: {
           reason: `This server did not answer for ${SURFACE_LABEL[id]} — it may be running a build from before ${SURFACE_LABEL[id]} was wired into Discover.`,
           missing: null,
@@ -313,6 +318,10 @@ export function legacyDiscover(home: HomeView | null): DiscoverView {
         surface: "ebaylive",
         method: LEGACY_METHOD,
         hits,
+        // Nothing on this path knows what the operator sells, so nothing on it
+        // was matched. Saying so is the same admission `hitFromShow` makes by
+        // leaving every `why` empty, made once for the whole list.
+        unmatched: true,
         unavailable: hits.length === 0 && reason ? { reason, missing: null } : null,
       },
     ]),

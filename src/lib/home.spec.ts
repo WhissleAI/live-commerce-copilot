@@ -7,6 +7,7 @@ import {
   missingLine,
   normalizeSurfaceRow,
   ownCatalogs,
+  waitForPreparation,
   watchingLine,
   type HomeSources,
 } from "./home";
@@ -15,6 +16,7 @@ import type {
   CatalogSummary,
   EbayStatus,
   HomeView,
+  PreparedShow,
   ShowRow,
   ShowSummary,
   SurfaceDraft,
@@ -670,5 +672,114 @@ describe("the scripted show is hidden as a setup row, never as a running session
     expect(m.surfaces.map((s) => s.id)).not.toContain("simulated");
     // …and still the session that needs the operator.
     expect(m.now.live.map((l) => l.showId)).toEqual(["s_demo"]);
+  });
+});
+
+// ── waiting for a preparation ───────────────────────────────────────────────
+//
+// `POST /api/shows/prepare` answers when the work is QUEUED. The row that
+// makes an attach legal lands a minute later, at the end of several eBay
+// Browse calls and an agent creation — and the paste box attached on the very
+// next line, so it hit the same `prepare-first` 409 it was recovering from,
+// every time. "Prepare the agent and then monitor" could not be done from the
+// paste box at all. These pin the three ways out of the wait.
+describe("waiting for a preparation to land", () => {
+  const show = (eventId: string) =>
+    ({
+      eventId,
+      title: "a real title, off the grid",
+      host: "Filthy Hits",
+      sellerHandle: "rcerjd-9tko",
+      tags: [],
+      thumbnailUrl: null,
+      catalogId: `ebay-${eventId}`,
+      agentId: "ag_1",
+      items: 42,
+      warnings: [],
+      preparedAt: "2026-09-25T10:00:00.000Z",
+    }) satisfies PreparedShow;
+
+  /** A clock and a sleep that cost no real time. */
+  function fakeTime() {
+    let t = 0;
+    return { now: () => t, sleep: async (ms: number) => void (t += ms) };
+  }
+
+  it("keeps waiting while the id is still in `preparing`, then returns the row", async () => {
+    const { now, sleep } = fakeTime();
+    let reads = 0;
+    const row = show("Aaaa1111Bbbb2222");
+    const got = await waitForPreparation("Aaaa1111Bbbb2222", {
+      now,
+      sleep,
+      read: async () => {
+        reads++;
+        // Queued, queued, queued — and only then written.
+        return reads < 4
+          ? { prepared: [], preparing: ["Aaaa1111Bbbb2222"], failed: [] }
+          : { prepared: [row], preparing: [], failed: [] };
+      },
+    });
+    expect(got).toEqual(row);
+    expect(reads).toBe(4);
+  });
+
+  it("stops the moment the server says the preparation threw", async () => {
+    const { now, sleep } = fakeTime();
+    await expect(
+      waitForPreparation("Cccc3333Dddd4444", {
+        now,
+        sleep,
+        read: async () => ({
+          prepared: [],
+          preparing: [],
+          failed: [
+            { eventId: "Cccc3333Dddd4444", at: "2026-09-25T10:00:00.000Z", error: "eBay refused the seller filter" },
+          ],
+        }),
+      }),
+    ).rejects.toThrow(/eBay refused the seller filter/);
+  });
+
+  it("a stale failure never condemns the attempt that just worked", async () => {
+    const { now, sleep } = fakeTime();
+    const row = show("Eeee5555Ffff6666");
+    // The server keeps failures until the same event is prepared again, so a
+    // landed row and an old failure can be true at once. The row wins.
+    const got = await waitForPreparation("Eeee5555Ffff6666", {
+      now,
+      sleep,
+      read: async () => ({
+        prepared: [row],
+        preparing: [],
+        failed: [{ eventId: "Eeee5555Ffff6666", at: "2026-09-25T09:00:00.000Z", error: "an earlier try" }],
+      }),
+    });
+    expect(got).toEqual(row);
+  });
+
+  it("gives up on a deadline and says how long it waited, not whose fault it was", async () => {
+    const { now, sleep } = fakeTime();
+    await expect(
+      waitForPreparation("Gggg7777Hhhh8888", {
+        now,
+        sleep,
+        timeoutMs: 10_000,
+        everyMs: 1_000,
+        read: async () => ({ prepared: [], preparing: ["Gggg7777Hhhh8888"], failed: [] }),
+      }),
+    ).rejects.toThrow(/more than 10s/);
+  });
+
+  it("tolerates a server that does not send `failed` at all", async () => {
+    const { now, sleep } = fakeTime();
+    const row = show("Iiii9999Jjjj0000");
+    let reads = 0;
+    const got = await waitForPreparation("Iiii9999Jjjj0000", {
+      now,
+      sleep,
+      read: async () => (++reads < 2 ? { prepared: [], preparing: [] } : { prepared: [row], preparing: [] }),
+    });
+    expect(got).toEqual(row);
   });
 });

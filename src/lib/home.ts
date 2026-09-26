@@ -38,6 +38,7 @@ import type {
   HomeSurfaceRow,
   HomeSurfaceStep,
   HomeView,
+  PreparedList,
   PreparedShow,
   ShowRow,
   ShowSummary,
@@ -47,6 +48,59 @@ import type {
   SurfaceInfo,
 } from "./types";
 import { SURFACE_LABEL, capabilitiesOf, isSurfaceId, withRemote } from "./surfaces";
+
+// ── waiting for a preparation ───────────────────────────────────────────────
+
+/**
+ * Block until the preparation of `eventId` has actually landed.
+ *
+ * `POST /api/shows/prepare` answers the moment the work is QUEUED. The row
+ * that makes an attach legal is written at the very END of a minute of Browse
+ * calls and an agent creation, and the paste box attached on the next line —
+ * so the attach hit the same `prepare-first` 409 it was recovering from, every
+ * time, and no amount of retrying by hand got past it because the race is not
+ * close. Prepare-then-monitor did not work for anyone.
+ *
+ * Three ways out, and the last two are the ones that matter: it landed; it
+ * THREW, which the server now reports rather than logging to a box nobody is
+ * reading; or the deadline passed, which says how long it waited instead of
+ * blaming the show. A silent forever-spinner is not one of them.
+ *
+ * The reader and the clock are injected so the rule above can be tested as
+ * the rule it is, with no server and no minute of real time.
+ */
+export async function waitForPreparation(
+  eventId: string,
+  io: {
+    read: () => Promise<Pick<PreparedList, "prepared" | "preparing" | "failed">>;
+    sleep: (ms: number) => Promise<void>;
+    now?: () => number;
+    timeoutMs?: number;
+    everyMs?: number;
+  },
+): Promise<PreparedShow> {
+  const now = io.now ?? Date.now;
+  // Generous: preparing is several eBay Browse calls, an agent creation and a
+  // knowledge-base upload, and the cost of being wrong here is telling an
+  // operator their show failed when it was about to land.
+  const deadline = now() + (io.timeoutMs ?? 180_000);
+  for (;;) {
+    const state = await io.read();
+    const landed = state.prepared.find((p) => p.eventId === eventId);
+    if (landed) return landed;
+    // Only consulted when nothing has landed: a server that keeps a failure
+    // from an earlier attempt must not condemn the attempt that just worked.
+    const failed = state.failed?.find((f) => f.eventId === eventId);
+    if (failed) throw new Error(`preparing this show failed — ${failed.error}`);
+    if (now() >= deadline) {
+      throw new Error(
+        `preparing this show has taken more than ${Math.round((io.timeoutMs ?? 180_000) / 1000)}s. ` +
+          `It may still finish — check the Prepared list in a moment.`,
+      );
+    }
+    await io.sleep(io.everyMs ?? 2_000);
+  }
+}
 
 // ── the three phases, in words ──────────────────────────────────────────────
 

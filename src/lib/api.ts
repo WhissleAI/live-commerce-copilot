@@ -52,6 +52,7 @@ import type {
   DiscoverInterests,
   DiscoverView,
   HomeView,
+  PreparedList,
   EbayImportResult,
   EbayResult,
   EbayStatus,
@@ -749,14 +750,30 @@ export const api = {
 
   /** Build a catalog and an agent for an event before it starts. Returns as
    *  soon as the work is queued — it takes the better part of a minute. */
+  /**
+   * Queue a preparation. Answers as soon as the work is QUEUED, never when it
+   * is done — it is a minute of Browse calls and an agent creation. Anything
+   * that needs the result waits on `api.prepared()`.
+   *
+   * Only `eventId` is required, and that is the point rather than a
+   * convenience: the seller handle that a preparation is entirely built from
+   * lives on the server's grid and on no path a browser has. Sending `title`
+   * is for a show that has already dropped off that grid; sending
+   * `sellerHandle: null` to mean "I do not know" is what produced a run of
+   * empty catalogs, and the server now ignores it in favour of what it holds.
+   */
   prepareShow: (s: {
     eventId: string;
-    title: string;
+    title?: string;
     host?: string;
     sellerHandle?: string | null;
     tags?: string[];
     thumbnailUrl?: string | null;
   }): Promise<{ eventId: string; status: string }> => post("/api/shows/prepare", s),
+
+  /** Preparations: the ones that landed, the ones still running, and the ones
+   *  that threw. The third is how a waiter knows to stop. */
+  prepared: (): Promise<PreparedList> => get("/api/shows/prepared"),
 
   /** Drops the prepared show, its catalog file and its agent. */
   dropPrepared: (eventId: string): Promise<{ agent: { ok: boolean; detail: string } | null }> =>

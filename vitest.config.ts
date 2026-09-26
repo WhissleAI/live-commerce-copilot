@@ -19,6 +19,7 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     globals: false,
+    globalSetup: ["./src/test/buildId.setup.ts"],
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.spec.{ts,tsx}"],
     // Mocks are opt-in in the app and must be OFF here, or every api spec would

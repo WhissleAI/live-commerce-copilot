@@ -11,6 +11,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "prebuild": "node scripts/build-id.mjs",
+    "pretest": "node scripts/build-id.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },

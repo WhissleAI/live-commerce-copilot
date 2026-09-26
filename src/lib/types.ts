@@ -1344,6 +1344,29 @@ export interface PreparedShow {
   preparedAt: string;
 }
 
+/** A preparation that threw, so nothing is coming and something should say so. */
+export interface PrepareFailure {
+  eventId: string;
+  at: string;
+  error: string;
+}
+
+/**
+ * `GET /api/shows/prepared` — the three states a preparation can be in.
+ *
+ * All three, because two of them are not enough. A preparation runs detached
+ * on the server, so "still working" and "threw twenty seconds ago" look
+ * identical from outside `prepared`, and anything waiting on one without
+ * `failed` waits out its whole timeout before saying something vague.
+ */
+export interface PreparedList {
+  prepared: PreparedShow[];
+  preparing: string[];
+  /** Absent on an older server, which is not the same claim as "none". */
+  failed?: PrepareFailure[];
+  session: EbayLiveSession;
+}
+
 export interface HomeView {
   live: DiscoveredShow[];
   discovery: {
@@ -1354,6 +1377,19 @@ export interface HomeView {
   };
   prepared: PreparedShow[];
   preparing: string[];
+  /**
+   * Preparations that THREW, newest message per event.
+   *
+   * A preparation runs detached on the server, so waiting on one has exactly
+   * two observable states — the id is in `preparing`, or a row appeared in
+   * `prepared` — and a throw produces neither. Anything waiting on it waited
+   * forever. This is the third state, and it is why the paste box can now say
+   * what went wrong instead of spinning until it gives up.
+   *
+   * Optional: an older server does not send it, and an absent list is not the
+   * same claim as an empty one.
+   */
+  preparingFailed?: PrepareFailure[];
   watching: ShowSummary[];
 
   /**
@@ -1820,6 +1856,22 @@ export interface DiscoverSourceResult {
    *  the source is still listed — a missing tab reads as a broken product
    *  rather than a door the platform never opened. */
   unavailable: { reason: string; missing: string | null } | null;
+  /**
+   * These hits were not filtered by a reason, so they may match nothing the
+   * operator sells and their `why` is empty.
+   *
+   * A LABEL, never a licence. The server sets it for two questions: "show me
+   * everything live here", which is asked by name, and the one a brand-new
+   * operator is in — no catalog, so no interests, so no question to filter by.
+   * That second case used to come back as five empty tabs under a heading
+   * promising what is live on what they sell, which reads as a dead product.
+   * The grid is the honest answer to "we do not know you yet"; this flag is
+   * how the screen knows to say so above it instead of implying a match.
+   *
+   * Optional because an older server does not send it — absent is `false`,
+   * which is the conservative reading.
+   */
+  unmatched?: boolean;
 }
 
 /**
