@@ -221,6 +221,25 @@ export function DiscoverView({ onAttach }: { onAttach: (url: string) => void }) 
     [home?.prepared],
   );
 
+  // Pressed, and not yet visible in anything the server has said.
+  //
+  // `home.preparing` is authoritative but it arrives on the next poll, so the
+  // button sat there looking untouched for a whole round trip while a
+  // preparation was already running — long enough to press twice. Optimism
+  // here is local and short-lived: the moment the server names the event in
+  // `preparing` or `prepared`, this set stops mattering.
+  const [pressed, setPressed] = useState<ReadonlySet<string>>(() => new Set());
+  const forget = useCallback(
+    (id: string) =>
+      setPressed((prev) => {
+        if (!prev.has(id)) return prev;
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      }),
+    [],
+  );
+
   const act = useCallback(
     async (hit: DiscoverHit) => {
       setError(null);
@@ -238,6 +257,7 @@ export function DiscoverView({ onAttach }: { onAttach: (url: string) => void }) 
           // legacy payload happens to carry, and it fills in only where the
           // server's own grid has nothing. Sending `sellerHandle: null` no
           // longer erases the handle a preparation is entirely built from.
+          setPressed((prev) => new Set(prev).add(hit.id));
           await api.prepareShow({
             eventId: hit.id,
             title: hit.title,
@@ -263,11 +283,21 @@ export function DiscoverView({ onAttach }: { onAttach: (url: string) => void }) 
         }
         if (hit.url) window.open(hit.url, "_blank", "noopener,noreferrer");
       } catch (e) {
+        // A preparation that never started must not leave a button spinning.
+        forget(hit.id);
         setError(operatorMessage(e));
       }
     },
-    [onAttach, preparedBy, read],
+    [onAttach, preparedBy, read, forget],
   );
+
+  // The server has caught up: its own list is the truth from here.
+  useEffect(() => {
+    if (!pressed.size) return;
+    const known = new Set([...(home?.preparing ?? []), ...(home?.prepared ?? []).map((p) => p.eventId)]);
+    if (![...pressed].some((id) => known.has(id))) return;
+    setPressed((prev) => new Set([...prev].filter((id) => !known.has(id))));
+  }, [home?.preparing, home?.prepared, pressed]);
 
   const sources = payload?.sources ?? [];
   const shown = filter === "all" ? sources : sources.filter((s) => s.surface === filter);
@@ -380,7 +410,8 @@ export function DiscoverView({ onAttach }: { onAttach: (url: string) => void }) 
               sources={shown}
               all={filter === "all"}
               preparedBy={preparedBy}
-              preparing={home?.preparing ?? []}
+              // The server's list, plus anything pressed in the last round trip.
+              preparing={[...(home?.preparing ?? []), ...pressed]}
               isWatched={(h) => isWatched(rooms, h)}
               onAct={(h) => void act(h)}
             />
@@ -834,10 +865,15 @@ function QuietSources({ sources }: { sources: DiscoverSourceResult[] }) {
         <>
           Not answering:{" "}
           {closed
-            .map(
-              (s) =>
-                `${surfaceLabel(s.surface)}${s.unavailable?.missing ? ` (${s.unavailable.missing})` : ""}`,
-            )
+            .map((s) => {
+              // A missing key names itself; anything else has a REASON, and
+              // dropping it left surfaces like Whatnot — which needs no key and
+              // fails to Cloudflare — listed as silent with no explanation at
+              // all, which reads as the product being broken rather than the
+              // network being unfriendly.
+              const why = s.unavailable?.missing || s.unavailable?.reason;
+              return `${surfaceLabel(s.surface)}${why ? ` (${why})` : ""}`;
+            })
             .join(", ")}
           . Select one above to see what it needs.
         </>
@@ -918,14 +954,24 @@ export function HitCard({
 
       {prepared ? (
         <p
-          className={cn("flex items-start gap-1.5 text-[11.5px]", empty ? "text-warn" : "text-ok")}
+          className={cn(
+            "flex items-start gap-1.5 text-[11.5px]",
+            empty ? "text-warn" : "text-ok",
+          )}
         >
           {empty ? (
             <AlertTriangle className="mt-0.5 size-3 shrink-0" aria-hidden />
           ) : (
             <CheckCircle2 className="mt-0.5 size-3 shrink-0" aria-hidden />
           )}
-          {empty ? "agent ready, catalog empty" : `${prepared.items} lots in its own agent`}
+          {empty
+            ? // An empty catalog always has a REASON, and preparation already
+              // wrote it down. Saying only "catalog empty" sends the operator
+              // to look for a bug in a system that knows exactly what happened
+              // — usually that eBay does not recognise the seller's live-page
+              // slug as a username, which is a fact about eBay, not a failure.
+              (prepared.warnings[0] ?? "agent ready, catalog empty")
+            : `${prepared.items} lots in its own agent`}
           {prepared.catalogId && !empty ? (
             <Link
               to="/knowledge"

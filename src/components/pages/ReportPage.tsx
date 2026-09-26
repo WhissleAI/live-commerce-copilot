@@ -287,8 +287,13 @@ export function ReportPage({ showId }: { showId: string }) {
               // Question typed → sendable reply on screen. A session with no
               // answerable question has no latency, not a zero-millisecond one.
               value={e.answered && e.p95LatencyMs > 0 ? ms(e.p95LatencyMs) : "—"}
+              // PRD §4 sets this at 10 s, not the 2 s the original brief asked
+              // for: past roughly a minute the buyer has scrolled, and the
+              // number that matters is whether the answer still converts. This
+              // tile graded against the brief long after the PRD moved, so a
+              // 3 s p95 — comfortably inside target — rendered as a miss.
               {...(e.answered && e.p95LatencyMs > 0
-                ? { target: "target <2s", targetMet: e.p95LatencyMs < 2000 }
+                ? { target: "target <10s", targetMet: e.p95LatencyMs < 10_000 }
                 : {})}
               hint={
                 e.answered && e.p95LatencyMs > 0

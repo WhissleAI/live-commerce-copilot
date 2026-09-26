@@ -5,6 +5,7 @@ import {
   ArrowUp,
   ArrowDown,
   Link2Off,
+  ExternalLink,
   LogOut,
   Lock,
   Wallet,
@@ -23,6 +24,7 @@ import type {
 } from "@/lib/types";
 import { Bar, ConsoleButton, Hover } from "./primitives";
 import { useNow } from "@/hooks/useNow";
+import { streamUrl } from "@/lib/surfaces";
 
 const LEVELS: { level: AutonomyLevel; short: string; name: string; def: string }[] = [
   {
@@ -313,6 +315,7 @@ export function TopBar({
 }) {
   const now = useNow();
   const elapsed = (now - new Date(show.startedAt).getTime()) / 1000;
+  const liveUrl = show.source ? streamUrl(show.surface ?? show.source, show.externalId) : null;
 
   return (
     // sticky + z-40 so the bar survives any scrolling context around it, and so
@@ -350,6 +353,20 @@ export function TopBar({
         <span className="shrink-0 truncate text-[12px] text-text-muted">
           {seller?.name ?? show.sellerHandle}
         </span>
+        {/* The stream itself. A quiet room and a broken watcher look identical
+            from in here — both are an empty chat pane — and this is the only
+            control that tells them apart. */}
+        {liveUrl ? (
+          <a
+            href={liveUrl}
+            target="_blank"
+            rel="noreferrer noopener"
+            title={`Open the ${surface?.label ?? "live"} stream this session is reading`}
+            className="hidden shrink-0 items-center gap-1 rounded-[4px] border border-hairline-strong px-1.5 py-0.5 text-[10px] text-text-muted hover:text-text sm:flex"
+          >
+            <ExternalLink className="size-2.5" aria-hidden /> Watch
+          </a>
+        ) : null}
         {surface && surface.id !== "ebaylive" && surface.id !== "simulated" ? (
           <span className="hidden shrink-0 rounded-[4px] bg-elevated px-1.5 py-0.5 text-[10px] text-text-muted sm:inline">
             {surface.label}

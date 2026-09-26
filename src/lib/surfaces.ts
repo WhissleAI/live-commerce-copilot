@@ -513,3 +513,40 @@ export function surfacesForCorpus(
     .filter((s) => kind !== "community" || s.capabilities.communityRules)
     .map((s) => s.id);
 }
+
+/**
+ * The public page this session is reading, so an operator can open it.
+ *
+ * The console used to name a session and show its numbers without ever linking
+ * the thing it was watching, which left "is this actually connected to the
+ * stream?" as a question the UI could not answer. Worse, a quiet room and a
+ * broken watcher look identical from the console — the only way to tell them
+ * apart is to open the stream and see for yourself.
+ *
+ * Null where the surface has no addressable public page, or where we hold no
+ * external id: a dead link is worse than no link, because a dead link is the
+ * operator's answer to the question and it is the wrong one.
+ */
+export function streamUrl(source: SurfaceId, externalId: string | null | undefined): string | null {
+  const id = (externalId ?? "").trim();
+  if (!id) return null;
+  switch (source) {
+    case "ebaylive":
+      return `https://www.ebay.com/ebaylive/events/${encodeURIComponent(id)}/stream`;
+    case "whatnot":
+      // The adapter's target is the room's uuid; Whatnot resolves a bare uuid.
+      return `https://www.whatnot.com/live/${encodeURIComponent(id)}`;
+    case "twitch":
+      return `https://www.twitch.tv/${encodeURIComponent(id)}`;
+    case "tiktoklive":
+      return `https://www.tiktok.com/@${encodeURIComponent(id.replace(/^@/, ""))}/live`;
+    case "reddit":
+      return id.startsWith("r/")
+        ? `https://www.reddit.com/${id}`
+        : `https://www.reddit.com/comments/${encodeURIComponent(id.replace(/^t3_/, ""))}`;
+    // `simulated` is a script in this repo and `dm` is an inbox, neither of
+    // which is somewhere to go and look.
+    default:
+      return null;
+  }
+}
