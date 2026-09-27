@@ -31,6 +31,7 @@ import {
   Card,
   EmptyState,
   SectionHeading,
+  Pending,
   Skeleton,
   StatTile,
 } from "@/components/ui/kit";
@@ -200,9 +201,9 @@ export function CostPage() {
       <div className="mt-3 grid gap-3 sm:grid-cols-3">
         {!data ? (
           <>
-            <Skeleton className="h-[92px]" />
-            <Skeleton className="h-[92px]" />
-            <Skeleton className="h-[92px]" />
+            <Pending failed={error} className="h-[92px]" what="Your money" />
+            <Pending failed={error} className="h-[92px]" />
+            <Pending failed={error} className="h-[92px]" />
           </>
         ) : (
           <>
@@ -247,7 +248,7 @@ export function CostPage() {
         </SectionHeading>
         <Card className="mt-3 overflow-hidden">
           {!data ? (
-            <Skeleton className="h-[160px]" />
+            <Pending failed={error} className="h-[160px]" what="The session table" />
           ) : data.shows.length === 0 ? (
             <EmptyState title={NO_FINISHED_SESSIONS.title}>{NO_FINISHED_SESSIONS.cost}</EmptyState>
           ) : (
@@ -336,7 +337,7 @@ export function CostPage() {
           </SectionHeading>
           <Card className="mt-3">
             {!data ? (
-              <Skeleton className="h-[140px]" />
+              <Pending failed={error} className="h-[140px]" />
             ) : Object.keys(data.byDoor).length === 0 ? (
               <EmptyState title="Nothing measured yet">
                 Doors are recorded when a session closes.
