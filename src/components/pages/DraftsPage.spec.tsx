@@ -157,12 +157,17 @@ describe("DraftCard when the surface recorded less", () => {
     expect(screen.queryByText(/^conf /)).not.toBeInTheDocument();
   });
 
-  it("draws no guard pills and says why instead", () => {
+  // The card used to carry a 28-word paragraph explaining why it had no guard
+  // pills — on EVERY such card, which on a four-draft queue is the same
+  // sentence four times under a heading that already said most of it. Whether
+  // the guards are recorded is a fact about the queue, not about a draft, so
+  // it is stated once on the section heading now.
+  it("draws no guard pills, and does not re-explain why on every card", () => {
     render(<DraftCard d={thin} onSent={noop} onDismiss={noop} />);
     expect(screen.queryByRole("list", { name: "Guardrail results" })).not.toBeInTheDocument();
     expect(
-      screen.getByText(/A draft the guards held is never stored here at all/),
-    ).toBeInTheDocument();
+      screen.queryByText(/A draft the guards held is never stored here at all/),
+    ).not.toBeInTheDocument();
   });
 
   it("draws no thread toggle and no rules block", () => {
