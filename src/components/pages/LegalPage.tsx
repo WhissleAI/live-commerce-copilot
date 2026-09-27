@@ -108,13 +108,13 @@ export const SURFACE_READS: { id: string; surface: string; how: string }[] = [
     surface: "Twitch",
     // src/surfaces/twitch/chat.ts:170-180 reads display-name, user-id, text
     // and tmi-sent-ts; src/shows/runtime.ts:546 keeps only author/text/id.
-    how: "Twitch's own APIs, on a channel you connect with your own sign-in. Chat carries a display name, a Twitch user id and a timestamp; we keep the name and the message and drop the id and the timestamp.",
+    how: "Twitch's own APIs, on a channel you connect with your own sign-in. Chat carries a display name, a Twitch user id, a message id and Twitch's own send time. We keep the display name, the message, the message id and that send time — the message id is what stops a reconnect replaying the same comment twice. The Twitch USER id is dropped: it arrives on the message and is never written down.",
   },
   {
     id: "reddit",
     surface: "Reddit",
     // src/surfaces/reddit/poll.ts:65, thread.ts:88-112, :210
-    how: "Reddit's own API, on the subreddits you choose: new posts and the branch of the comment tree above the comment being answered. We keep the author name and the text; the permalink and Reddit's own timestamp are read and not stored.",
+    how: "Reddit's own API, on the subreddits you choose: new posts and the branch of the comment tree above the comment being answered. We keep the author name, the text, the comment's own fullname and Reddit's posting time. The permalink is kept on the draft that answers the comment, because it is the link the operator clicks to go and post their reply.",
   },
   {
     id: "dm",
