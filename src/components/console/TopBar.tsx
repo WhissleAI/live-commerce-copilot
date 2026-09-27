@@ -25,6 +25,7 @@ import type {
 import { Bar, ConsoleButton, Hover } from "./primitives";
 import { useNow } from "@/hooks/useNow";
 import { streamUrl } from "@/lib/surfaces";
+import { P95_ANSWER_MS } from "@/lib/targets";
 
 const LEVELS: { level: AutonomyLevel; short: string; name: string; def: string }[] = [
   {
@@ -61,8 +62,23 @@ const LEVELS: { level: AutonomyLevel; short: string; name: string; def: string }
 
 function LatencyMeter({ metrics }: { metrics: Metrics }) {
   const { p50, p95, p99, budgetMs, breaches } = metrics.latency;
+  // Two numbers, and they are not the same question.
+  //
+  //   `budgetMs` is the ENGINEERING budget — 2 s, allocated per stage in
+  //   TDD §5 (compose 1400, retrieve 150, guard 80, headroom 250). Breaching
+  //   it means a stage is slower than it was designed to be.
+  //
+  //   `P95_ANSWER_MS` is the PRODUCT target — PRD §4, 10 s. Past it the buyer
+  //   has scrolled and the answer no longer converts.
+  //
+  // The bar keeps measuring headroom against the budget, because that is what
+  // an engineer wants to see. The COLOUR follows the product target, because
+  // red is a claim that something is failing — and at 2.7 s nothing is. The
+  // operator used to get red on air and "inside target" on the report for the
+  // same number, which is the console and the report disagreeing about whether
+  // the show went well.
   const ratio = p95 / budgetMs;
-  const tone = ratio < 0.6 ? "ok" : ratio <= 1 ? "warn" : "bad";
+  const tone = ratio < 0.6 ? "ok" : p95 <= P95_ANSWER_MS ? "warn" : "bad";
   const color = tone === "ok" ? "text-ok" : tone === "warn" ? "text-warn" : "text-bad";
   return (
     <Hover
@@ -76,7 +92,8 @@ function LatencyMeter({ metrics }: { metrics: Metrics }) {
               ["p50", p50],
               ["p95", p95],
               ["p99", p99],
-              ["budget", budgetMs],
+              ["budget (design)", budgetMs],
+              ["target (PRD)", P95_ANSWER_MS],
             ] as const
           ).map(([k, v]) => (
             <div key={k} className="flex justify-between">
