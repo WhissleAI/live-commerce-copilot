@@ -86,8 +86,19 @@
      provenance line, every ⌘K group header, the Inspector's fact ids and its
      expected/found labels, the shell's tab counts, and every placeholder in
      the product via placeholder:text-text-faint. It stays a step lighter than
-     --text-muted, which is the whole point of having two. */
-  --text-faint: oklch(0.5655 0.0158 261.3);
+     --text-muted, which is the whole point of having two.
+
+     That pass darkened it to 0.5655 and stopped two steps short of the bar it
+     was aiming for: 4.29 on --canvas and 4.17 on --elevated, both still under
+     4.5, and only --panel actually cleared it. The band eyebrows ("NOW",
+     "NEXT") and the "What is this?" control sit on --canvas.
+
+     0.5455 is the SMALLEST darkening that clears AA on all three surfaces —
+     4.63 canvas, 4.92 panel, 4.50 elevated — so it buys the contrast without
+     spending any more of the gap to --text-muted than it has to. Measured by
+     test/contrast.spec.ts, whose converter is validated against the browser's
+     own rendering. */
+  --text-faint: oklch(0.5455 0.0158 261.3);
 
   /* The status colours are darkened rather than reused: the dark theme's greens
      and ambers were tuned against a near-black canvas and fail contrast on
