@@ -152,7 +152,7 @@ export function DraftsPage() {
       }
       tabs={tabs}
     >
-      <SectionHeading hint="These are the surfaces the copilot writes for and does not post to. It reads the thread, drafts a reply against the same guards a live session uses, and stops. You are the sender: copy it, post it under your own name, and mark it sent so the next draft knows this question is answered.">
+      <SectionHeading hint="These are the surfaces the copilot writes for and does not post to. It reads the thread, drafts a reply against the same guards a live session uses — against the catalog as it stands now — and stops. A draft the guards held is never stored here at all, so everything below is sendable. You are the sender: copy it, post it under your own name, and mark it sent so the next draft knows this question is answered.">
         Written for you to send
       </SectionHeading>
 
@@ -404,12 +404,7 @@ export function DraftCard({
               />
             ))}
           </div>
-        ) : (
-          <p className="text-[11.5px] text-text-muted">
-            Written through the same guard chain a live reply passes, against the catalog as it
-            stands now. A draft the guards held is never stored here at all.
-          </p>
-        )}
+        ) : null}
 
         <StyleRef styleRef={d.styleRef} />
 
