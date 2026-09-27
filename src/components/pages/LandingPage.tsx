@@ -176,7 +176,7 @@ export const SURFACE_FAMILIES: SurfaceFamily[] = [
     delivery: "drafts · you connect it",
     lead: "Twitch chat, on a channel you connect with your own keys and an OAuth sign-in. Same reading, same drafting, same guards — a stream's chat is a room like any other.",
     limit:
-      "Key-gated and not connected in production. Without the credentials the app names the variable it wants instead of hiding the surface. The stream's own actions — a clip, a poll, a pinned message — are written and tested against Twitch's API and not yet wired into the running app, so this page will not sell them to you.",
+      "Key-gated and not connected in production; the app names the variable rather than hiding the surface. The stream's own actions — clip, poll, pinned message — are written and tested but not wired in, so this page will not sell them to you.",
   },
   {
     id: "communities",
@@ -185,7 +185,7 @@ export const SURFACE_FAMILIES: SurfaceFamily[] = [
     delivery: "drafts · you post",
     lead: "It watches the subreddits you choose, reads a question with the branch of the thread above it, and writes the reply you would have written — against the same guards a live show uses.",
     limit:
-      "Draft-only in the code, four times over: the capability says so, the action list contains no reply, preflight refuses one, and the Reddit client has no write path at all — its only POST mints an OAuth token. We never post to Reddit for you. You post it, under your own name.",
+      "Draft-only in the code, four times over: the capability says so, the action list has no reply, preflight refuses one, and the Reddit client has no write path at all. You post it, under your own name.",
   },
   {
     id: "inbox",
@@ -194,7 +194,7 @@ export const SURFACE_FAMILIES: SurfaceFamily[] = [
     delivery: "drafts · you send",
     lead: "Everyone who asked during a show and did not buy is a question you still owe an answer to. When the show ends the inbox holds one written reply per person — re-checked against the catalog as it stands now, not as it stood then.",
     limit:
-      "A follow-up the guards block is never written down at all, so everything waiting for you has already passed the chain. It skips anyone you settled with a committed change to the listing they asked about. You are the sender; marking it sent is your word, which is the only word there is.",
+      "A blocked follow-up is never written down, so everything waiting has already passed the chain. It skips anyone you settled with a committed change to their listing. You are the sender.",
   },
 ];
 
@@ -544,12 +544,11 @@ export function LandingPage() {
             last word.
           </h1>
           <p className="mt-6 max-w-[540px] text-[17px] leading-relaxed text-text-secondary">
-            SideStage is one copilot across a live show, a stream, a subreddit and your own
-            follow-up inbox. It reads the conversation, answers out of your listings, your policies
-            and every question you have already answered, names the fact it used, and runs six
-            deterministic guards against the state as it stands right now. Then it hands the reply
-            to you: nothing it writes reaches a buyer, a listing or a thread on its own.
-          </p>
+          One copilot across a live show, a stream, a subreddit and your follow-up inbox. It
+          answers from your listings, your policies and what you have already answered, names
+          the fact it used, and runs six deterministic guards against the catalog as it stands
+          now. Then it hands you the reply — nothing reaches a buyer on its own.
+        </p>
           <div className="mt-8 flex flex-wrap gap-3.5">
             <Primary to="/register">
               Create an account <span className="text-[13px] opacity-80">free</span>
@@ -578,19 +577,19 @@ export function LandingPage() {
             [
               "2.00s",
               "is the budget a drafted reply is measured against. We miss it.",
-              "The p95 figure that belongs in this space was measured on an older build and no longer reproduces, so it is not quoted here — a stale number in the flattering direction is the exact failure this section promises not to commit. It is being re-measured. Until then the only p95 worth reading is your own: every breach is counted and shown on the session bar rather than averaged away.",
+              "The p95 that belongs here no longer reproduces on the current build, so it is not quoted — a stale number in the flattering direction is the exact failure this section promises not to commit. Read your own instead: every breach is counted on the session bar, never averaged away.",
               "text-[#F5B84A]",
             ],
             [
               "$0.06",
               "a minute, measured once. Not a price.",
-              "One omni-channel agent per session — it reads the chat, hears the host, sees the lot — metered by the minute, with the meter beside the queue while the session runs. This figure is one observation: $0.52 for nine minutes of a watch auction, and an upper bound at that, because the wallet it was measured against is shared across the workspace. Nothing in the product quotes a rate, and the meter you should read is your own.",
+              "One agent per session — reads the chat, hears the host, sees the lot — metered by the minute, with the meter beside the queue. One observation: $0.52 for nine minutes, and an upper bound.",
               "",
             ],
             [
               "6",
               "deterministic guards. A reply passes all six, or it is held.",
-              "They are rules over the catalog as it stands right now, not a second model asked to be careful. The precision and recall this space used to quote came from our own labelled case suite and is not quoted while that suite is being re-measured against a change to the chain — and it proved internal consistency and not much else anyway, since the same person wrote the guards and the cases.",
+              "Rules over the catalog as it stands right now, not a second model asked to be careful. The precision and recall once quoted here came from our own labelled suite, which proved internal consistency and little else — the same person wrote the guards and the cases. Not quoted while that suite is re-measured.",
               "",
             ],
           ].map(([n, lead, body, tone = ""]) => (
@@ -616,11 +615,10 @@ export function LandingPage() {
               <H2>The same copilot, in four places that behave nothing alike.</H2>
             </div>
             <p className="text-[17px] leading-relaxed text-text-secondary lg:pb-1">
-              A live show runs at the speed of the block: a question is worth answering for about as
-              long as the lot is on it. A thread from Tuesday is still worth a real answer on
-              Friday, and the person who asked during last week's show and left is worth one too.
-              The copilot works at both speeds, out of the same ground truth, under the same guards.
-            </p>
+            A live show runs at the speed of the block — a question is worth answering while the
+            lot is on it. A Tuesday thread still deserves a real answer on Friday. Both speeds,
+            one ground truth, the same guards.
+          </p>
           </div>
           <div className="mt-14 grid gap-6 md:grid-cols-2 xl:grid-cols-4 xl:grid-rows-[auto_auto_auto_1fr_auto] xl:gap-y-0">
             {SURFACE_FAMILIES.map((f) => (
@@ -631,20 +629,18 @@ export function LandingPage() {
             <div>
               <p className="text-[18px] font-semibold">Two tempos, one set of rules</p>
               <p className="mt-3 text-[16px] leading-relaxed text-text-secondary">
-                A live surface gets a bounded session: attach, answer, end, report. An async surface
-                has no session at all — a standing watch on the rooms you chose and a queue of
-                drafts that is always open. Both go through the same retrieval, the same six guards,
-                the same audit.
-              </p>
+              A live surface gets a bounded session: attach, answer, end, report. An async one
+              has none — a standing watch and an always-open queue. Same retrieval, same six
+              guards, same audit.
+            </p>
             </div>
             <div>
               <p className="text-[18px] font-semibold">What is running today</p>
               <p className="mt-3 text-[16px] leading-relaxed text-text-secondary">
-                eBay Live is the surface this was built on and the one we run, including its report
-                and its follow-ups. Whatnot reads the same way. TikTok Live, Twitch and Reddit ship
-                in the build behind their own credentials or their own flag — and the app names the
-                variable it is missing rather than pretending the surface is broken.
-              </p>
+              eBay Live is what this was built on and the one we run. Whatnot reads the same
+              way. TikTok Live, Twitch and Reddit ship behind their own credentials, and the app
+              names the variable it wants rather than pretending the surface is broken.
+            </p>
             </div>
             <div>
               <p className="text-[18px] font-semibold">Who sends it</p>
@@ -703,11 +699,10 @@ export function LandingPage() {
               <H2>Three phases, everywhere. What fills them depends on the tempo.</H2>
             </div>
             <p className="text-[17px] leading-relaxed text-text-secondary lg:pb-1">
-              A live show is prepared, worked and reported on. A subreddit has no session to prepare
-              and no moment that ends, so the same three phases become a connection, a standing
-              watch and a queue that empties. The retrieval, the guards and the audit are one
-              implementation across both.
-            </p>
+            A live show is prepared, worked and reported on. A subreddit has no session and no
+            moment that ends, so the three phases become a connection, a standing watch and a
+            queue that empties.
+          </p>
           </div>
 
           {/* 01 — before ------------------------------------------------------- */}
@@ -723,17 +718,17 @@ export function LandingPage() {
                 <Points
                   items={[
                     "Reads what is live on eBay, resolves the seller behind the show, and builds a catalog of up to eighty of their own listings.",
-                    "Values each lot against comparables that are asking prices, labelled as asking prices — eBay's completed-sales data is limited-release and this keyset was not granted it. The two are never averaged: asking prices skew high, and a seller holding firm against a number they think is a sale price is being misled.",
+                    "Values each lot against comparables that are asking prices, labelled as such — eBay's completed-sales data is limited-release and this keyset was not granted it. The two are never averaged: asking prices skew high, and a seller holding firm against one is being misled.",
                     "Creates the show's own agent, syncs the lineup into its knowledge base with prices marked indicative, and arms the never-say rules on the agent itself.",
                     "Readiness is nine named checks — catalog, policy clauses, comps, the aspects eBay expects, the agent, its inventory, its policies, stale corpora, the rules armed — plus a fit check that catches a catalog belonging to a different auction. A policy it cannot find is never invented.",
                   ]}
                 />
                 <TempoNote>
-                  Nothing to prepare and nothing to warm up. A community's before is the connection
-                  and the rooms: you name the subreddits the copilot watches, and posting stays off
-                  — on Reddit, permanently. Preparation in this sense is an eBay Live step today;
-                  the other surfaces attach and start reading.
-                </TempoNote>
+                Nothing to prepare, nothing to warm up. A community's before is the connection
+                and the rooms: you name the subreddits, and posting stays off — on Reddit,
+                permanently. Preparation is an eBay Live step today; the others attach and start
+                reading.
+              </TempoNote>
               </div>
             </div>
             <Shot
@@ -750,7 +745,7 @@ export function LandingPage() {
                 n="02"
                 label="during"
                 title="It reads the same page your buyers read."
-                lead="No private API and no special access. It opens the public eBay Live player, reads the chat and the lot card as they render, hears you through a tab-audio bridge if you share it, and samples a frame off the camera. Every lot is versioned as the auction moves, so a reply can be checked against the state it was written for."
+                lead="No private API, no special access. It opens the public eBay Live player, reads the chat and lot card as they render, hears you through a tab-audio bridge if you share it, and samples a camera frame. Lots are versioned as the auction moves."
               />
               <div className="mt-8 grid gap-8 sm:grid-cols-2">
                 {[
@@ -780,11 +775,10 @@ export function LandingPage() {
                 ))}
               </div>
               <TempoNote>
-                No console, no clock, no session to end. A subreddit's during is a standing watch
-                and a queue that is always open: the thread and the branch above the question
-                instead of a lot rail, no latency budget to breach because a reply to Tuesday has no
-                deadline to miss, and a copy button where the live console has send.
-              </TempoNote>
+              No console, no clock, no session to end. A standing watch and an always-open
+              queue: the thread and the branch above the question instead of a lot rail, and a
+              copy button where the console has send.
+            </TempoNote>
             </div>
             <Shot
               src="/landing/console.jpg"
@@ -825,7 +819,7 @@ export function LandingPage() {
                 n="03"
                 label="after"
                 title="It reports, and then it owes people answers."
-                lead="Five sections and a to-do list: did it help · what the host did · can I trust it · what the agent concluded · fix before the next session. The counts are measured; the conclusion is written by the session's own agent from evidence on that same page, and it is prose from a model, so the counts come first."
+                lead="Five sections and a to-do list: did it help · what the host did · can I trust it · what the agent concluded · fix before next time. The counts are measured; the conclusion is prose from the session's own agent, so the counts come first."
               />
               <div className="mt-8">
                 <Points
@@ -895,12 +889,10 @@ export function LandingPage() {
                     corroborated at `docs/SURFACES.md:142-145`, and the session
                     is named here so the next reader can check it. */}
                 One real fragrance auction — session{" "}
-                <span className="num">ebay_47tK1SX0VsiHEXN1</span>: 190 comments produced 60
-                answerable drafts from 29 distinct buyers, and the seller sent none of them. That is
-                not a metric, it is twenty-nine people who asked about a specific bottle and left.
-                The follow-up inbox turns them into twenty-nine drafts, one per person, each re-run
-                through the same guards before it is written down. A blocked one is never stored,
-                and you are the one who sends them.
+                <span className="num">ebay_47tK1SX0VsiHEXN1</span>
+                : 190 comments, 60 answerable drafts, 29 distinct buyers — none sent. Twenty-
+                nine people who asked and left. The inbox makes one draft each, re-run through
+                the same guards. A blocked one is never stored.
               </p>
             </div>
             <Shot
@@ -918,10 +910,10 @@ export function LandingPage() {
           <Kicker>What makes it different</Kicker>
           <H2>It listens and looks. Most copilots only read.</H2>
           <p className="mt-4 text-[16px] leading-relaxed text-text-secondary">
-            A chat bot sees the chat. On a live show this one also hears the host, sees the lot on
-            camera, and knows which version of the listing every fact came from — so what it says
-            can be checked, and what it will not say is a decision, not a guess.
-          </p>
+          A chat bot sees the chat. This one also hears the host, sees the lot on camera, and
+          knows which listing version every fact came from — so what it says is checkable, and
+          what it will not say is a decision.
+        </p>
         </div>
         <div className="grid gap-x-12 gap-y-9 sm:grid-cols-2">
           {[
@@ -960,12 +952,11 @@ export function LandingPage() {
                 It stops the answer that would be wrong.
               </h2>
               <p className="mt-6 text-[17px] leading-relaxed text-text-secondary">
-                No model is ever asked whether a reply is safe — a checker that shares the
-                generator's blind spots fails in the same direction at the same time. Six
-                deterministic guards run on every draft, on every surface, against the listing as it
-                stands right now. Each one points at a fact that contradicts the draft, or it
-                allows.
-              </p>
+              No model is ever asked whether a reply is safe — a checker sharing the generator's
+              blind spots fails the same way. Six deterministic guards run on every draft,
+              against the listing as it stands now. Each points at a contradicting fact, or
+              allows.
+            </p>
             </div>
             <MomentCard />
           </div>
@@ -1002,11 +993,11 @@ export function LandingPage() {
             <div>
               <p className="text-[20px] font-semibold">Where they run</p>
               <p className="mt-4 text-[16px] leading-relaxed text-text-secondary">
-                Fifteen of the seventeen never-say rules are armed on the agent itself, so they hold
-                on voice and on the embed widget too. The two that stay in the app depend on whether
-                a listing carries a certificate — a string matcher with no catalog access would
-                block a true claim.
-              </p>
+              Fifteen of the seventeen never-say rules are armed on the agent itself, so they
+              hold on voice and the embed widget too. The two that stay in the app depend on
+              whether a listing carries a certificate — a string matcher with no catalog access
+              would block a true claim.
+            </p>
             </div>
           </div>
         </div>
@@ -1017,10 +1008,10 @@ export function LandingPage() {
         <Kicker>Autonomy</Kicker>
         <H2>It starts as a copilot and earns every rung after that.</H2>
         <p className="mt-4 max-w-[640px] text-[16px] leading-relaxed text-text-secondary">
-          Each level unlocks on evidence from your own finished shows — and an unknown never counts
-          as met. What a rung changes is how much may clear without you asking. It never changes who
-          carries the words into the room: that is you at L0, and it is still you at L4.
-        </p>
+        Each level unlocks on evidence from your own finished shows; an unknown never counts as
+        met. A rung changes how much clears without you asking, never who carries the words into
+        the room — you at L0, still you at L4.
+      </p>
         <div className="relative mt-12">
           <div className="absolute top-[13px] right-0 left-0 h-0.5 bg-hairline" aria-hidden />
           <div className="absolute top-[13px] left-0 h-0.5 w-[30%] bg-bad" aria-hidden />
@@ -1070,14 +1061,10 @@ export function LandingPage() {
             <Kicker>What it costs</Kicker>
             <H2>One agent, metered by the minute. We show you the meter.</H2>
             <p className="mt-4 max-w-[560px] text-[16px] leading-relaxed text-text-secondary">
-              The one agent behind every reply cost $0.06 a minute on the session we measured — nine
-              minutes of a watch auction — which would be about $7 across two hours if it held. It
-              is an observation and not a rate: nothing in the product quotes one, and the cost page
-              names no price either. The count of calls is exact; the dollars come from what the
-              wallet actually moved, never from a token-price guess, and the app reports them per
-              hour and per answered question with the basis named. Set a per-session cap and it
-              stops rather than draining a wallet quietly.
-            </p>
+            Nine minutes of a watch auction ran at $0.06 a minute — roughly $7 over two hours.
+            An observation, not a rate. Calls are counted exactly; the dollars are what the
+            wallet moved. Set a per-session cap and it stops.
+          </p>
           </div>
           <div className="flex gap-10">
             {[
@@ -1129,12 +1116,12 @@ export function LandingPage() {
               "Known limits",
               [
                 "p95 misses the 2s budget on the cold path.",
-                "No surface delivers a reply. We draft, check, record and audit it; you paste it. eBay Live publishes no chat-post API, the scraped surfaces have no send path by construction, Reddit refuses the action in four separate places, and Twitch's is written and tested but not wired into the executor.",
+                "No surface delivers a reply: we draft, check, record and audit it; you paste it. eBay Live publishes no chat-post API, the scraped surfaces have no send path, Reddit refuses it in four places, and Twitch's is written but not wired in.",
                 "Listing writes run against a mock by default; the eBay adapter is switched on per show, after you consent on eBay's own page. No live action has committed through it yet.",
                 "Comparables are asking prices, not sold prices — eBay's completed-sales feed is limited-release and this keyset was not granted it.",
                 "TikTok Live, Twitch and Reddit need a flag or their own credentials; the app names the variable instead of failing vaguely. YouTube Live is a capability row with no adapter, so it is not offered.",
                 "Privacy and terms are pages of the product — /privacy, /terms — written from what it actually stores.",
-                "eBay bot-gates the eBay Live GRID: measured 2026-09-26, an ordinary browser on the same signed-in account reads ninety-two shows and every automated one reads zero — headed or headless, on a laptop or a server, proxied or direct. Discover therefore lists what it can on the other surfaces, and eBay Live is attached by pasting a show's link, which works normally. Preparing, monitoring, guards, actions and reports are unaffected.",
+                "eBay bot-gates the eBay Live grid: measured 2026-09-26, an ordinary browser on the same account reads ninety-two shows and every automated one reads zero — headed or headless, laptop or server, proxied or direct. So Discover lists the other surfaces, and eBay Live is attached by pasting a link. Preparing, monitoring, guards, actions and reports are unaffected.",
               ],
             ],
             [
@@ -1143,7 +1130,7 @@ export function LandingPage() {
                 "One agent per session, created before the show if you prepare it, deleted with the session.",
                 "Guardrails armed on the agent, not only in the app.",
                 "Hash-chained audit for every approved reply and every write.",
-                "Posting into a room you do not own starts off, stays off until you turn it on for that room — and cannot be turned on at all where the surface is draft-only. Nothing in this build acts on that switch yet; it is the lock, ahead of the door.",
+                "Posting into a room you do not own starts off and stays off until you turn it on for that room — and cannot be turned on where the surface is draft-only. Nothing acts on that switch yet: it is the lock, ahead of the door.",
               ],
             ],
             [
