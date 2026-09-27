@@ -1104,7 +1104,7 @@ export function LandingPage() {
                 "Comparables are asking prices, not sold prices — eBay's completed-sales feed is limited-release and this keyset was not granted it.",
                 "TikTok Live, Twitch and Reddit need their own credentials. YouTube Live has no adapter, so it is not offered.",
                 "Privacy and terms are pages of the product — /privacy, /terms — written from what it actually stores.",
-                "eBay bot-gates the eBay Live grid: measured 2026-09-26, an ordinary browser on the same account reads ninety-two shows and every automated one reads zero — headed or headless, laptop or server, proxied or direct. So Discover lists the other surfaces, and eBay Live is attached by pasting a link. Preparing, monitoring, guards, actions and reports are unaffected.",
+                "eBay's bot check sometimes serves the grid page without its shows: zero on 2026-09-26, 144 from the same box the next morning. When it happens Discover lists the other surfaces and eBay Live is attached by pasting a link. Everything downstream is unaffected.",
               ],
             ],
             [
