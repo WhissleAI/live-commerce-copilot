@@ -538,7 +538,10 @@ export type StreamEvent =
   | { type: "listen"; data: ListenHealth }
   // The server says so when the show id it was asked for does not exist. The
   // browser used to ignore it and sit on an empty stream forever.
-  | { type: "stream_error"; data: { error: string } };
+  | { type: "stream_error"; data: { error: string } }
+  /** Nobody is watching anything. The stream is healthy; the console is
+   *  between shows. Distinct from `stream_error`, which is a failure. */
+  | { type: "stream_idle"; data: Record<string, never> };
 
 /**
  * The seller's per-show spend cap, and where this show stands against it.

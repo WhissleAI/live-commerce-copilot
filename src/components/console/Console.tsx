@@ -541,8 +541,15 @@ export function Console() {
                 </Button>
               }
             >
-              {operatorMessage(streamError, "The session stream")} This is not the same as nothing
-              being on air — whatever was running is still running.
+              {/* `operatorMessage` returns a sentence without trailing
+                  punctuation, so the two ran together on screen: "…to start
+                  one This is not the same as…". Separate nodes, not a
+                  concatenation. */}
+              <p className="mb-2">{operatorMessage(streamError, "The session stream")}</p>
+              <p>
+                This is not the same as nothing being on air — whatever was running is still
+                running.
+              </p>
             </EmptyState>
           </Card>
         ) : idle ? (

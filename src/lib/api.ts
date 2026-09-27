@@ -334,6 +334,7 @@ const STREAM_EVENTS = [
   // were emitted and neither was heard — the same class of bug as `levels`.
   "source",
   "stream_error",
+  "stream_idle",
   // The spend cap and the low-balance warning. Emitted by the server on every
   // wallet read; never subscribed to, so the banner that stops a show from
   // draining a wallet quietly could not render. Same class of bug as `levels`.
