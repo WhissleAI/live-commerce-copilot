@@ -563,8 +563,7 @@ export function LandingPage() {
             <Secondary to="/login">Sign in</Secondary>
           </div>
           <p className="mt-6 max-w-[528px] text-[13px] leading-relaxed text-text-muted">
-            For the one person running the whole thing · read-only on any session you do not own ·
-            draft-only where the room says so · a human approves every reply and every action, at
+            For the one person running it all · read-only on sessions you do not own · a human approves every reply and every action, at
             every rung
           </p>
         </div>

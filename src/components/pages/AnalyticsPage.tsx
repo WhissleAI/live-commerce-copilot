@@ -207,7 +207,7 @@ function Overview({ o, failed }: { o: AnalyticsOverview | null; failed?: string 
       </div>
 
       <div className="mt-8">
-        <SectionHeading hint="Every guard runs on every reply, so these counts are independent — one reply can be caught by more than one. Flagged wrong is what you marked after sending: a floor, never a total.">
+        <SectionHeading hint="Every guard runs on every reply, so these counts are independent. Flagged wrong is a floor, never a total.">
           Can I trust it
         </SectionHeading>
         <div className="mt-3 grid gap-3 sm:grid-cols-4">
@@ -261,7 +261,7 @@ function Overview({ o, failed }: { o: AnalyticsOverview | null; failed?: string 
       </div>
 
       <div className="mt-8">
-        <SectionHeading hint="Hammer value of everything that closed while a session was on air, booked from lot-state transitions the copilot observed. Sessions recorded before PRD metrics existed carry no GMV and are counted, not zeroed.">
+        <SectionHeading hint="Hammer value of everything that closed on air. Sessions older than PRD metrics carry no GMV and are counted, not zeroed.">
           What it was worth
         </SectionHeading>
         <div className="mt-3 grid gap-3 sm:grid-cols-4">
@@ -442,7 +442,7 @@ function Topics({ o, failed }: { o: AnalyticsOverview | null; failed?: string | 
   const worstAbstain = [...o.byIntent].sort((a, b) => b.abstainedRate - a.abstainedRate)[0];
   return (
     <>
-      <SectionHeading hint="By topic, across every finished session in the window. The last column is what the ladder allows to auto-send at L3; the columns before it are the evidence that allow-list should be argued from.">
+      <SectionHeading hint="By topic, across every finished session. The last column is what L3 auto-sends; the rest is the evidence for it.">
         Where it is strong, and where it is not
       </SectionHeading>
       <Card className="mt-3 overflow-hidden">
@@ -519,7 +519,7 @@ function Autonomy({ r, loaded, failed }: { r: PromotionReadiness | null; loaded:
   }
   return (
     <>
-      <SectionHeading hint="Each rung unlocks from your own finished sessions, on the criteria below. Nothing here is a switch: a rung you have not earned is locked, and the reason is a number.">
+      <SectionHeading hint="Each rung unlocks from your own finished sessions. A rung you have not earned is locked, and the reason is a number.">
         The autonomy ladder
       </SectionHeading>
       <div className="mt-3 flex flex-col gap-3">

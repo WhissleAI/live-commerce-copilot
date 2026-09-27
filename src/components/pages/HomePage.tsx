@@ -294,7 +294,7 @@ export function HomePage({ view = "today" }: { view?: View }) {
           <Band
             eyebrow="Next"
             title="What you are preparing"
-            hint="A session, a channel, or a thread. The copilot works out which surface it is, and what it can do there follows from that — a live session gives it a lineup to answer from, a subreddit gives it the room's rules and a reply you send yourself."
+            hint="A session, a channel, or a thread. The copilot works out which surface it is, and what it can do follows from that."
             hintOpen={teachOpen(exp, { hasContent: model.next.prepared.length > 0 })}
           >
             <div className="mt-3 flex items-start gap-2.5">
@@ -592,7 +592,7 @@ export function BehindBand({
     <Band
       eyebrow="Behind you"
       title="What finished"
-      hint="Each session leaves a report — what it answered, what it blocked, and the questions your knowledge could not ground. The follow-ups are the people who asked and did not buy."
+      hint="Each session leaves a report: what it answered, what it blocked, what it could not ground."
       hintOpen={teachOpen(exp, { hasContent: reports.length > 0 })}
     >
       <div className="mt-3 flex flex-col gap-1.5">
@@ -688,7 +688,7 @@ export function SurfaceTable({
     <Band
       eyebrow="Surfaces"
       title="Where the copilot can work"
-      hint="Every surface passes through the same three phases; what fills them differs by tempo. A live surface has a session with a start and an end; an async one has a standing watch and a queue of drafts, and never has a session at all."
+      hint="Every surface passes through the same three phases. A live one has a session; an async one has a standing watch and a queue."
       hintOpen={teachOpen(exp, { hasContent: rows.length > 0 })}
     >
       <Card className="mt-3 overflow-hidden">

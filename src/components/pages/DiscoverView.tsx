@@ -334,7 +334,7 @@ export function DiscoverView({ onAttach }: { onAttach: (url: string) => void }) 
           hintOpen={teachOpen(discoverExp, { hasContent: !noInterests })}
           hint={
             noInterests
-              ? "No terms yet, so nothing below has been matched against anything — it is what the surfaces we can read have on air. Add a term, or load a catalog, and every card starts naming the terms it matched."
+              ? "No terms yet, so nothing below is matched. Add a term or load a catalog and every card names what it matched."
               : "Every surface asked the same question: given what you sell, what is worth your attention right now — and why. The terms come from your catalogs; each card names the ones it matched."
           }
         >
@@ -471,10 +471,9 @@ export function LegacyNotice() {
     <Card className="mt-3 flex items-start gap-2 px-3 py-2.5">
       <Radio className="mt-0.5 size-3.5 shrink-0 text-text-muted" aria-hidden />
       <span className="text-[12.5px] text-text-secondary">
-        This server answers the older, eBay-only discovery. You are seeing the eBay Live grid
-        without your interests applied — the other surfaces and the matched terms arrive with the
-        server that has them.
-      </span>
+      This server answers the older, eBay-only discovery — the grid without your interests
+      applied.
+    </span>
     </Card>
   );
 }
@@ -608,12 +607,9 @@ export function NoInterests({ catalogs }: { catalogs: number | null }) {
           </>
         ) : (
           <>
-            Discovery asks every surface one question — given what you sell, what is worth your
-            attention right now — and the terms come from your listings. Below is everything the
-            surfaces we can read have on air, in no particular order and matched against nothing:
-            none of it is a recommendation. You can prepare any of it. Load a catalog, or add a term
-            above, and these become the shows that have something to do with you.
-          </>
+          Below is everything on air, in no order and matched against nothing. Load a catalog or
+          add a term, and these become shows with something to do with you.
+        </>
         )}
       </EmptyState>
     </Card>

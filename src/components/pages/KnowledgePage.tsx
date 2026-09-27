@@ -266,7 +266,7 @@ export function KnowledgePage({ initialId }: { initialId?: string | undefined } 
           ) : null}
 
           <div className="mt-8">
-            <SectionHeading hint="Every row says what it was matched against, because a delta is only as good as the comparison behind it — three generic results for a rare colorway is an unmatched lot, not an overpriced one.">
+            <SectionHeading hint="Every row says what it was matched against. Three generic results for a rare colorway is an unmatched lot, not an overpriced one.">
               The lineup, against the market
             </SectionHeading>
 

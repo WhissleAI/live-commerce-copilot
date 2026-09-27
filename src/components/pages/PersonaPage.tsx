@@ -80,7 +80,7 @@ const BOUNDARY_COPY: {
   {
     key: "must_disclose",
     title: "Always say",
-    hint: "The opposite kind of rule, and a different mechanism: these are not checked by a guard, they are written into what the copilot is asked to say. It will always say them — in a room where not saying something is the violation, that is the thing that keeps you inside the rules.",
+    hint: "The opposite kind of rule: not checked by a guard, written into what the copilot is asked to say. It will always say them.",
     placeholder: "that this is a paid partnership",
   },
 ];
@@ -297,7 +297,7 @@ export function PersonaPage() {
 
       <Section
         title="Boundaries"
-        hint="Not preferences, and not one mechanism. The first two become never-say rules the guards check on the finished reply, so they are enforced rather than hoped for. The third is a prompt requirement, not a guard: it is what the copilot will always say, which is a promise about what is in a reply and not a check that blocks one."
+        hint="Not preferences, and not one mechanism. The first two are guards on the finished reply; the third is a prompt requirement."
       >
         <div className="grid gap-2.5 lg:grid-cols-3">
           {BOUNDARY_COPY.map((b) => (
@@ -339,7 +339,7 @@ export function PersonaPage() {
 
       <Section
         title="Voice corpus"
-        hint="Your own past replies and posts, indexed so a draft can be written the way you have answered before. A style reference is never grounding — no claim in a reply stands on one — which is why it renders muted on the card, under the guards."
+        hint="Your own past replies, indexed so a draft sounds like you. A style reference is never grounding — no claim stands on one."
       >
         <div className="mb-2.5 flex flex-wrap items-center gap-2">
           <Button onClick={() => void learn()} disabled={learning}>
@@ -361,10 +361,9 @@ export function PersonaPage() {
               icon={<PenLine className="size-5" aria-hidden />}
               title="Nothing learned yet."
             >
-              Learn reads the replies you have actually sent — from your sessions, and from drafts
-              you marked sent — and keeps them as examples of how you write. Nothing is invented and
-              nothing is sent anywhere.
-            </EmptyState>
+            Learn reads the replies you actually sent and keeps them as examples of how you
+            write.
+          </EmptyState>
           </Card>
         ) : (
           <ul className="flex flex-col gap-1.5">

@@ -152,7 +152,7 @@ export function DraftsPage() {
       }
       tabs={tabs}
     >
-      <SectionHeading hint="These are the surfaces the copilot writes for and does not post to. It reads the thread, drafts a reply against the same guards a live session uses — against the catalog as it stands now — and stops. A draft the guards held is never stored here at all, so everything below is sendable. You are the sender: copy it, post it under your own name, and mark it sent so the next draft knows this question is answered.">
+      <SectionHeading hint="Surfaces the copilot writes for and does not post to. A draft the guards held is never stored, so everything below is sendable. Copy it, post it under your own name, and mark it sent.">
         Written for you to send
       </SectionHeading>
 
@@ -182,13 +182,9 @@ export function DraftsPage() {
               icon={<SquarePen className="size-5" aria-hidden />}
               title="Nothing to send."
             >
-              Two things fill this queue. A session open on a room — you start one by pasting a link
-              on Home — puts a draft here whenever the copilot reads a thread and writes a reply for
-              it; a room kept on Rooms is a choice, and nothing reads it on its own. And a session
-              that ends leaves one reply per buyer who asked and did not buy, re-checked against
-              your knowledge as it stands now. Either way you are the sender: Reddit drafts are
-              never posted by us, not as a setting, in the code.
-            </EmptyState>
+            Two things fill this queue: a session open on a room, and a session that ended
+            leaving one reply per buyer who did not buy. Either way you are the sender.
+          </EmptyState>
           </Card>
         ) : (
           shown.map((d) => (
@@ -204,7 +200,7 @@ export function DraftsPage() {
 
       {heldShown.length ? (
         <div className="mt-8">
-          <SectionHeading hint="A guard stopped these before they were written out, so there is nothing to paste. They are here because a draft that never appears reads as a copilot that had no answer — and the rule that held it is usually the most useful thing on the card.">
+          <SectionHeading hint="A guard stopped these, so there is nothing to paste. They are here because the rule that held one is usually the useful part.">
             Held by a guard
           </SectionHeading>
           <div className="mt-3 flex flex-col gap-2.5">

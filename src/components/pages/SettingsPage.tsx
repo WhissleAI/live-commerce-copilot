@@ -259,9 +259,9 @@ export function SettingsPage({ initialTab }: { initialTab?: SettingsTab | undefi
             </dl>
           ) : null}
           <p className="mt-2 text-[10px] leading-relaxed text-text-muted">
-            Read back from the gateway after the push, not assumed from it. This is what fires on
-            voice and on the embed widget, where this app is not in the loop.
-          </p>
+          Read back from the gateway, not assumed. This is what fires on voice and the embed
+          widget.
+        </p>
         </div>
       ) : null}
 
@@ -449,7 +449,7 @@ function GuardChain() {
   return (
     <Section
       title="What always runs"
-      hint="Eight deterministic checks on every drafted reply, in this order. A block is never a model's opinion — it is one of these failing, and the console names which. The last two have nothing to check on a surface with no room rules and no sponsor, so the console draws no pill for them there; they still run."
+      hint="Eight deterministic checks on every drafted reply, in this order. A block is one of these failing, and the console names which. The last two draw no pill where a surface has no room rules or sponsor, but still run."
     >
       <Card className="divide-y divide-hairline">
         {guards.map((g) => (
@@ -523,7 +523,7 @@ export const GUARD_ROWS: { guard: GuardName; name: string; checks: string; knob:
       guard: "community_rule",
       name: "Room rules",
       checks:
-        "The rules of the room this reply is going into — a subreddit's, a channel's. They sit beside the evidence, never among it: a constraint is not something a claim may cite.",
+        "The rules of the room this reply is going into. They sit beside the evidence, never among it.",
       knob: "set by the room, not by you",
     },
     {
