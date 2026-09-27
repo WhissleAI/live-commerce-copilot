@@ -38,8 +38,13 @@ describe("LegendOverlay", () => {
     ).toBeInTheDocument();
   });
 
+  // Asserts the DISTINCTION, not one phrasing of it. The previous version
+  // matched the sentence word for word and failed on a rewrite that said the
+  // same thing in fewer words.
   it("says the six are six and the extra two are extra", () => {
     render(<LegendOverlay open onClose={() => {}} />);
-    expect(screen.getByText(/plus two\s+more on surfaces that have them/)).toBeInTheDocument();
+    const copy = screen.getByText(/Six guards run on every reply/);
+    expect(copy).toBeInTheDocument();
+    expect(copy.textContent).toMatch(/plus two\s+where the surface has them/);
   });
 });

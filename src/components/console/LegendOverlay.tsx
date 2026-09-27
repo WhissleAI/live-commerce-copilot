@@ -128,9 +128,8 @@ export function LegendOverlay({ open, onClose }: { open: boolean; onClose: () =>
         <div className="flex flex-col gap-4 p-4">
           <section>
             <p className="text-[12.5px] leading-relaxed text-text-secondary">
-              Six guards run on every drafted reply, in order, and each leaves a pill — plus two
-              more on surfaces that have them. The pills are the reply&apos;s receipt: they say what
-              was checked, not what the model thought.
+              Six guards run on every reply, plus two where the surface has them. The pills are
+              the receipt: what was checked, not what the model thought.
             </p>
             <ul className="mt-2.5 flex flex-col gap-1.5">
               {GUARDS.map((g) => (

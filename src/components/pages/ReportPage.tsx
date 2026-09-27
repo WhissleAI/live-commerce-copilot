@@ -1199,7 +1199,7 @@ function Audit({ record }: { record: ShowRecord | null }) {
   const rows = [...record.audit].reverse();
   return (
     <>
-      <SectionHeading hint="Every entry in the chain, newest first. Each hashes the one before it, so nothing can be edited or removed without breaking every hash after it — the report's 'intact' is a check over exactly these rows.">
+      <SectionHeading hint="Every entry, newest first. Each hashes the one before, so nothing can be edited without breaking every hash after it.">
         Audit chain
       </SectionHeading>
       <Card className="mt-3 overflow-hidden">
@@ -1360,7 +1360,7 @@ function GapRow({
             Answer
           </BadgeButton>
         ) : (
-          <Badge title="No catalog to write the answer into. One is made by importing your listings on Settings › eBay, or by preparing a session on Discover — and it becomes the place these answers live.">
+          <Badge title="No catalog to write the answer into. Make one by importing listings on Settings › eBay, or by preparing a session.">
             no catalog
           </Badge>
         )}

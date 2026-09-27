@@ -707,10 +707,9 @@ function LiveShowAnalytics({ showId }: { showId: string }) {
           )}
           <p className="text-[11px] leading-relaxed text-text-secondary">
             <span className="num">{d.policy.neverSayRules}</span> never-say rules are checked here;{" "}
-            <span className="num">{d.policy.armedOnAgent}</span> are armed on the agent itself. The
-            difference is deliberate — rules that depend on whether a listing carries an
-            authentication certificate cannot be enforced by a string matcher with no catalog
-            access. Discount cap: <span className="num">{d.policy.maxDiscountPct}%</span>.
+            <span className="num">{d.policy.armedOnAgent}</span> are armed on the agent itself.
+            The rest depend on whether a listing carries a certificate, which a string matcher
+            cannot check. Discount cap: <span className="num">{d.policy.maxDiscountPct}%</span>.
           </p>
         </div>
       </Section>

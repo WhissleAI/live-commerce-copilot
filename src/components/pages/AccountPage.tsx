@@ -72,7 +72,7 @@ export function AccountPage() {
 
   return (
     <AppShell section="account" title="Account" subtitle={account?.email ?? "your account"}>
-      <SectionHeading hint="Every send, approval, eBay consent and deleted session is recorded against this account in the audit chain — which is the only way “who approved that markdown” has an answer.">
+      <SectionHeading hint="Every send, approval, eBay consent and deleted session is recorded against this account. It is how “who approved that markdown” has an answer.">
         You
       </SectionHeading>
       <Card className="mt-3 divide-y divide-hairline">
