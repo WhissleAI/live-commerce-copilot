@@ -77,6 +77,56 @@ const derived = deriveSurfaces(surfaces, {
   rooms: {},
 });
 
+// ── teaching copy ───────────────────────────────────────────────────────────
+
+describe("explaining itself only until it has been learned", () => {
+  const HINT = /only one that is about the next sixty seconds/;
+
+  it("explains the band in full to someone who has finished nothing", async () => {
+    await renderWithRouter(
+      <NowBand
+        live={[live({ surface: "twitch", title: "Friday build", host: "raebuilds" })]}
+        drafts={{ total: 0, bySurface: [] }}
+        surfaces={derived}
+        onOpen={noop}
+        exp="first_run"
+      />,
+    );
+    const hint = screen.getByText(HINT);
+    expect(hint).toBeInTheDocument();
+    // Open, not merely present: no <details> wrapper around it.
+    expect(hint.closest("details")).toBeNull();
+  });
+
+  it("folds it for a practised operator — folded, never deleted", async () => {
+    await renderWithRouter(
+      <NowBand
+        live={[live({ surface: "twitch", title: "Friday build", host: "raebuilds" })]}
+        drafts={{ total: 0, bySurface: [] }}
+        surfaces={derived}
+        onOpen={noop}
+        exp="practised"
+      />,
+    );
+    // Still in the document — find-in-page and screen readers keep it.
+    const hint = screen.getByText(HINT);
+    expect(hint).toBeInTheDocument();
+    const wrapper = hint.closest("details");
+    expect(wrapper).not.toBeNull();
+    expect(wrapper).not.toHaveAttribute("open");
+    // And there is a control that says so.
+    expect(screen.getByText("What is this?")).toBeInTheDocument();
+  });
+
+  it("keeps the explanation when the band is empty, however practised they are", async () => {
+    await renderWithRouter(
+      <NowBand live={[]} drafts={{ total: 0, bySurface: [] }} surfaces={derived} onOpen={noop} exp="practised" />,
+    );
+    // Nothing to read instead, so the sentence IS the content.
+    expect(screen.getByText(HINT).closest("details")).toBeNull();
+  });
+});
+
 // ── NOW ─────────────────────────────────────────────────────────────────────
 
 describe("the NOW band", () => {

@@ -296,17 +296,38 @@ export function SectionHeading({
   children,
   hint,
   className,
+  /** False collapses `hint` behind a control instead of dropping it. Undefined
+   *  keeps the old always-open behaviour, so every existing call is unchanged. */
+  hintOpen,
+  hintLabel = "What is this?",
 }: {
   children: ReactNode;
   hint?: ReactNode;
   className?: string;
+  hintOpen?: boolean;
+  hintLabel?: string;
 }) {
+  const body = (
+    <p className="mt-1.5 max-w-[720px] text-[12.5px] leading-relaxed text-text-muted">{hint}</p>
+  );
   return (
     <div className={className}>
       <h2 className="section-heading">{children}</h2>
-      {hint ? (
-        <p className="mt-1.5 max-w-[720px] text-[12.5px] leading-relaxed text-text-muted">{hint}</p>
-      ) : null}
+      {!hint ? null : hintOpen === false ? (
+        // A DETAILS element, not a state hook: the explanation is still in the
+        // document for find-in-page and for a screen reader, it opens without
+        // JavaScript, and nothing has to remember whether it was opened. The
+        // copy is never deleted — only folded.
+        <details className="group mt-1">
+          <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-[11.5px] text-text-faint hover:text-text-muted [&::-webkit-details-marker]:hidden">
+            <span aria-hidden className="transition-transform group-open:rotate-90">›</span>
+            {hintLabel}
+          </summary>
+          {body}
+        </details>
+      ) : (
+        body
+      )}
     </div>
   );
 }
