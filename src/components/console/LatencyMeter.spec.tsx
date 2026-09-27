@@ -23,7 +23,16 @@ const metrics = (p95: number) =>
 const bar = () => screen.getByLabelText(/p95 latency/).querySelector("[class*='text-']");
 const toneOf = (p95: number): string => {
   const { unmount } = render(
-    <TopBar show={show} metrics={metrics(p95)} onToggleCost={() => {}} costOpen={false} latencyMeter />,
+    <TopBar
+      show={show}
+      metrics={metrics(p95)}
+      connection="open"
+      viewerDelta={0}
+      onAutonomy={() => {}}
+      onToggleCost={() => {}}
+      costOpen={false}
+      latencyMeter
+    />,
   );
   const el = screen.getByLabelText(/p95 latency/);
   const cls = el.querySelector(".num")?.className ?? "";
