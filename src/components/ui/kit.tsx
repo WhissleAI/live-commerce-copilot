@@ -292,6 +292,40 @@ export function SectionLabel({ children, className }: { children: ReactNode; cla
   return <div className={cn("section-header", className)}>{children}</div>;
 }
 
+/**
+ * A placeholder that knows whether the load already failed.
+ *
+ * `{!data ? <Skeleton/> : …}` is the natural shape and it is wrong in one
+ * specific way: a read that FAILED also leaves `data` null, so the section
+ * shimmers forever. A shimmer means "wait" — the one instruction that is not
+ * true here — and on Cost it sat directly under a banner saying the read could
+ * not be done, so the page contradicted itself.
+ *
+ * `failed` is the error string, or null while it is genuinely still coming.
+ */
+export function Pending({
+  failed,
+  className,
+  what = "This section",
+}: {
+  failed?: string | null | undefined;
+  className?: string;
+  what?: string;
+}) {
+  if (!failed) return <Skeleton className={className ?? ""} />;
+  return (
+    <Card tone="bad" className="px-4 py-3">
+      <p className="text-[12.5px] text-bad">
+        {what} did not load — {failed}
+      </p>
+      <p className="mt-1 text-[11.5px] text-text-muted">
+        This is a failed read, not an empty one. Reload the page; if it keeps happening the server
+        is the thing to look at.
+      </p>
+    </Card>
+  );
+}
+
 export function SectionHeading({
   children,
   hint,

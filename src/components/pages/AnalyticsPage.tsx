@@ -43,6 +43,7 @@ import {
   Card,
   EmptyState,
   SectionHeading,
+  Pending,
   Skeleton,
   StatTile,
 } from "@/components/ui/kit";
@@ -132,22 +133,22 @@ export function AnalyticsPage() {
         </Card>
       ) : null}
 
-      {view === "overview" ? <Overview o={o} /> : null}
-      {view === "topics" ? <Topics o={o} /> : null}
-      {view === "autonomy" ? <Autonomy r={o?.readiness ?? null} loaded={o !== null} /> : null}
+      {view === "overview" ? <Overview o={o} failed={error} /> : null}
+      {view === "topics" ? <Topics o={o} failed={error} /> : null}
+      {view === "autonomy" ? <Autonomy r={o?.readiness ?? null} loaded={o !== null} failed={error} /> : null}
       {view === "live" && o?.liveShowId ? <LiveShowAnalytics showId={o.liveShowId} /> : null}
     </AppShell>
   );
 }
 
-function Overview({ o }: { o: AnalyticsOverview | null }) {
+function Overview({ o, failed }: { o: AnalyticsOverview | null; failed?: string | null | undefined }) {
   if (!o) {
     return (
       <div className="grid gap-3 sm:grid-cols-4">
-        <Skeleton className="h-[92px]" />
-        <Skeleton className="h-[92px]" />
-        <Skeleton className="h-[92px]" />
-        <Skeleton className="h-[92px]" />
+        <Pending failed={failed} className="h-[92px]" what="Did it help" />
+        <Pending failed={failed} className="h-[92px]" />
+        <Pending failed={failed} className="h-[92px]" />
+        <Pending failed={failed} className="h-[92px]" />
       </div>
     );
   }
@@ -427,8 +428,8 @@ export function BySession({ rows }: { rows: AnalyticsOverview["perShow"] }) {
  * constant currently allows, and the rest is the evidence it should be argued
  * from. Rates are over proposals: a comment the gate dropped never got a topic.
  */
-function Topics({ o }: { o: AnalyticsOverview | null }) {
-  if (!o) return <Skeleton className="h-[200px]" />;
+function Topics({ o, failed }: { o: AnalyticsOverview | null; failed?: string | null }) {
+  if (!o) return <Pending failed={failed} className="h-[200px]" what="Topics" />;
   if (!o.byIntent.length) {
     return (
       <Card>
@@ -507,8 +508,8 @@ function Topics({ o }: { o: AnalyticsOverview | null }) {
  * existed with an empty click handler. A rung that is locked says what would
  * unlock it, in the numbers it is measured in.
  */
-function Autonomy({ r, loaded }: { r: PromotionReadiness | null; loaded: boolean }) {
-  if (!loaded) return <Skeleton className="h-[200px]" />;
+function Autonomy({ r, loaded, failed }: { r: PromotionReadiness | null; loaded: boolean; failed?: string | null | undefined }) {
+  if (!loaded) return <Pending failed={failed} className="h-[200px]" what="The ladder" />;
   if (!r) {
     return (
       <Card>
