@@ -130,7 +130,7 @@ export function IngestionPanel({ p, set }: { p: SellerGuardrailPolicy; set: Patc
         />
         <Toggle
           label="Host audio, with emotion and intent"
-          hint="Off means it never hears “last one in this waist” — the lot facts you say out loud and never typed. On, the audio is kept in chunks beside its transcript so the session can be played back."
+          hint="Off, it never hears the lot facts you say out loud. On, the audio is kept so the session replays."
           on={ing.hostAudio}
           onChange={(v) => set("ingest", { ...ing, hostAudio: v })}
         />
@@ -167,7 +167,7 @@ export function AutomationPanel({ p, set }: { p: SellerGuardrailPolicy; set: Pat
   ];
   return (
     <>
-      <SectionHeading hint="Where a new session starts, and the bounds any rung above it must respect. Price and discount are excluded from auto-reply at every rung and cannot be added — they move during a session, and that is where a wrong answer costs real money.">
+      <SectionHeading hint="Where a new session starts. Price and discount are excluded from auto-reply at every rung and cannot be added.">
         Automation defaults
       </SectionHeading>
 
@@ -264,10 +264,9 @@ export function AutomationPanel({ p, set }: { p: SellerGuardrailPolicy; set: Pat
             </div>
           ) : null}
           <p className="mt-2 text-[11.5px] leading-snug text-text-muted">
-            Spend is a wallet delta and the wallet is workspace-wide, so the figure is an upper
-            bound — the cap fires early rather than late. Past it, questions still arrive and are
-            recorded; nothing is drafted.
-          </p>
+          The wallet is workspace-wide, so spend is an upper bound and the cap fires early. Past
+          it, nothing is drafted.
+        </p>
         </div>
       </div>
 
@@ -308,7 +307,7 @@ export function DryRunPanel() {
 
   return (
     <>
-      <SectionHeading hint="Ask what the copilot would say, against the catalog exactly as it stands, without a session running and without sending anything. The same pipeline and the same six guards — which is how a guardrail change gets tested between sessions rather than on a buyer.">
+      <SectionHeading hint="Ask what the copilot would say against the catalog as it stands, with no session running. Same pipeline, same six guards.">
         Dry run
       </SectionHeading>
 
@@ -386,7 +385,7 @@ export function AgentsPanel({
   const preparedOnly = prepared.filter((p) => p.agentId && !sessionAgents.has(p.agentId));
   return (
     <>
-      <SectionHeading hint="Every stream gets its own Whissle agent, built from the same template and tuned to that session's lineup — the enrichment differs per session, and a shared agent would answer one session's question out of another session's stock. Deleting a session deletes its agent and its knowledge base with it.">
+      <SectionHeading hint="Every stream gets its own agent, tuned to that session's lineup. Deleting a session deletes its agent and knowledge base.">
         Stream agents
       </SectionHeading>
       <Card className="mt-3 overflow-hidden">

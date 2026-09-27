@@ -339,7 +339,7 @@ export function ReportPage({ showId }: { showId: string }) {
           {/* what it was worth --------------------------------------------- */}
           {prd ? (
             <div className="mt-8">
-              <SectionHeading hintOpen={teach} hint="Hammer value of everything that closed while you were on air, booked from the lot-state transitions the copilot observed — not a sum over current listing state, which would answer a different question every time it was asked.">
+              <SectionHeading hintOpen={teach} hint="Hammer value of everything that closed while you were on air, booked from lot-state transitions the copilot observed.">
                 What it was worth
               </SectionHeading>
               <div className="mt-3 grid gap-3 sm:grid-cols-4">
@@ -398,11 +398,9 @@ export function ReportPage({ showId }: { showId: string }) {
             <Card className="mt-8 flex gap-2.5 bg-elevated px-4 py-3">
               <Info className="mt-0.5 size-4 shrink-0 text-text-muted" aria-hidden />
               <p className="text-[12px] leading-relaxed text-text-secondary">
-                This report was written before the PRD metrics were computed, and a report is never
-                regenerated — it is a statement about a session that has finished. GMV, operator
-                load and the trust rates are missing from this one; they are present on every
-                session recorded since.
-              </p>
+              Written before the PRD metrics existed, and a report is never regenerated. GMV,
+              operator load and trust rates are missing here.
+            </p>
             </Card>
           )}
 
@@ -546,7 +544,7 @@ export function ReportPage({ showId }: { showId: string }) {
       {view === "audit" || printing ? <Audit record={record} /> : null}
       {view === "timeline" || printing ? (
         <>
-          <SectionHeading hintOpen={teach} hint="Every signal the session produced, on one clock: what the host said with the emotion and intent measured on it, what the camera showed and what the agent read from it, and the audio to play it back.">
+          <SectionHeading hintOpen={teach} hint="Every signal on one clock: what the host said, how it was measured, what the camera showed, and the audio to replay it.">
             The session, played back
           </SectionHeading>
           <div className="mt-3">
@@ -630,7 +628,7 @@ function HostSection({
           <p className="text-[12px] leading-relaxed text-text-secondary">
             {host === undefined
               ? "This report was written before host signals were kept, and a report is never regenerated."
-              : "Host audio was not captured for this session, so there is nothing to say about how it was hosted. Open the audio bridge next session and this section fills in — pace, delivery, and the moments chat reacted to."}
+              : "No host audio for this session. Open the audio bridge next time and this fills in — pace, delivery, and where chat reacted."}
           </p>
         </Card>
       ) : (
@@ -916,7 +914,7 @@ const KIND_LABEL: Record<Conclusion["nextActions"][number]["kind"], string> = {
 function ConclusionSection({ c }: { c: Conclusion | null | undefined }) {
   return (
     <div className="mt-8">
-      <SectionHeading hint="Written by the session's own agent at the end, from the numbers on this page and the persisted signals — nothing it could not point at. Next actions are typed so they can be sorted and checked off; 'hosting' is the one only the host's audio can produce.">
+      <SectionHeading hint="Written by the session's own agent from the numbers on this page — nothing it could not point at.">
         What the agent concluded
       </SectionHeading>
       {!c ? (

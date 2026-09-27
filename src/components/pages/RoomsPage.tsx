@@ -166,12 +166,9 @@ export function RoomsPage() {
         <div className="text-[12.5px] leading-relaxed">
           <p className="font-medium text-text">Reddit drafts are never posted by us.</p>
           <p className="mt-0.5 text-text-secondary">
-            Not a setting on this page — Reddit is draft-only in the code, so nothing on any screen
-            can turn it into a poster. A reply written for a subreddit goes to Drafts, and you post
-            it yourself, under your own name. Everywhere else, posting starts off and stays off
-            until you turn it on for that room specifically, and turning it on arms a path rather
-            than starting one.
-          </p>
+          Reddit is draft-only in the code, so no screen can turn it into a poster. Elsewhere,
+          posting starts off until you turn it on for that room.
+        </p>
         </div>
       </Card>
 
@@ -183,11 +180,9 @@ export function RoomsPage() {
         <div className="text-[12.5px] leading-relaxed">
           <p className="font-medium text-text">A room here is a list, not a running watch.</p>
           <p className="mt-0.5 text-text-secondary">
-            Keeping a room records that you care about it, and each row says whether a session is
-            open on it right now. Nothing on this page starts one: a session begins when you paste a
-            link on Home, and a room is read for as long as that session is open. Adding a subreddit
-            does not, on its own, put drafts in your queue.
-          </p>
+          Keeping a room records that you care about it. Nothing here starts a session — that
+          begins when you paste a link on Home.
+        </p>
         </div>
       </Card>
 

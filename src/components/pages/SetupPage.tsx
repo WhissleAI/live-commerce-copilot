@@ -301,10 +301,9 @@ export function SetupPage({ showId }: { showId?: string | undefined }) {
                   </p>
                 ) : null}
                 <p className="mt-2 text-[11.5px] leading-relaxed text-text-muted">
-                  A warning, not a blocker — you can start without it. Without it the copilot
-                  answers from the catalog and chat only, will not hear “last one in this waist”,
-                  and the report’s section on how you worked the room stays empty.
-                </p>
+                A warning, not a blocker. Without it the copilot never hears what you say out
+                loud, and the report's delivery section stays empty.
+              </p>
               </div>
             ) : null}
           </Card>
