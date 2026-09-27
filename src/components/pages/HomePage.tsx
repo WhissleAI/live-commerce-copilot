@@ -72,6 +72,7 @@ import type {
 import { ATTACH_INPUT, ATTACH_VERB, HOME, NO_FINISHED_SESSIONS } from "@/lib/copy";
 import { AppShell, type Tab } from "@/components/app/AppShell";
 import { Badge, Button, Card, SectionHeading, Skeleton } from "@/components/ui/kit";
+import { experienceOf, teachOpen, type Experience } from "@/lib/experience";
 import { DiscoverView } from "./DiscoverView";
 
 type View = "today" | "discover";
@@ -137,6 +138,10 @@ export function HomePage({ view = "today" }: { view?: View }) {
       }),
     [home, surfaces, rows, drafts, catalogs, ebay, rooms],
   );
+
+  // How much the product should still be explaining itself. Derived from what
+  // this operator has finished, never from a banner they dismissed.
+  const exp = experienceOf(model);
 
   // ── the paste box ─────────────────────────────────────────────────────────
   const [url, setUrl] = useState("");
@@ -283,12 +288,14 @@ export function HomePage({ view = "today" }: { view?: View }) {
             surfaces={model.surfaces}
             loading={loading}
             onOpen={openConsole}
+            exp={exp}
           />
 
           <Band
             eyebrow="Next"
             title="What you are preparing"
             hint="A session, a channel, or a thread. The copilot works out which surface it is, and what it can do there follows from that — a live session gives it a lineup to answer from, a subreddit gives it the room's rules and a reply you send yourself."
+            hintOpen={teachOpen(exp, { hasContent: model.next.prepared.length > 0 })}
           >
             <div className="mt-3 flex items-start gap-2.5">
               <div className="flex-1">
@@ -393,9 +400,10 @@ export function HomePage({ view = "today" }: { view?: View }) {
             reports={model.behind.reports}
             followups={model.behind.followups}
             loading={loading}
+            exp={exp}
           />
 
-          <SurfaceTable rows={model.surfaces} loading={loading} />
+          <SurfaceTable rows={model.surfaces} loading={loading} exp={exp} />
         </>
       )}
     </AppShell>
@@ -427,11 +435,15 @@ export function Band({
   eyebrow,
   title,
   hint,
+  hintOpen,
   children,
 }: {
   eyebrow: string;
   title: string;
   hint?: string;
+  /** See `lib/experience`. Undefined keeps the explainer open, which is what
+   *  every band did before and what an untouched caller still gets. */
+  hintOpen?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -439,7 +451,11 @@ export function Band({
       <div className="text-[11px] font-semibold tracking-[0.09em] text-text-faint uppercase">
         {eyebrow}
       </div>
-      <SectionHeading className="mt-1" {...(hint ? { hint } : {})}>
+      <SectionHeading
+        className="mt-1"
+        {...(hint ? { hint } : {})}
+        {...(hintOpen === undefined ? {} : { hintOpen })}
+      >
         {title}
       </SectionHeading>
       {children}
@@ -455,12 +471,14 @@ export function NowBand({
   surfaces,
   loading,
   onOpen,
+  exp = "first_run",
 }: {
   live: HomeLiveSession[];
   drafts: { total: number; bySurface: { surface: SurfaceId; count: number }[] };
   surfaces: HomeSurfaceRow[];
   loading?: boolean;
   onOpen: (showId: string) => void;
+  exp?: Experience;
 }) {
   const empty = live.length === 0 && drafts.total === 0;
   return (
@@ -468,6 +486,7 @@ export function NowBand({
       eyebrow="Now"
       title="What needs you this minute"
       hint="Sessions on air across every surface, and the replies waiting for a human to send. This band is the only one that is about the next sixty seconds."
+      hintOpen={teachOpen(exp, { hasContent: !empty })}
     >
       <div className="mt-3 flex flex-col gap-1.5">
         {loading ? (
@@ -562,16 +581,19 @@ export function BehindBand({
   reports,
   followups,
   loading,
+  exp = "first_run",
 }: {
   reports: HomeReport[];
   followups: { total: number; ready: number };
   loading?: boolean;
+  exp?: Experience;
 }) {
   return (
     <Band
       eyebrow="Behind you"
       title="What finished"
       hint="Each session leaves a report — what it answered, what it blocked, and the questions your knowledge could not ground. The follow-ups are the people who asked and did not buy."
+      hintOpen={teachOpen(exp, { hasContent: reports.length > 0 })}
     >
       <div className="mt-3 flex flex-col gap-1.5">
         {loading ? (
@@ -652,13 +674,22 @@ export function BehindBand({
  * A surface nobody has connected is a quiet invitation. Nothing here is red,
  * because nothing here is broken — not having a Twitch app is a choice.
  */
-export function SurfaceTable({ rows, loading }: { rows: HomeSurfaceRow[]; loading?: boolean }) {
+export function SurfaceTable({
+  rows,
+  loading,
+  exp = "first_run",
+}: {
+  rows: HomeSurfaceRow[];
+  loading?: boolean;
+  exp?: Experience;
+}) {
   const [open, setOpen] = useState<SurfaceId | null>(null);
   return (
     <Band
       eyebrow="Surfaces"
       title="Where the copilot can work"
       hint="Every surface passes through the same three phases; what fills them differs by tempo. A live surface has a session with a start and an end; an async one has a standing watch and a queue of drafts, and never has a session at all."
+      hintOpen={teachOpen(exp, { hasContent: rows.length > 0 })}
     >
       <Card className="mt-3 overflow-hidden">
         <div className="scroll-thin overflow-x-auto">
