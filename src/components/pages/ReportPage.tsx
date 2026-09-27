@@ -65,6 +65,7 @@ import {
   StatTile,
 } from "@/components/ui/kit";
 import { experienceOfReport, teachOpen } from "@/lib/experience";
+import { DECISION_MS, P95_ANSWER_MS, targetLabel } from "@/lib/targets";
 
 /**
  * One vocabulary, the same as the server's and the console's:
@@ -298,7 +299,7 @@ export function ReportPage({ showId }: { showId: string }) {
               // tile graded against the brief long after the PRD moved, so a
               // 3 s p95 — comfortably inside target — rendered as a miss.
               {...(e.answered && e.p95LatencyMs > 0
-                ? { target: "target <10s", targetMet: e.p95LatencyMs < 10_000 }
+                ? { target: targetLabel(P95_ANSWER_MS), targetMet: e.p95LatencyMs < P95_ANSWER_MS }
                 : {})}
               hint={
                 e.answered && e.p95LatencyMs > 0
@@ -323,7 +324,7 @@ export function ReportPage({ showId }: { showId: string }) {
               }
               hint="card shown → you sent or dismissed"
               {...(prd?.operatorLoad.medianDecisionMs != null
-                ? { target: "target <2s", targetMet: prd.operatorLoad.medianDecisionMs < 2000 }
+                ? { target: targetLabel(DECISION_MS), targetMet: prd.operatorLoad.medianDecisionMs < DECISION_MS }
                 : {})}
             />
           </div>

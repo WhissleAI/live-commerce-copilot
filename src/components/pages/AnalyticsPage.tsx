@@ -16,6 +16,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { DECISION_MS, P95_ANSWER_MS, targetLabel } from "@/lib/targets";
 import {
   NOTHING_BLOCKED,
   NO_FINISHED_SESSIONS,
@@ -184,8 +185,8 @@ function Overview({ o }: { o: AnalyticsOverview | null }) {
         <StatTile
           label="Worst p95"
           value={ms(e.worstP95Ms)}
-          target="target <2s"
-          targetMet={e.worstP95Ms < 2000}
+          target={targetLabel(P95_ANSWER_MS)}
+          targetMet={e.worstP95Ms < P95_ANSWER_MS}
           hint={
             e.medianOfMediansMs
               ? `median of per-session medians ${ms(e.medianOfMediansMs)}`
@@ -280,9 +281,9 @@ function Overview({ o }: { o: AnalyticsOverview | null }) {
           <StatTile
             label="Median decision"
             value={o.operator.medianDecisionMs == null ? "—" : ms(o.operator.medianDecisionMs)}
-            target="target <2s"
+            target={targetLabel(DECISION_MS)}
             {...(o.operator.medianDecisionMs != null
-              ? { targetMet: o.operator.medianDecisionMs < 2000 }
+              ? { targetMet: o.operator.medianDecisionMs < DECISION_MS }
               : {})}
             hint="card shown → you sent or dismissed"
           />
@@ -381,7 +382,7 @@ export function BySession({ rows }: { rows: AnalyticsOverview["perShow"] }) {
                   <td
                     className={cn(
                       "num px-3 py-2 text-right",
-                      measured && r.p95LatencyMs > 2000 && "text-bad",
+                      measured && r.p95LatencyMs > P95_ANSWER_MS && "text-bad",
                     )}
                   >
                     {measured && r.p95LatencyMs ? ms(r.p95LatencyMs) : "—"}
