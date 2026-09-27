@@ -762,6 +762,24 @@ export const api = {
    * `sellerHandle: null` to mean "I do not know" is what produced a run of
    * empty catalogs, and the server now ignores it in favour of what it holds.
    */
+  /**
+   * A token that opens the audio bridge and NOTHING ELSE.
+   *
+   * The bridge is a separate tab, so its token is in a URL — in history, in
+   * the address bar, in any log that records a path. Until now that token was
+   * the operator's whole account session, which reaches every show they own
+   * and every route in the product.
+   *
+   * The server has minted the narrow one all along (`openBridgeSession`): a
+   * `sbt_` token that expires in sixty minutes, is pinned to ONE show, and is
+   * confined by `inBridgeScope` to that show's audio and visual ingest. It
+   * cannot read the console, cannot reach another show, and cannot mint a
+   * second one. The comment beside it in routes.ts says in as many words that
+   * this is the URL the console should have been building.
+   */
+  bridgeToken: (showId: string): Promise<{ token: string; expiresAt: string; showId: string; url: string }> =>
+    post(`/api/shows/${encodeURIComponent(showId)}/bridge-token`, {}),
+
   prepareShow: (s: {
     eventId: string;
     title?: string;

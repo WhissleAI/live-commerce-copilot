@@ -16,7 +16,8 @@ import { useCallback, useEffect, useState } from "react";
 import { ATTACH_HINT, ATTACH_VERB } from "@/lib/copy";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { AlertTriangle, ArrowRight, Check, ExternalLink, Info, Loader2 } from "lucide-react";
-import { api, API_BASE, tokenQuery } from "@/lib/api";
+import { api } from "@/lib/api";
+import { openAudioBridge } from "@/lib/bridge";
 import { surfaceLabel, surfaceOf } from "@/lib/surfaces";
 import type { CatalogFit, CatalogReadiness, ShowSummary } from "@/lib/types";
 import { AppShell } from "@/components/app/AppShell";
@@ -62,9 +63,9 @@ export function SetupPage({ showId }: { showId?: string | undefined }) {
   const checks = readiness?.checks ?? [];
   const blockers = checks.filter((c) => !c.ok && c.severity === "blocker");
   const warnings = checks.filter((c) => !c.ok && c.severity === "warning");
-  const bridge = show
-    ? `${API_BASE}/audio-bridge?showId=${encodeURIComponent(show.showId)}&${tokenQuery()}`
-    : null;
+  // No eagerly-built URL any more: the token is minted on the click that opens
+  // the tab, so it is never sitting in a href waiting to be copied.
+  const [bridgeError, setBridgeError] = useState<string | null>(null);
 
   return (
     <AppShell
@@ -276,16 +277,33 @@ export function SetupPage({ showId }: { showId?: string | undefined }) {
               </div>
             ) : null}
 
-            {bridge ? (
+            {show ? (
               <div className="px-4 py-3 shadow-[0_-1px_0_var(--hairline)]">
-                <a href={bridge} target="_blank" rel="noreferrer">
-                  <Button size="sm">
-                    <ExternalLink className="size-3" aria-hidden /> Open the audio bridge
-                  </Button>
-                </a>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setBridgeError(null);
+                    void openAudioBridge(show.showId).then((r) => {
+                      if (r.ok) return;
+                      setBridgeError(
+                        r.reason === "blocked"
+                          ? "Your browser blocked the new tab. Allow pop-ups for this site and press it again."
+                          : "Could not open the bridge. The session may have ended — reload and try again.",
+                      );
+                    });
+                  }}
+                >
+                  <ExternalLink className="size-3" aria-hidden /> Open the audio bridge
+                </Button>
+                {bridgeError ? (
+                  <p role="alert" className="mt-2 text-[11.5px] leading-relaxed text-bad">
+                    {bridgeError}
+                  </p>
+                ) : null}
                 <p className="mt-2 text-[11.5px] leading-relaxed text-text-muted">
-                  A warning, not a blocker — you can start without it. The copilot then answers from
-                  the catalog and chat only, and will not hear “last one in this waist”.
+                  A warning, not a blocker — you can start without it. Without it the copilot
+                  answers from the catalog and chat only, will not hear “last one in this waist”,
+                  and the report’s section on how you worked the room stays empty.
                 </p>
               </div>
             ) : null}
