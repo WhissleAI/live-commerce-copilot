@@ -16,7 +16,8 @@
 // Finishing a session is the honest line. It means they have been through
 // prepare, console and report at least once, which is exactly the vocabulary
 // the copy teaches.
-import type { HomeModel } from "./home";
+import type { HomeModel, } from "./home";
+import type { PromotionReadiness } from "./types";
 
 export type Experience = "first_run" | "practised";
 
@@ -47,4 +48,26 @@ export function experienceOf(m: Pick<HomeModel, "behind">): Experience {
 export function teachOpen(exp: Experience, opts: { hasContent: boolean }): boolean {
   if (exp === "first_run") return true;
   return !opts.hasContent;
+}
+
+/**
+ * The same question on a post-session report, answered from what the report
+ * already holds.
+ *
+ * `PromotionReadiness` is scored across the operator's own finished sessions
+ * and each criterion carries `showsSeen` — how many it was judged against. That
+ * is the same "have you been through this before" fact the home derivation
+ * uses, and it is already on the page, so reading it costs no extra request.
+ *
+ * MORE THAN ONE, not at least one: the report you are reading is itself a
+ * finished session, so `showsSeen === 1` is the first report this operator has
+ * ever opened — exactly when every sentence should be there.
+ *
+ * Unknown readiness reads as a first run. The safe direction to be wrong in is
+ * explaining something to someone who already knew it.
+ */
+export function experienceOfReport(readiness: PromotionReadiness | null): Experience {
+  if (!readiness) return "first_run";
+  const seen = Math.max(0, ...readiness.criteria.map((c) => c.showsSeen ?? 0));
+  return seen > 1 ? "practised" : "first_run";
 }

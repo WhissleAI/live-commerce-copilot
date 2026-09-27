@@ -64,6 +64,7 @@ import {
   Skeleton,
   StatTile,
 } from "@/components/ui/kit";
+import { experienceOfReport, teachOpen } from "@/lib/experience";
 
 /**
  * One vocabulary, the same as the server's and the console's:
@@ -234,6 +235,10 @@ export function ReportPage({ showId }: { showId: string }) {
     );
   }
 
+  // Fold the section explainers once this is not the operator's first report.
+  // `showsSeen` is already on the page — the readiness criteria are scored
+  // across their own finished sessions — so nothing extra is fetched.
+  const teach = teachOpen(experienceOfReport(readiness), { hasContent: true });
   const e = report.engagement;
 
   // A drafted card is a measurement even when nothing was sent.
@@ -273,7 +278,7 @@ export function ReportPage({ showId }: { showId: string }) {
       {view === "summary" || printing ? (
         <>
           {/* did it help --------------------------------------------------- */}
-          <SectionHeading hint={SENT_MEANS_SUMMARY}>Did it help</SectionHeading>
+          <SectionHeading hint={SENT_MEANS_SUMMARY} hintOpen={teach}>Did it help</SectionHeading>
           <div className="mt-3 grid gap-3 sm:grid-cols-4">
             <StatTile
               label="Answered rate"
@@ -333,7 +338,7 @@ export function ReportPage({ showId }: { showId: string }) {
           {/* what it was worth --------------------------------------------- */}
           {prd ? (
             <div className="mt-8">
-              <SectionHeading hint="Hammer value of everything that closed while you were on air, booked from the lot-state transitions the copilot observed — not a sum over current listing state, which would answer a different question every time it was asked.">
+              <SectionHeading hintOpen={teach} hint="Hammer value of everything that closed while you were on air, booked from the lot-state transitions the copilot observed — not a sum over current listing state, which would answer a different question every time it was asked.">
                 What it was worth
               </SectionHeading>
               <div className="mt-3 grid gap-3 sm:grid-cols-4">
@@ -403,7 +408,7 @@ export function ReportPage({ showId }: { showId: string }) {
           {/* can I trust it ------------------------------------------------- */}
           {prd ? (
             <div className="mt-8">
-              <SectionHeading hint="The four numbers that decide whether you climb the autonomy ladder. Every guard runs on every reply, so these counts are independent — one reply can be caught by more than one.">
+              <SectionHeading hintOpen={teach} hint="The four numbers that decide whether you climb the autonomy ladder. Every guard runs on every reply, so these counts are independent — one reply can be caught by more than one.">
                 Can I trust it
               </SectionHeading>
               <div className="mt-3 grid gap-3 sm:grid-cols-4">
@@ -511,7 +516,7 @@ export function ReportPage({ showId }: { showId: string }) {
 
           {/* fix before the next session — the short form; the tab has the list --- */}
           <div className="mt-8">
-            <SectionHeading hint="The part worth acting on. The gaps tab has every question and a place to answer it; this is the rung the session counted toward.">
+            <SectionHeading hintOpen={teach} hint="The part worth acting on. The gaps tab has every question and a place to answer it; this is the rung the session counted toward.">
               Fix before the next session
             </SectionHeading>
             <div className="mt-3 grid gap-3 lg:grid-cols-[1fr_1fr]">
@@ -540,7 +545,7 @@ export function ReportPage({ showId }: { showId: string }) {
       {view === "audit" || printing ? <Audit record={record} /> : null}
       {view === "timeline" || printing ? (
         <>
-          <SectionHeading hint="Every signal the session produced, on one clock: what the host said with the emotion and intent measured on it, what the camera showed and what the agent read from it, and the audio to play it back.">
+          <SectionHeading hintOpen={teach} hint="Every signal the session produced, on one clock: what the host said with the emotion and intent measured on it, what the camera showed and what the agent read from it, and the audio to play it back.">
             The session, played back
           </SectionHeading>
           <div className="mt-3">
