@@ -129,13 +129,12 @@ export function PrivacyPage() {
   return (
     <Frame title="Privacy policy">
       <p>
-        SideStage is a copilot for one person answering a room. It reads a public conversation —
-        a live show&apos;s chat, a stream&apos;s chat, a subreddit thread — drafts replies for the
-        operator to send, and, on the operator&apos;s own eBay listings and at their instruction,
-        acts. This page says what it reads, what it keeps, where that goes, and for how long. It
-        is written from the code, and the parts nobody has decided yet are marked as such rather
-        than filled in.
-      </p>
+      SideStage is a copilot for one person answering a room. It reads a public conversation — a
+      live show&apos;s chat, a stream&apos;s chat, a subreddit thread — drafts replies for the
+      operator to send, and acts on the operator&apos;s own eBay listings at their instruction.
+      This page says what it reads, what it keeps, where that goes and for how long. Written
+      from the code; what nobody has decided yet is marked, not filled in.
+    </p>
 
       {/* Replaces the sandbox notice. The old one said the opposite of this. */}
       <h2>This runs against the real thing</h2>
@@ -170,12 +169,12 @@ export function PrivacyPage() {
           {/* chat_messages (004_session_record.sql:18-29) and reply_proposals
               (:37-57); the audit table's summary and detail carry the handle
               and up to 80 characters of the message (pipeline.ts:477,486,548). */}
-          <strong>Comments by people who are not you.</strong> For every comment SideStage reads in
-          a monitored room it keeps the author&apos;s display name as that platform showed it, the
-          text of the comment, and the time we received it. For every comment it answered it also
-          keeps the reply it drafted, the guardrail verdicts on that reply, and what the operator
-          did with it — sent, edited, or dismissed. The name and the first part of the comment are
-          also written into a tamper-evident audit log, which is the record of who approved what.
+          <strong>Comments by people who are not you.</strong>
+          For every comment read in a monitored room it keeps the author&apos;s display name as
+          that platform showed it, the comment text, and the time received. For every comment
+          answered it also keeps the drafted reply, its guardrail verdicts, and what the
+          operator did — sent, edited or dismissed. The name and the start of the comment also
+          go into a tamper-evident audit log: the record of who approved what.
         </li>
         <li>
           {/* followups (021_followups.sql:21-34): buyer, question, draft. */}
@@ -230,13 +229,14 @@ export function PrivacyPage() {
           {/* src/llm/whissle.ts:1 — "the ONLY LLM provider in this system";
               buildUserMessage (src/compose/prompts.ts:328-330) sends the
               author's display name with the question. */}
-          <strong>Whissle</strong> runs the language and speech models. It is the only such provider
-          SideStage uses — there is no call to any other model vendor anywhere in the code. To draft
-          a reply we send the asker&apos;s display name and their question; where a thread is being
-          answered we send the comments above it, which are other people&apos;s words and names. The
-          operator&apos;s catalog and policies are uploaded to a per-session knowledge base, host
-          audio is streamed to a listen-only session for transcription, and kept frames are sent for
-          a reading. Whissle&apos;s own policy applies to that processing.
+          <strong>Whissle</strong>
+          runs the language and speech models, and is the only such provider — no other model
+          vendor is called anywhere in the code. To draft a reply we send the asker&apos;s
+          display name and their question; answering a thread also sends the comments above it,
+          which are other people&apos;s words and names. The catalog and policies are uploaded
+          to a per-session knowledge base, host audio streams to a listen-only session for
+          transcription, and kept frames are sent for a reading. Whissle&apos;s own policy
+          applies to that processing.
         </li>
         <li>
           <strong>eBay, Twitch and Reddit</strong> receive the API calls made on the operator&apos;s
@@ -256,13 +256,12 @@ export function PrivacyPage() {
       {/* RETENTION. The honest version. See the file comment. */}
       <h2>How long</h2>
       <p>
-        There is no timer. SideStage does not delete anything a person said after any period,
-        because no such rule has been written — not in the code and not as a policy. What exists is
-        deletion by hand, and it is complete: deleting a session deletes its chat, its proposals,
-        its audit log, its transcript, its audio and its frames, its follow-ups and its report,
-        along with the per-session agent and its knowledge base. Disconnecting an account deletes
-        that account&apos;s tokens. A session can be exported as JSON at any time from its report.
-      </p>
+      There is no timer: nothing a person said is deleted after any period, because no such rule
+      has been written — not in the code, not as a policy. Deletion is by hand, and complete.
+      Deleting a session deletes its chat, proposals, audit log, transcript, audio and frames,
+      follow-ups and report, plus the per-session agent and its knowledge base. Disconnecting an
+      account deletes that account&apos;s tokens. Any session exports as JSON from its report.
+    </p>
       <p>
         Two things outlive the session they came from, and this page would rather say so than be
         accurate only in general: the style references described above, which are attached to the
