@@ -449,7 +449,7 @@ function GuardChain() {
   return (
     <Section
       title="What always runs"
-      hint="Eight deterministic checks on every drafted reply, in this order. A block is one of these failing, and the console names which. The last two draw no pill where a surface has no room rules or sponsor, but still run."
+      hint="Eight deterministic checks on every reply, in order. A block is one of these failing. The last two draw no pill where a surface has neither, but still run."
     >
       <Card className="divide-y divide-hairline">
         {guards.map((g) => (
@@ -617,7 +617,7 @@ function AccountAndData() {
     <>
       <Section
         title="Account"
-        hint="Every send and approval is recorded against the signed-in account in the audit chain — which is the only way “who approved that markdown” has an answer."
+        hint="Every send and approval is recorded against the signed-in account. It is how “who approved that markdown” has an answer."
       >
         <Card className="px-4 py-3.5">
           <div className="flex items-center gap-2.5">

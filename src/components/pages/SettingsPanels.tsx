@@ -117,7 +117,7 @@ export function IngestionPanel({ p, set }: { p: SellerGuardrailPolicy; set: Patc
   const ing = p.ingest;
   return (
     <>
-      <SectionHeading hint="Each source off is one class of question the copilot will abstain on rather than guess at. The consequence is printed beside the switch, because that is the thing worth knowing before turning one off.">
+      <SectionHeading hint="Each source off is one class of question the copilot abstains on. The consequence is printed beside the switch.">
         What the copilot may use
       </SectionHeading>
       <Card className="mt-3">

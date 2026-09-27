@@ -222,7 +222,7 @@ export const SURFACE_FAMILIES: SurfaceFamily[] = [
  * Said here once, as a constant, so a section cannot quietly imply otherwise.
  */
 export const NOT_THE_SENDER =
-  "You are the sender. Nothing in this build posts a reply for you on any surface: the copilot reads, drafts, cites and checks, and a human puts the words in the room.";
+  "You are the sender. Nothing here posts for you: the copilot reads, drafts, cites and checks, and a human puts the words in the room.";
 
 /** live or async, read off the shipped capability table. */
 export function tempoLabel(ids: SurfaceId[]): string {
@@ -372,12 +372,10 @@ function MomentCard() {
         </div>
       </div>
       <p className="mt-3.5 text-[13px] leading-relaxed text-text-muted">
-        Two and a half seconds: the seller marked the lot down, the draft quoted the old price, the
-        guard compared the fact&apos;s listing version against the live one and stopped it. Run it
-        yourself: <span className="num">npm run demo:stale-price</span> — and read past the block,
-        because the script then repairs the draft and sends it, which is a step the shipped pipeline
-        does not have. A guard that asks for a revision aggregates to a block, so a blocked draft is
-        held for you rather than re-written.
+        Two and a half seconds. The lot was marked down and the draft quoted the old price; the
+        guard compared listing versions and stopped it. Run it
+        yourself: <span className="num">npm run demo:stale-price</span>. Read past the block —
+        the script repairs and sends, which the shipped pipeline does not do.
       </p>
     </div>
   );
@@ -553,8 +551,7 @@ export function LandingPage() {
           </h1>
           <p className="mt-6 max-w-[540px] text-[17px] leading-relaxed text-text-secondary">
           One copilot across a live show, a stream, a subreddit and your follow-up inbox. It
-          answers from your own listings, names the fact it used, and checks it against the
-          catalog as it stands now. Then it hands you the reply.
+          answers from your listings, names the fact it used, and hands you the reply.
         </p>
           <div className="mt-8 flex flex-wrap gap-3.5">
             <Primary to="/register">
@@ -563,7 +560,7 @@ export function LandingPage() {
             <Secondary to="/login">Sign in</Secondary>
           </div>
           <p className="mt-6 max-w-[528px] text-[13px] leading-relaxed text-text-muted">
-            For the one person running it all · read-only on sessions you do not own · a human approves every reply and every action, at
+            For the one person running it all · read-only on sessions you do not own · a human approves every reply, at
             every rung
           </p>
         </div>
@@ -621,9 +618,8 @@ export function LandingPage() {
               <H2>The same copilot, in four places that behave nothing alike.</H2>
             </div>
             <p className="text-[17px] leading-relaxed text-text-secondary lg:pb-1">
-            A live show runs at the speed of the block — a question is worth answering while the
-            lot is on it. A Tuesday thread still deserves a real answer on Friday. Both speeds,
-            one ground truth, the same guards.
+            A live show runs at the speed of the block. A Tuesday thread still deserves a real
+            answer on Friday. Both speeds, the same guards.
           </p>
           </div>
           <div className="mt-14 grid gap-6 md:grid-cols-2 xl:grid-cols-4 xl:grid-rows-[auto_auto_auto_1fr_auto] xl:gap-y-0">
@@ -669,7 +665,7 @@ export function LandingPage() {
           <H2>One person, three jobs, four rooms.</H2>
           <p className="mt-4 text-[16px] leading-relaxed text-text-secondary">
             A brand's live show has a producer, a moderator and a merchandiser. You are all three,
-            while holding the item up to a lens — and the questions do not stop when the show does.
+            on camera — and the questions outlast the show.
           </p>
         </div>
         <div className="grid gap-x-12 gap-y-9 sm:grid-cols-2">
@@ -827,9 +823,8 @@ export function LandingPage() {
                     "Every unanswered question, with how often it was asked, and a button that answers it into the catalog.",
                     "The session plays back: audio, transcript with emotion and intent, and the frames the agent read. Deleted with the session.",
                     <>
-                      And everyone who asked and did not buy leaves with a drafted answer. One per
-                      buyer, re-checked against the catalog as it stands now — and skipped entirely
-                      where you already settled it with a change to the listing they asked about.
+                      Everyone who asked and did not buy leaves with a drafted answer, re-checked
+                      against the catalog as it stands now.
                     </>,
                   ]}
                 />
@@ -888,9 +883,8 @@ export function LandingPage() {
                     is named here so the next reader can check it. */}
                 One real fragrance auction — session{" "}
                 <span className="num">ebay_47tK1SX0VsiHEXN1</span>
-                : 190 comments, 60 answerable drafts, 29 distinct buyers — none sent. Twenty-
-                nine people who asked and left. The inbox makes one draft each, re-run through
-                the same guards. A blocked one is never stored.
+                : 190 comments, 60 answerable drafts, 29 buyers — none sent. The inbox makes one
+                draft each, re-run through the same guards.
               </p>
             </div>
             <Shot
@@ -1084,9 +1078,8 @@ export function LandingPage() {
               Point it at tonight's show, or at the thread from last Tuesday.
             </h2>
             <p className="mt-5 max-w-[560px] text-[17px] leading-relaxed text-white/70">
-              One account, one box that takes a show, a channel or a subreddit. A session you do not
-              own is monitored read-only — it drafts, proposes and reports, and never writes to a
-              listing. Everything it writes is still yours to send.
+              One account, one box. A session you do not own is read-only: it drafts and reports,
+              and never writes to a listing.
             </p>
           </div>
           <div className="flex flex-wrap gap-3.5">

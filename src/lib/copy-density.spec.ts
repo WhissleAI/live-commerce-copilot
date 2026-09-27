@@ -16,13 +16,15 @@ import { join } from "node:path";
 // A RATCHET, not the target.
 //
 // The skill's real budget is 14 words for a card body and 20 for any sentence.
-// The product is not there yet: this pass took 36 passages down and left 17
-// above 34 words, most of them carrying inline markup that the rewrite could
-// not reach cleanly. These numbers are set just above today's worst so the
-// guard bites on anything NEW, and they are meant to be lowered as the
-// remaining passages are done — not treated as the standard.
-const SENTENCE_MAX = 34;
-const PASSAGE_MAX = 50;
+// The product is not there yet, and these numbers say where it actually is so
+// the guard bites on anything NEW. They come down as passages are done; the
+// worst passage in the product was 97 words when this started.
+//
+//   97 -> 50 -> 34
+//
+// Lower them again when you next work on copy. Do not raise them.
+const SENTENCE_MAX = 26;
+const PASSAGE_MAX = 34;
 
 /**
  * Is this actually a sentence someone reads?

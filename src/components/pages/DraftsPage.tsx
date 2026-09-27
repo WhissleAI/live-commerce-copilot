@@ -152,7 +152,7 @@ export function DraftsPage() {
       }
       tabs={tabs}
     >
-      <SectionHeading hint="Surfaces the copilot writes for and does not post to. A draft the guards held is never stored, so everything below is sendable. Copy it, post it under your own name, and mark it sent.">
+      <SectionHeading hint="Surfaces the copilot writes for and does not post to. A draft the guards held is never stored here. Copy it, post it, mark it sent.">
         Written for you to send
       </SectionHeading>
 
