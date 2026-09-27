@@ -78,6 +78,7 @@ import type {
   SurfaceRoom,
 } from "@/lib/types";
 import { Badge, Button, Card, EmptyState, SectionHeading, Skeleton } from "@/components/ui/kit";
+import { teachOpen, type Experience } from "@/lib/experience";
 
 type Filter = SurfaceId | "all";
 
@@ -315,6 +316,10 @@ export function DiscoverView({ onAttach }: { onAttach: (url: string) => void }) 
   // that list rather than instead of it. The rule the audits were about is
   // untouched: no card claims a reason, because none of them have one.
   const noInterests = mode === "index" && interests.length === 0;
+  // What Discover teaches — what this list is and why these items are on it —
+  // is learned by preparing something from it. So that is the signal, rather
+  // than Home's "finished a session", which is a different lesson.
+  const discoverExp: Experience = home?.prepared.length ? "practised" : "first_run";
 
   return (
     <div className="mb-10">
@@ -324,6 +329,9 @@ export function DiscoverView({ onAttach }: { onAttach: (url: string) => void }) 
             and "on what you sell" would be the single most misleading sentence
             on the page. */}
         <SectionHeading
+          // With no terms, the sentence explaining that nothing was matched IS
+          // the content of the page — the empty-band rule in `lib/experience`.
+          hintOpen={teachOpen(discoverExp, { hasContent: !noInterests })}
           hint={
             noInterests
               ? "No terms yet, so nothing below has been matched against anything — it is what the surfaces we can read have on air. Add a term, or load a catalog, and every card starts naming the terms it matched."
@@ -423,7 +431,10 @@ export function DiscoverView({ onAttach }: { onAttach: (url: string) => void }) 
           and the catalog exist, and they are what make attaching instant. */}
       {home?.prepared.length ? (
         <div className="mt-8">
-          <SectionHeading hint="Each of these has its own agent carrying its own catalog. Deleting one deletes that agent and everything in it.">
+          <SectionHeading
+            hintOpen={teachOpen(discoverExp, { hasContent: true })}
+            hint="Each of these has its own agent carrying its own catalog. Deleting one deletes that agent and everything in it."
+          >
             Prepared
           </SectionHeading>
           <div className="mt-3 flex flex-col gap-1.5">
