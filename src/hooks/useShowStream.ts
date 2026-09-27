@@ -161,6 +161,12 @@ export function useShowStream(showId?: string | null) {
       case "budget":
         setBudget(e.data);
         break;
+      // Between shows. The stream is healthy and there is simply nothing on
+      // air, so the console opens in its resting state rather than its red one.
+      case "stream_idle":
+        setStreamError(null);
+        setGreeted(true);
+        break;
       case "stream_error":
         setStreamError(e.data.error);
         break;
