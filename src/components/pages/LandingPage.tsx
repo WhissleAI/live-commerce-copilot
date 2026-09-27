@@ -566,7 +566,7 @@ export function LandingPage() {
         <Shot
           src="/landing/console.jpg"
           alt="The SideStage console attached to a live eBay Live watch auction: buyer chat on the left, drafted replies with guard verdicts in the middle, the pinned lot on the right"
-          caption="The console on a real eBay Live show tonight — 558 watching, 19 replies drafted, 0 sent without you. A screenshot, not a mock."
+          caption="The console on a real eBay Live show, 14 September — 558 watching, 19 replies drafted, 0 sent without you. A screenshot, not a mock."
           eager
         />
       </section>
@@ -1134,7 +1134,7 @@ export function LandingPage() {
                 "Comparables are asking prices, not sold prices — eBay's completed-sales feed is limited-release and this keyset was not granted it.",
                 "TikTok Live, Twitch and Reddit need a flag or their own credentials; the app names the variable instead of failing vaguely. YouTube Live is a capability row with no adapter, so it is not offered.",
                 "Privacy and terms are pages of the product — /privacy, /terms — written from what it actually stores.",
-                "Discover's eBay Live source needs your signed-in session and runs on your own machine — that grid is refused from a server. The surfaces with public APIs need their own credentials instead, and attaching by link runs anywhere.",
+                "eBay bot-gates the eBay Live GRID: measured 2026-09-26, an ordinary browser on the same signed-in account reads ninety-two shows and every automated one reads zero — headed or headless, on a laptop or a server, proxied or direct. Discover therefore lists what it can on the other surfaces, and eBay Live is attached by pasting a show's link, which works normally. Preparing, monitoring, guards, actions and reports are unaffected.",
               ],
             ],
             [
