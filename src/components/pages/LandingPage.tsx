@@ -165,9 +165,9 @@ export const SURFACE_FAMILIES: SurfaceFamily[] = [
     title: "Live commerce",
     surfaces: ["ebaylive", "whatnot", "tiktoklive"],
     delivery: "drafts · proposes listing changes",
-    lead: "It reads the same public page the buyer reads, resolves the lot on the block, and answers out of your own listings — then proposes the change the answer implies: a markdown, a stock correction, a listing ended.",
+    lead: "Reads the public page the buyer reads, resolves the lot on the block, answers from your listings — then proposes what that implies: a markdown, a stock fix, a listing ended.",
     limit:
-      "eBay Live is the one that acts on listings: on a show you own, after a preflight, with a 90-second undo — and against a mock until you connect eBay and arm that show. Whatnot and TikTok Live are read the same way and draft only, and TikTok stays off until its own flag is set.",
+      "Only eBay Live acts on listings: your own show, after preflight, 90-second undo — against a mock until you connect eBay. Whatnot and TikTok Live read the same way but draft only; TikTok needs its flag.",
   },
   {
     id: "streams",
@@ -192,7 +192,7 @@ export const SURFACE_FAMILIES: SurfaceFamily[] = [
     title: "Your follow-up inbox",
     surfaces: ["dm"],
     delivery: "drafts · you send",
-    lead: "Everyone who asked during a show and did not buy is a question you still owe an answer to. When the show ends the inbox holds one written reply per person — re-checked against the catalog as it stands now, not as it stood then.",
+    lead: "Everyone who asked and did not buy is an answer you still owe. When the show ends the inbox holds one reply per person, re-checked against the catalog as it stands now.",
     limit:
       "A blocked follow-up is never written down, so everything waiting has already passed the chain. It skips anyone you settled with a committed change to their listing. You are the sender.",
   },
@@ -699,9 +699,8 @@ export function LandingPage() {
               <H2>Three phases, everywhere. What fills them depends on the tempo.</H2>
             </div>
             <p className="text-[17px] leading-relaxed text-text-secondary lg:pb-1">
-            A live show is prepared, worked and reported on. A subreddit has no session and no
-            moment that ends, so the three phases become a connection, a standing watch and a
-            queue that empties.
+            Prepared, worked, reported on — or, where nothing ends, a connection, a standing
+            watch and a queue that empties.
           </p>
           </div>
 
@@ -712,22 +711,21 @@ export function LandingPage() {
                 n="01"
                 label="before"
                 title="It prepares, and tells you what it could not."
-                lead="A session should not meet its first question with an empty catalog. Ahead of an eBay Live show the copilot resolves the seller, builds their catalog, gives the show its own agent, and grades its own readiness — out loud, item by item."
+                lead="No session should meet its first question with an empty catalog. Ahead of an eBay Live show it resolves the seller, builds their catalog, gives the show its own agent and grades its own readiness, item by item."
               />
               <div className="mt-8">
                 <Points
                   items={[
                     "Reads what is live on eBay, resolves the seller behind the show, and builds a catalog of up to eighty of their own listings.",
-                    "Values each lot against comparables that are asking prices, labelled as such — eBay's completed-sales data is limited-release and this keyset was not granted it. The two are never averaged: asking prices skew high, and a seller holding firm against one is being misled.",
+                    "Comparables are asking prices, labelled as such — eBay's completed-sales data is limited-release and this keyset was not granted it. Never averaged with sold prices: asking prices skew high, and a seller holding firm against one is being misled.",
                     "Creates the show's own agent, syncs the lineup into its knowledge base with prices marked indicative, and arms the never-say rules on the agent itself.",
-                    "Readiness is nine named checks — catalog, policy clauses, comps, the aspects eBay expects, the agent, its inventory, its policies, stale corpora, the rules armed — plus a fit check that catches a catalog belonging to a different auction. A policy it cannot find is never invented.",
+                    "Nine named checks — catalog, policy clauses, comps, the aspects eBay expects, the agent, its inventory and policies, stale corpora, the rules armed — plus a fit check for a catalog belonging to another auction. A policy it cannot find is never invented.",
                   ]}
                 />
                 <TempoNote>
-                Nothing to prepare, nothing to warm up. A community's before is the connection
-                and the rooms: you name the subreddits, and posting stays off — on Reddit,
-                permanently. Preparation is an eBay Live step today; the others attach and start
-                reading.
+                Nothing to prepare. A community's before is the connection and the rooms: you
+                name the subreddits, and posting stays off — on Reddit, permanently. The other
+                surfaces attach and start reading.
               </TempoNote>
               </div>
             </div>
@@ -775,9 +773,9 @@ export function LandingPage() {
                 ))}
               </div>
               <TempoNote>
-              No console, no clock, no session to end. A standing watch and an always-open
-              queue: the thread and the branch above the question instead of a lot rail, and a
-              copy button where the console has send.
+              No console, no clock, nothing to end. A standing watch and an always-open queue:
+              the thread and the branch above the question instead of a lot rail, and a copy
+              button where the console has send.
             </TempoNote>
             </div>
             <Shot
@@ -819,7 +817,7 @@ export function LandingPage() {
                 n="03"
                 label="after"
                 title="It reports, and then it owes people answers."
-                lead="Five sections and a to-do list: did it help · what the host did · can I trust it · what the agent concluded · fix before next time. The counts are measured; the conclusion is prose from the session's own agent, so the counts come first."
+                lead="Five sections and a to-do list: did it help · what the host did · can I trust it · what the agent concluded · fix before next time. The counts are measured; the conclusion is prose from the agent, so the counts come first."
               />
               <div className="mt-8">
                 <Points
@@ -835,10 +833,10 @@ export function LandingPage() {
                   ]}
                 />
                 <TempoNote>
-                  A watch never ends, so it has no report. What a community leaves behind is the
-                  record in Drafts — what you sent, what you dismissed, and a question that stops
-                  being re-drafted the moment you mark it answered.
-                </TempoNote>
+                A watch never ends, so it has no report. What a community leaves behind is the
+                record in Drafts: what you sent, what you dismissed, and a question that stops
+                being re-drafted once you mark it answered.
+              </TempoNote>
               </div>
               <div className="mt-10 grid gap-8 sm:grid-cols-3">
                 {[
