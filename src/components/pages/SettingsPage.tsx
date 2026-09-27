@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import type { GuardName } from "@/lib/types";
 import { operatorMessage } from "@/lib/copy";
 import { AlertTriangle, Check, Plus, RotateCcw, Save, ShieldCheck, Trash2 } from "lucide-react";
 import { api, ensureSession } from "@/lib/api";
@@ -442,46 +443,13 @@ export function SettingsPage({ initialTab }: { initialTab?: SettingsTab | undefi
  * out loud is worth more than a switch.
  */
 function GuardChain() {
-  const guards: { name: string; checks: string; knob: string | null }[] = [
-    {
-      name: "Price",
-      checks:
-        "Every number in the draft matches the current listing version, or an approved markdown. A reply drafted before a price change is caught here.",
-      knob: null,
-    },
-    {
-      name: "Availability",
-      checks: "Nothing is promised that is sold out or already committed to another buyer.",
-      knob: null,
-    },
-    {
-      name: "Policy",
-      checks:
-        "Shipping, returns, authenticity and the discount floor — plus every rule in Never say below.",
-      knob: "Never say · Max discount on air",
-    },
-    {
-      name: "Grounding",
-      checks:
-        "Every claim cites a real fact id whose text supports it. No citation, no send — the copilot abstains instead of guessing.",
-      knob: "Automation · confidence floor",
-    },
-    {
-      name: "Tone",
-      checks: "Length, markdown, emoji and the voice you set for the agent.",
-      knob: "Voice",
-    },
-    {
-      name: "PII",
-      checks: "E-mail, phone and card-like runs are masked before anything reaches public chat.",
-      knob: "Voice · redact PII",
-    },
-  ];
+  const guards = GUARD_ROWS;
+
 
   return (
     <Section
       title="What always runs"
-      hint="Six deterministic checks on every drafted reply, in this order. A block is never a model's opinion — it is one of these failing, and the console names which."
+      hint="Eight deterministic checks on every drafted reply, in this order. A block is never a model's opinion — it is one of these failing, and the console names which. The last two have nothing to check on a surface with no room rules and no sponsor, so the console draws no pill for them there; they still run."
     >
       <Card className="divide-y divide-hairline">
         {guards.map((g) => (
@@ -499,6 +467,73 @@ function GuardChain() {
     </Section>
   );
 }
+
+/**
+ * What the Guardrails tab documents, one row per guard in the chain.
+ *
+ * `guard` binds each row to a `GuardName`, so a guard added to the product
+ * without a row here fails a test rather than quietly going undocumented —
+ * which is how this page came to describe six of the eight that actually run.
+ */
+export const GUARD_ROWS: { guard: GuardName; name: string; checks: string; knob: string | null }[] = [
+{
+      guard: "price",
+      name: "Price",
+      checks:
+        "Every number in the draft matches the current listing version, or an approved markdown. A reply drafted before a price change is caught here.",
+      knob: null,
+    },
+    {
+      guard: "availability",
+      name: "Availability",
+      checks: "Nothing is promised that is sold out or already committed to another buyer.",
+      knob: null,
+    },
+    {
+      guard: "policy",
+      name: "Policy",
+      checks:
+        "Shipping, returns, authenticity and the discount floor — plus every rule in Never say below.",
+      knob: "Never say · Max discount on air",
+    },
+    {
+      guard: "claim_grounding",
+      name: "Grounding",
+      checks:
+        "Every claim cites a real fact id whose text supports it. No citation, no send — the copilot abstains instead of guessing.",
+      knob: "Automation · confidence floor",
+    },
+    {
+      guard: "tone",
+      name: "Tone",
+      checks: "Length, markdown, emoji and the voice you set for the agent.",
+      knob: "Voice",
+    },
+    {
+      guard: "pii",
+      name: "PII",
+      checks: "E-mail, phone and card-like runs are masked before anything reaches public chat.",
+      knob: "Voice · redact PII",
+    },
+    // The two that enforce somebody ELSE's rules. They were missing from this
+    // page entirely, which made it the wrong length AND left out the guards an
+    // operator is least likely to guess at: they did not write these rules and
+    // cannot change them here.
+    {
+      guard: "community_rule",
+      name: "Room rules",
+      checks:
+        "The rules of the room this reply is going into — a subreddit's, a channel's. They sit beside the evidence, never among it: a constraint is not something a claim may cite.",
+      knob: "set by the room, not by you",
+    },
+    {
+      guard: "sponsor",
+      name: "Sponsor",
+      checks:
+        "A claim about a sponsored product with no approved fact behind it. What the brief says must be said, and what it forbids, on the segments that carry one.",
+      knob: "set by the brief",
+    },
+  ];
 
 function Field({
   label,
