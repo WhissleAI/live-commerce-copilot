@@ -14,7 +14,8 @@ import {
   Wallet,
   X,
 } from "lucide-react";
-import { api, API_BASE, USE_MOCKS, ensureSession, tokenQuery } from "@/lib/api";
+import { openAudioBridge } from "@/lib/bridge";
+import { api, USE_MOCKS, ensureSession } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { isTypingIn, modalOpen, shortcutActs } from "@/lib/keys";
 import {
@@ -689,11 +690,24 @@ export function Console() {
                 context={store.context}
                 listen={store.listen}
                 surface={surfaceId}
-                bridgeUrl={
-                  USE_MOCKS
-                    ? null
-                    : `${API_BASE}/audio-bridge?showId=${encodeURIComponent(show.id)}&${tokenQuery()}`
-                }
+                {...(USE_MOCKS
+                  ? {}
+                  : {
+                      onOpenBridge: () =>
+                        void openAudioBridge(show.id).then((r) => {
+                          if (r.ok) return;
+                          // Mid-show, a button that does nothing reads as the
+                          // product being broken. Setup says which of the two
+                          // things went wrong; so does this.
+                          toasts.push({
+                            tone: "bad",
+                            text:
+                              r.reason === "blocked"
+                                ? "Your browser blocked the bridge tab — allow pop-ups for this site and press it again"
+                                : "Could not open the bridge — the session may have ended",
+                          });
+                        }),
+                    })}
               />
             </div>
           ) : layout.threadPanel ? (

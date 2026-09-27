@@ -57,14 +57,16 @@ export function TranscriptPanel({
   transcript,
   levels,
   context,
-  bridgeUrl,
+  onOpenBridge,
   listen,
   surface = "ebaylive",
 }: {
   transcript: TranscriptSegment[];
   levels: number[];
   context: ShowContext | null;
-  bridgeUrl: string | null;
+  /** Mints a show-scoped token and opens the tab. Absent where there is no
+   *  bridge to open (the scripted source). */
+  onOpenBridge?: () => void;
   listen?: ListenHealth | null;
   /** Which surface this session is on, for the one sentence that names a tab. */
   surface?: SurfaceId;
@@ -152,15 +154,14 @@ export function TranscriptPanel({
             </span>
           )}
         </div>
-        {bridgeUrl && (
-          <a
-            href={bridgeUrl}
-            target="_blank"
-            rel="noreferrer"
+        {onOpenBridge && (
+          <button
+            type="button"
+            onClick={onOpenBridge}
             className="flex items-center gap-1 text-[11px] text-accent hover:underline"
           >
             Open bridge <ExternalLink className="size-3" aria-hidden />
-          </a>
+          </button>
         )}
       </header>
 
