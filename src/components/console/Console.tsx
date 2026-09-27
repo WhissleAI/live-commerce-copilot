@@ -690,7 +690,24 @@ export function Console() {
                 context={store.context}
                 listen={store.listen}
                 surface={surfaceId}
-                {...(USE_MOCKS ? {} : { onOpenBridge: () => void openAudioBridge(show.id) })}
+                {...(USE_MOCKS
+                  ? {}
+                  : {
+                      onOpenBridge: () =>
+                        void openAudioBridge(show.id).then((r) => {
+                          if (r.ok) return;
+                          // Mid-show, a button that does nothing reads as the
+                          // product being broken. Setup says which of the two
+                          // things went wrong; so does this.
+                          toasts.push({
+                            tone: "bad",
+                            text:
+                              r.reason === "blocked"
+                                ? "Your browser blocked the bridge tab — allow pop-ups for this site and press it again"
+                                : "Could not open the bridge — the session may have ended",
+                          });
+                        }),
+                    })}
               />
             </div>
           ) : layout.threadPanel ? (
