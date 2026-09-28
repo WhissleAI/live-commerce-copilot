@@ -18,6 +18,11 @@ const page = readFileSync(
   "utf8",
 );
 
+const analytics = readFileSync(
+  join(import.meta.dirname, "..", "components", "pages", "AnalyticsPage.tsx"),
+  "utf8",
+);
+
 describe("the Cost page says what it measures", () => {
   it("does not call time attached 'on air'", () => {
     expect(page).not.toMatch(/on air/i);
@@ -36,5 +41,38 @@ describe("the Cost page says what it measures", () => {
     // `perHourUsd` is null until something has been answered. A zero here would
     // read as "this is free".
     expect(page).toContain("no session has answered anyone yet");
+  });
+});
+
+/**
+ * Analytics had the same mislabel and one worse consequence: "GMV per session
+ * hour" divided gross by every hour the app was attached to anything. Two
+ * rooms left attached overnight held 21.6 hours each, sold nothing, and put
+ * $205 an hour on the metric the PRD names first — against roughly $13,000
+ * over the shows that actually sold.
+ */
+describe("the Analytics page says what it measures", () => {
+  it("does not label a DURATION 'on air'", () => {
+    // "the session on air right now" is fine and true — a live show is on air.
+    // What is not is calling attach-to-detach time airtime, which is how a
+    // subreddit came to hold 21.6 hours of it.
+    expect(analytics).not.toMatch(/>On air</);
+    expect(analytics).not.toMatch(/h on air/);
+    expect(analytics).not.toMatch(/hours on air/);
+  });
+
+  it("divides gross by the hours that produced it", () => {
+    expect(analytics).toMatch(/o\.gmv\.grossCents \/ o\.gmv\.hours/);
+    expect(analytics).not.toMatch(/grossCents \/ o\.shows\./);
+  });
+
+  it("says nothing sold rather than printing a rate of nothing", () => {
+    expect(analytics).toContain("nothing has sold in this window");
+  });
+
+  it("hints the answered rate with the number it is a rate of", () => {
+    // The headline is sent ÷ asked. The hint used to print drafted ÷ asked —
+    // 34 of 45, which reads as 76% above a headline of 7%.
+    expect(analytics).toMatch(/\$\{e\.sent\} sent/);
   });
 });
