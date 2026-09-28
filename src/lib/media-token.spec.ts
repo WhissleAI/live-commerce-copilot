@@ -52,3 +52,35 @@ describe("media URLs carry a scoped token, never the session", () => {
     expect("exportUrl" in api).toBe(false);
   });
 });
+
+describe("a lazy image is never mounted without its src", () => {
+  /**
+   * Caught on production, an hour after shipping the scoped token.
+   *
+   * Gating the attribute — `src={token ? url : undefined}` — renders the
+   * element first and gives it a source later. Chrome decides whether a
+   * `loading="lazy"` image is deferred when the element GETS its source; one
+   * that had none at mount is never evaluated again. The report showed 34
+   * thumbnails that never loaded, and nothing looked wrong: no error, no
+   * broken-image icon, `complete: false` and `currentSrc: ""` forever.
+   * Proven by removing `loading="lazy"` and re-setting the identical src,
+   * which loaded it immediately.
+   *
+   * So the element is mounted only once the token exists. This test reads the
+   * source because the failure has no runtime signal to assert on.
+   */
+  it("gates the element, not the attribute", () => {
+    const src = readFileSync(
+      join(import.meta.dirname, "..", "components", "pages", "ReportTimeline.tsx"),
+      "utf8",
+    );
+    const gatedAttribute = /src=\{\s*mediaToken\s*\?/.test(src);
+    expect(gatedAttribute, "src={mediaToken ? …} leaves a lazy img mounted with no source").toBe(
+      false,
+    );
+    // and every frame url is still behind the token
+    const urls = src.match(/api\.frameUrl\([^)]*\)/g) ?? [];
+    expect(urls.length).toBeGreaterThan(0);
+    for (const u of urls) expect(u).toContain("mediaToken");
+  });
+});
