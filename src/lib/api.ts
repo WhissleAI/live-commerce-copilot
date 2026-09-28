@@ -65,7 +65,13 @@ import type {
 const BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8790";
 /** Exported so the console can link to backend-served pages (the audio bridge). */
 export const API_BASE = BASE;
-/** For the two places a header cannot go: EventSource and the bridge page. */
+/**
+ * The session in a query string — now only for `EventSource`, which cannot set
+ * a header and has no scoped equivalent because the stream IS the console.
+ * The report's media tags used this too; they carry a scoped `smt_` instead,
+ * because a `src` attribute is read by the DOM and by the access log, and the
+ * account session is a thirty-day key to everything.
+ */
 export function tokenQuery(): string {
   const t = authToken() ?? memoryToken;
   return t ? `token=${encodeURIComponent(t)}` : "";
@@ -605,8 +611,9 @@ export const api = {
    *  the browser downloads it. */
   // The export is a cross-origin URL: a browser ignores `download` on those,
   // and an <a> cannot send a bearer header. Fetch it and hand back a blob.
-  exportUrl: (showId: string): string =>
-    `${BASE}/api/shows/${encodeURIComponent(showId)}/export?${tokenQuery()}`,
+  // (There was an `exportUrl` here that built the link directly with the
+  // session in the query string. `exportBlob` replaced it and it was left
+  // behind unused — a shareable URL carrying a thirty-day account token.)
   exportBlob: async (showId: string): Promise<Blob> => {
     const res = await fetch(url(`/api/shows/${encodeURIComponent(showId)}/export`), {
       headers: bearer(),
@@ -614,12 +621,23 @@ export const api = {
     if (!res.ok) throw await failure(res, "export");
     return res.blob();
   },
-  // Media is loaded by <img> and <audio>, which cannot send a bearer header,
-  // so the session travels in the query string the way the stream's does.
-  frameUrl: (showId: string, seq: number): string =>
-    `${BASE}/api/shows/${encodeURIComponent(showId)}/media/frames/${seq}?${tokenQuery()}`,
-  audioUrl: (showId: string, seq: number): string =>
-    `${BASE}/api/shows/${encodeURIComponent(showId)}/media/audio/${seq}?${tokenQuery()}`,
+  /**
+   * Mints the token the report's media tags carry. One hour, one show,
+   * read-only — see `openMediaSession` on the backend.
+   */
+  mediaToken: (showId: string): Promise<{ token: string; expiresAt: string }> =>
+    post(`/api/shows/${encodeURIComponent(showId)}/media-token`, {}),
+
+  // Media is loaded by <img> and <audio>, which cannot send a bearer header, so
+  // the token travels in the query string. It is NOT the session: a `src`
+  // attribute is in the rendered DOM and in every access-log line, and the
+  // query-token allowlist governs where a token may be read, not what it can
+  // do — the account session harvested from a `src` replays as a bearer header
+  // against everything. `token` here is a scoped one from `mediaToken`.
+  frameUrl: (showId: string, seq: number, token: string): string =>
+    `${BASE}/api/shows/${encodeURIComponent(showId)}/media/frames/${seq}?token=${encodeURIComponent(token)}`,
+  audioUrl: (showId: string, seq: number, token: string): string =>
+    `${BASE}/api/shows/${encodeURIComponent(showId)}/media/audio/${seq}?token=${encodeURIComponent(token)}`,
 
   /** Deletes the session, its chat, its audit chain — and the Whissle agent it
    *  owned. The dialog has to say all three before this is called. */

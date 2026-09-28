@@ -17,7 +17,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Eye, Mic, Pause, Play, Sparkles, X } from "lucide-react";
+import { AlertTriangle, ChevronLeft, ChevronRight, Eye, Mic, Pause, Play, Sparkles, X } from "lucide-react";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { ShowTimeline, SignalDistribution, TimelineFrame, Utterance } from "@/lib/types";
@@ -89,6 +89,43 @@ type Row =
   | { kind: "see"; at: number; f: TimelineFrame; repeat: boolean };
 
 function Player({ t, showId, onDescribe }: { t: ShowTimeline; showId: string; onDescribe: () => void }) {
+  // `<img>` and `<audio>` cannot send a bearer header, so whatever is in these
+  // URLs ends up in the rendered DOM and in every access-log line the report
+  // writes. That used to be the console session: thirty days, whole account,
+  // replayable as a bearer header against every route. This is a token that
+  // reads this one show's media for an hour and does nothing else.
+  //
+  // There is deliberately no fall back to the session if minting fails. A
+  // report whose frames do not load is visible and gets fixed; a report that
+  // quietly goes back to publishing the account key is not.
+  const [mediaToken, setMediaToken] = useState<string | null>(null);
+  const [mediaDenied, setMediaDenied] = useState(false);
+  useEffect(() => {
+    let stop = false;
+    const mint = () => {
+      api
+        .mediaToken(showId)
+        .then((r) => {
+          if (stop) return;
+          setMediaToken(r.token);
+          setMediaDenied(false);
+        })
+        .catch(() => !stop && setMediaDenied(true));
+    };
+    setMediaToken(null);
+    setMediaDenied(false);
+    mint();
+    // The token lasts an hour. A report is a page someone leaves open — on a
+    // second monitor, across a lunch — and without this the stills and the
+    // scrubber would start 403ing partway through an afternoon with nothing
+    // on screen to explain it. Re-minted well inside the hour instead.
+    const timer = setInterval(mint, 45 * 60_000);
+    return () => {
+      stop = true;
+      clearInterval(timer);
+    };
+  }, [showId]);
+
   const audio = useRef<HTMLAudioElement | null>(null);
   const feed = useRef<HTMLDivElement | null>(null);
   const [chunkIx, setChunkIx] = useState(0);
@@ -147,8 +184,8 @@ function Player({ t, showId, onDescribe }: { t: ShowTimeline; showId: string; on
       const el = audio.current;
       setChunkIx(ix);
       setPos(ms);
-      if (!el) return;
-      const src = api.audioUrl(showId, c.seq);
+      if (!el || !mediaToken) return;
+      const src = api.audioUrl(showId, c.seq, mediaToken);
       const within = Math.max(0, (ms - c.offsetMs) / 1000);
       const apply = () => {
         try {
@@ -164,7 +201,7 @@ function Player({ t, showId, onDescribe }: { t: ShowTimeline; showId: string; on
         el.load();
       } else apply();
     },
-    [chunkFor, chunks, showId],
+    [chunkFor, chunks, showId, mediaToken],
   );
 
   // Chunk boundary: roll to the next one, or stop at the end.
@@ -245,7 +282,11 @@ function Player({ t, showId, onDescribe }: { t: ShowTimeline; showId: string; on
           <button
             type="button"
             onClick={toggle}
-            disabled={!chunks.length}
+            // Without the token `seek` cannot set a src, but `toggle` sets
+            // `playing` regardless — the button flipped to Pause and nothing
+            // played. Sub-second on load, and a control that lies is worse
+            // than one that waits.
+            disabled={!chunks.length || !mediaToken}
             aria-label={playing ? "Pause" : "Play"}
             className="grid size-8 shrink-0 place-items-center rounded-full bg-accent text-accent-foreground transition-transform hover:scale-105 active:scale-95 disabled:opacity-40"
           >
@@ -280,6 +321,19 @@ function Player({ t, showId, onDescribe }: { t: ShowTimeline; showId: string; on
           ) : null}
         </div>
       </Card>
+
+      {/* Said once, here, rather than as a broken image per frame. The reading
+          and the transcript below are unaffected — only playback and stills
+          need the token. */}
+      {mediaDenied ? (
+        <Card className="flex items-start gap-2 px-4 py-2.5 text-[12px] text-warn">
+          <AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+          <span>
+            Audio and stills could not be unlocked for this session. Everything below is the
+            written record and is complete. Reload to try again.
+          </span>
+        </Card>
+      ) : null}
 
       {/* the feed --------------------------------------------------------- */}
       <div className="grid gap-3 lg:grid-cols-[1fr_300px]">
@@ -337,7 +391,7 @@ function Player({ t, showId, onDescribe }: { t: ShowTimeline; showId: string; on
                         title="See this frame large"
                       >
                         <img
-                          src={api.frameUrl(showId, r.f.seq)}
+                          src={mediaToken ? api.frameUrl(showId, r.f.seq, mediaToken) : undefined}
                           alt={r.f.reading}
                           loading="lazy"
                           className="h-[54px] w-24 shrink-0 rounded-sm bg-elevated object-cover ring-1 ring-hairline transition-transform group-hover:scale-[1.03]"
@@ -369,7 +423,7 @@ function Player({ t, showId, onDescribe }: { t: ShowTimeline; showId: string; on
           <div className="px-4 py-2.5 text-[12px] text-text-muted shadow-[0_1px_0_var(--hairline)]">On camera at the playhead</div>
           {currentFrame ? (
             <button type="button" onClick={() => setOpen(frames.findIndex((f) => f.seq === currentFrame.seq))} className="block w-full px-4 pb-4 pt-3 text-left">
-              <img src={api.frameUrl(showId, currentFrame.seq)} alt={currentFrame.reading} className="w-full rounded-sm bg-elevated object-cover ring-1 ring-hairline" />
+              <img src={mediaToken ? api.frameUrl(showId, currentFrame.seq, mediaToken) : undefined} alt={currentFrame.reading} className="w-full rounded-sm bg-elevated object-cover ring-1 ring-hairline" />
               <p className="mt-2 text-[12.5px] font-medium leading-snug">{currentFrame.reading}</p>
               {currentFrame.description ? (
                 <p className="mt-1 text-[11.5px] leading-snug text-text-secondary">{currentFrame.description}</p>
@@ -385,6 +439,7 @@ function Player({ t, showId, onDescribe }: { t: ShowTimeline; showId: string; on
       {open != null && frames[open] ? (
         <Lightbox
           showId={showId}
+          mediaToken={mediaToken}
           frame={frames[open]!}
           index={open}
           count={frames.length}
@@ -403,6 +458,7 @@ function Player({ t, showId, onDescribe }: { t: ShowTimeline; showId: string; on
 
 function Lightbox({
   showId,
+  mediaToken,
   frame,
   index,
   count,
@@ -412,6 +468,8 @@ function Lightbox({
   onPlay,
 }: {
   showId: string;
+  /** Scoped, one hour, this show's media only — never the account session. */
+  mediaToken: string | null;
   frame: TimelineFrame;
   index: number;
   count: number;
@@ -445,7 +503,7 @@ function Lightbox({
             </button>
           </div>
         </div>
-        <img src={api.frameUrl(showId, frame.seq)} alt={frame.reading} className="max-h-[60vh] w-full bg-black object-contain" />
+        <img src={mediaToken ? api.frameUrl(showId, frame.seq, mediaToken) : undefined} alt={frame.reading} className="max-h-[60vh] w-full bg-black object-contain" />
         <div className="px-4 py-3">
           <p className="flex items-center gap-1.5 text-[13.5px] font-medium">
             <Eye className="size-3.5 text-text-muted" aria-hidden /> {frame.reading}
