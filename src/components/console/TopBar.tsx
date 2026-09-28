@@ -62,6 +62,20 @@ const LEVELS: { level: AutonomyLevel; short: string; name: string; def: string }
 
 function LatencyMeter({ metrics }: { metrics: Metrics }) {
   const { p50, p95, p99, budgetMs, breaches } = metrics.latency;
+  /**
+   * Nothing has been answered yet, so there is nothing to grade.
+   *
+   * A percentile of an empty window is 0, and this bar could not tell that
+   * from a reply that took no time: `ratio = 0 / 2000` is under every
+   * threshold, so a session that had answered NOTHING showed "p95 0ms" in
+   * green. Seen on a live eBay Live show 46 seconds in with an empty queue —
+   * the one moment an operator most wants to know the copilot has not spoken
+   * yet, reported as though it were answering instantly.
+   *
+   * `samples` is optional because a backend deployed before it sends none; an
+   * older payload keeps the old behaviour rather than reading as empty.
+   */
+  const unmeasured = metrics.latency.samples === 0;
   // Two numbers, and they are not the same question.
   //
   //   `budgetMs` is the ENGINEERING budget — 2 s, allocated per stage in
@@ -79,7 +93,9 @@ function LatencyMeter({ metrics }: { metrics: Metrics }) {
   // the show went well.
   const ratio = p95 / budgetMs;
   const tone = ratio < 0.6 ? "ok" : p95 <= P95_ANSWER_MS ? "warn" : "bad";
-  const color = tone === "ok" ? "text-ok" : tone === "warn" ? "text-warn" : "text-bad";
+  const color = unmeasured
+    ? "text-text-muted"
+    : tone === "ok" ? "text-ok" : tone === "warn" ? "text-warn" : "text-bad";
   return (
     <Hover
       side="bottom"
@@ -115,14 +131,25 @@ function LatencyMeter({ metrics }: { metrics: Metrics }) {
       <span
         tabIndex={0}
         className="flex items-center gap-2 rounded-[4px] px-1.5 py-1 hover:bg-elevated"
-        aria-label={`p95 latency ${formatMs(p95)} of ${formatMs(budgetMs)} budget`}
+        aria-label={
+          unmeasured
+            ? "p95 latency — nothing answered yet"
+            : `p95 latency ${formatMs(p95)} of ${formatMs(budgetMs)} budget`
+        }
       >
         <span className="section-header">p95</span>
         <span className={cn("num text-[16px] leading-none font-medium", color)}>
-          {Math.round(p95)}ms
+          {unmeasured ? "—" : `${Math.round(p95)}ms`}
         </span>
         <span className="w-16">
-          <Bar ratio={ratio} tone={tone} />
+          {/* The bare track, not a Bar at ratio 0 — `Bar` floors its fill at
+              2%, so "nothing measured" would still paint a coloured sliver and
+              read as a reply that was very fast. */}
+          {unmeasured ? (
+            <span className="block h-1 w-full rounded-[2px] bg-hairline" />
+          ) : (
+            <Bar ratio={ratio} tone={tone} />
+          )}
         </span>
       </span>
     </Hover>

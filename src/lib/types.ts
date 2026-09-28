@@ -445,7 +445,17 @@ export interface Metrics {
   dismissed: number;
   blocked: number;
   guardBlocks: Record<GuardName, number>;
-  latency: { p50: number; p95: number; p99: number; budgetMs: number; breaches: number };
+  latency: {
+    p50: number;
+    p95: number;
+    p99: number;
+    budgetMs: number;
+    breaches: number;
+    /** How many replies the percentiles are over. Zero means they measured
+     *  nothing — a percentile of an empty window is 0, which is not the same
+     *  as a reply that took no time. */
+    samples?: number;
+  };
   cacheHitRate: number;
   answeredRate: number;
   actionsCommitted: number;
