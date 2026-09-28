@@ -101,7 +101,7 @@ export function AnalyticsPage() {
       title="Analytics"
       subtitle={
         o
-          ? `${o.shows.finished} shows that finished in the last ${o.window.days} days · ${o.shows.hoursOnAir}h on air`
+          ? `${o.shows.finished} shows that finished in the last ${o.window.days} days · ${o.shows.hoursAttached}h attached`
           : "reading your sessions…"
       }
       tabs={tabs}
@@ -181,7 +181,13 @@ function Overview({ o, failed }: { o: AnalyticsOverview | null; failed?: string 
           value={pctText(e.answeredRate)}
           target="target >85%"
           targetMet={e.answeredRate > 0.85}
-          hint={`${e.answered} of ${e.questionsAsked} questions asked`}
+          /* The rate is SENT ÷ asked — the PRD's row is about the buyer, and a
+             draft nobody sent did not answer anybody. The hint used to read
+             "34 of 45", which is the DRAFTED count and divides to 76% above a
+             headline of 7%. Both numbers were right and the pair was not. The
+             funnel is the more useful thing anyway: 34 drafted, 3 sent is the
+             actual finding on this page. */
+          hint={`${e.sent} sent · ${e.answered} drafted · ${e.questionsAsked} asked`}
         />
         <StatTile
           label="Worst p95"
@@ -197,7 +203,7 @@ function Overview({ o, failed }: { o: AnalyticsOverview | null; failed?: string 
         <StatTile
           label="Comments seen"
           value={compact(e.commentsSeen)}
-          hint={`${e.questionsAsked} were questions · ${o.shows.hoursOnAir}h on air`}
+          hint={`${e.questionsAsked} were questions · ${o.shows.hoursAttached}h attached`}
         />
         <StatTile
           label="Cache hit rate"
@@ -270,14 +276,18 @@ function Overview({ o, failed }: { o: AnalyticsOverview | null; failed?: string 
             value={formatMoney(o.gmv.grossCents)}
             hint={`${o.gmv.lotsSold} lots closed across ${o.gmv.showsWithGmv} sessions`}
           />
+          {/* Divided by the hours BEHIND the gross, not by every hour the app
+              was attached to anything. Two rooms left attached overnight held
+              21.6 hours each, sold nothing, and dragged this to $205 where the
+              shows that actually sold were running about $13,000. */}
           <StatTile
-            label="Per session hour"
-            value={
-              o.shows.hoursOnAir
-                ? formatMoney(Math.round(o.gmv.grossCents / o.shows.hoursOnAir))
-                : "—"
+            label="Per selling hour"
+            value={o.gmv.hours ? formatMoney(Math.round(o.gmv.grossCents / o.gmv.hours)) : "—"}
+            hint={
+              o.gmv.hours
+                ? `gross ÷ ${o.gmv.hours}h across ${o.gmv.showsWithGmv} sessions that sold`
+                : "nothing has sold in this window"
             }
-            hint="gross ÷ hours on air"
           />
           <StatTile
             label="Median decision"
@@ -323,7 +333,7 @@ export function BySession({ rows }: { rows: AnalyticsOverview["perShow"] }) {
           <thead>
             <tr className="text-left text-[11px] text-text-muted">
               <th className="px-4 py-2 font-medium">Session</th>
-              <th className="px-3 py-2 text-right font-medium">On air</th>
+              <th className="px-3 py-2 text-right font-medium" title="Attach to detach. A room stays attached while nothing is broadcasting.">Attached</th>
               <th className="px-3 py-2 text-right font-medium">Answered</th>
               <th className="px-3 py-2 text-right font-medium">p95</th>
               <th className="px-3 py-2 text-right font-medium">Blocked</th>

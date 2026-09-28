@@ -748,7 +748,13 @@ export interface AgentActivity {
  *  and it is the same number tomorrow. */
 export interface AnalyticsOverview {
   window: { days: number; from: string; to: string };
-  shows: { finished: number; withoutReport: number; hoursOnAir: number };
+  shows: {
+    finished: number;
+    withoutReport: number;
+    /** Time ATTACHED. A room stays attached while nothing is broadcasting, so
+     *  this is not airtime and is never a rate's denominator on its own. */
+    hoursAttached: number;
+  };
   engagement: {
     commentsSeen: number;
     questionsAsked: number;
@@ -770,7 +776,15 @@ export interface AnalyticsOverview {
     chainsIntact: number;
   };
   actions: { proposed: number; committed: number; rolledBack: number; failed: number };
-  gmv: { grossCents: number; lotsSold: number; showsWithGmv: number };
+  gmv: {
+    grossCents: number;
+    lotsSold: number;
+    showsWithGmv: number;
+    /** Hours of the shows that produced this gross — the matched denominator
+     *  for a per-hour rate. Dividing by `shows.hoursAttached` instead counted
+     *  every room that sold nothing and every hour one sat idle. */
+    hours: number;
+  };
   operator: { medianDecisionMs: number | null; editRate: number | null };
   /** Where it is strong and where it is not, by topic — the evidence the
    *  auto-reply allow-list should be argued from. */
