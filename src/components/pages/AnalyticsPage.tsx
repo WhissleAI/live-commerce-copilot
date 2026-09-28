@@ -219,15 +219,19 @@ function Overview({ o, failed }: { o: AnalyticsOverview | null; failed?: string 
               : `${e.sent} sent · ${e.answered} drafted · ${e.questionsAsked} asked`
           }
         />
+        {/* `Math.max(0, ...[])` was 0, which is under every threshold — so an
+            empty window rendered "0ms" AND awarded a met target, reporting the
+            best latency achievable for sessions that answered nothing. */}
         <StatTile
           label="Worst p95"
-          value={ms(e.worstP95Ms)}
-          target={targetLabel(P95_ANSWER_MS)}
-          targetMet={e.worstP95Ms < P95_ANSWER_MS}
+          value={e.worstP95Ms == null ? "—" : ms(e.worstP95Ms)}
+          {...(e.worstP95Ms == null
+            ? {}
+            : { target: targetLabel(P95_ANSWER_MS), targetMet: e.worstP95Ms < P95_ANSWER_MS })}
           hint={
             e.medianOfMediansMs
               ? `median of per-session medians ${ms(e.medianOfMediansMs)}`
-              : "no per-session medians recorded yet"
+              : "nothing was answered in this window"
           }
         />
         <StatTile
@@ -237,8 +241,14 @@ function Overview({ o, failed }: { o: AnalyticsOverview | null; failed?: string 
         />
         <StatTile
           label="Cache hit rate"
-          value={pctText(e.cacheHitRate)}
-          hint="repeat questions answered free"
+          /* 0% reads as "the cache never hits" — a claim about a cache nobody
+             asked. Null is "not measured". */
+          value={e.cacheHitRate == null ? "—" : pctText(e.cacheHitRate)}
+          hint={
+            e.cacheHitRate == null
+              ? "no sessions in this window"
+              : "repeat questions answered free"
+          }
         />
       </div>
 
@@ -668,16 +678,29 @@ function LiveShowAnalytics({ showId }: { showId: string }) {
             value={String(c.proposals)}
             hint={`${c.sent} sent · ${c.dismissed} dismissed`}
           />
+          {/* Same signal for both: an empty latency window means this session
+              has not answered anything, so neither number is a measurement.
+              0ms tone-"ok" and 0% both read as results. */}
           <Stat
             label="Time to answer p95"
-            value={ms(c.latency.p95)}
-            tone={c.latency.p95 > c.latency.budgetMs ? "warn" : "ok"}
-            hint={`budget ${ms(c.latency.budgetMs)} · ${c.latency.breaches} breaches`}
+            value={c.latency.samples === 0 ? "—" : ms(c.latency.p95)}
+            {...(c.latency.samples === 0
+              ? {}
+              : { tone: c.latency.p95 > c.latency.budgetMs ? ("warn" as const) : ("ok" as const) })}
+            hint={
+              c.latency.samples === 0
+                ? "nothing answered yet"
+                : `budget ${ms(c.latency.budgetMs)} · ${c.latency.breaches} breaches`
+            }
           />
           <Stat
             label="Cache hit rate"
-            value={pctText(c.cacheHitRate)}
-            hint="repeat questions answered free"
+            value={c.latency.samples === 0 ? "—" : pctText(c.cacheHitRate)}
+            hint={
+              c.latency.samples === 0
+                ? "nothing answered yet"
+                : "repeat questions answered free"
+            }
           />
         </div>
       </Section>
