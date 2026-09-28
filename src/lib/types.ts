@@ -775,7 +775,8 @@ export interface AnalyticsOverview {
     sent: number;
     /** Sent ÷ asked. The PRD's row, and at L1 a measure of whether the seller
      *  pressed Send rather than of what the copilot could do. */
-    answeredRate: number;
+    /** Null when nothing was asked — the backend sends null, not zero. */
+    answeredRate: number | null;
     /** Answered ÷ asked — the copilot's own share, before the seller decides. */
     groundedRate: number | null;
     /** A median of per-show medians — a shape, not a median. */
@@ -792,7 +793,8 @@ export interface AnalyticsOverview {
     abstained: number;
     flaggedWrong: number;
     byGuard: Record<string, number>;
-    blockRate: number;
+    /** Null when nothing reached a verdict. */
+    blockRate: number | null;
     /** Chains that verified something. An empty chain verifies trivially, so
      *  it is not counted here. */
     chainsIntact: number;
@@ -819,7 +821,8 @@ export interface AnalyticsOverview {
   byIntent: {
     intent: string;
     asked: number;
-    answeredRate: number;
+    /** Null when nothing was asked — the backend sends null, not zero. */
+    answeredRate: number | null;
     abstainedRate: number;
     blocked: number;
     editedRate: number;
@@ -845,7 +848,8 @@ export interface AnalyticsOverview {
      */
     hasReport?: boolean;
     durationMin: number;
-    answeredRate: number;
+    /** Null when nothing was asked — the backend sends null, not zero. */
+    answeredRate: number | null;
     p95LatencyMs: number;
     blocked: number;
     flaggedWrong: number;
@@ -919,7 +923,8 @@ export interface PrdMetrics {
     operationalEdits: number;
   };
   trust: {
-    blockRate: number;
+    /** Null when nothing reached a verdict. */
+    blockRate: number | null;
     editRate: number;
     rollbackRate: number;
     /** The nearest machine proxy for "a wrong reply reached a buyer", and
@@ -945,7 +950,8 @@ export interface ShowReport {
     questionsAsked: number;
     answered: number;
     sent: number;
-    answeredRate: number;
+    /** Null when nothing was asked — the backend sends null, not zero. */
+    answeredRate: number | null;
     medianLatencyMs: number;
     p95LatencyMs: number;
     cacheHitRate: number;

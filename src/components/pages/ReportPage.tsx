@@ -77,8 +77,16 @@ import { DECISION_MS, P95_ANSWER_MS, targetLabel } from "@/lib/targets";
  */
 type View = "summary" | "replies" | "blocked" | "actions" | "gaps" | "audit" | "timeline";
 
-const ms = (n: number) => (n < 1000 ? `${Math.round(n)}ms` : `${(n / 1000).toFixed(2)}s`);
-const pct = (n: number) => `${Math.round(n * 100)}%`;
+// Not measured renders as an em dash, never as a number. The backend sends
+// `number | null` for `answeredRate` and `blockRate`; these took `number`, and
+// `Math.round(null * 100)` is 0 — so a report where nobody asked anything read
+// "Answered rate 0%" against a red target, and "Block rate 0%" as though a
+// guard had been tested. AnalyticsPage carries its own pair with the same
+// hole, now closed the same way; they are duplicated rather than shared
+// because the two pages format at different precisions.
+const ms = (n: number | null | undefined) =>
+  n == null ? "—" : n < 1000 ? `${Math.round(n)}ms` : `${(n / 1000).toFixed(2)}s`;
+const pct = (n: number | null | undefined) => (n == null ? "—" : `${Math.round(n * 100)}%`);
 
 export function ReportPage({ showId }: { showId: string }) {
   const [report, setReport] = useState<ShowReport | null>(null);
@@ -284,8 +292,9 @@ export function ReportPage({ showId }: { showId: string }) {
             <StatTile
               label="Answered rate"
               value={pct(e.answeredRate)}
-              target="target >85%"
-              targetMet={e.answeredRate > 0.85}
+              {...(e.answeredRate == null
+                ? {}
+                : { target: "target >85%", targetMet: e.answeredRate > 0.85 })}
               hint={`${e.answered} of ${e.questionsAsked} admitted questions answerable · ${e.sent} sent`}
             />
             <StatTile
@@ -414,8 +423,9 @@ export function ReportPage({ showId }: { showId: string }) {
                 <StatTile
                   label="Block rate"
                   value={pct(prd.trust.blockRate)}
-                  target="target <2%"
-                  targetMet={prd.trust.blockRate < 0.02}
+                  {...(prd.trust.blockRate == null
+                    ? {}
+                    : { target: "target <2%", targetMet: prd.trust.blockRate < 0.02 })}
                   hint="a high rate means weak grounding, not strong guards"
                 />
                 <StatTile

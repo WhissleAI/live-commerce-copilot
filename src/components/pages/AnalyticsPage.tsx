@@ -50,8 +50,21 @@ import {
 import { cn } from "@/lib/utils";
 import { Section, Stat } from "./PageShell";
 
-const ms = (n: number) => `${Math.round(n)}ms`;
-const pctText = (n: number) => `${Math.round(n * 100)}%`;
+/**
+ * Not measured renders as an em dash, never as a number.
+ *
+ * `pctText` took `number` and the backend sends `number | null` for
+ * `answeredRate` and `blockRate` — the two type definitions are hand-written
+ * on either side of the API and had drifted. `Math.round(null * 100)` is 0, so
+ * a window in which nobody asked anything rendered "Answered rate 0%" against
+ * a red target, and "Block rate 0%" as though a guard had been tested.
+ *
+ * Fixed in the formatter rather than at eleven call sites: a null that reaches
+ * here now shows as absent by construction, and the widened parameter makes
+ * every caller that could pass one typecheck against the truth.
+ */
+const ms = (n: number | null | undefined) => (n == null ? "—" : `${Math.round(n)}ms`);
+const pctText = (n: number | null | undefined) => (n == null ? "—" : `${Math.round(n * 100)}%`);
 
 function compact(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -199,8 +212,9 @@ function Overview({ o, failed }: { o: AnalyticsOverview | null; failed?: string 
         <StatTile
           label="Answered rate"
           value={pctText(e.answeredRate)}
-          target="target >85%"
-          targetMet={e.answeredRate > 0.85}
+          {...(e.answeredRate == null
+            ? {}
+            : { target: "target >85%", targetMet: e.answeredRate > 0.85 })}
           /* The rate is SENT ÷ asked — the PRD's row is about the buyer, and a
              draft nobody sent did not answer anybody. The hint used to read
              "34 of 45", which is the DRAFTED count and divides to 76% above a
@@ -260,8 +274,9 @@ function Overview({ o, failed }: { o: AnalyticsOverview | null; failed?: string 
           <StatTile
             label="Block rate"
             value={pctText(s.blockRate)}
-            target="target <2%"
-            targetMet={s.blockRate < 0.02}
+            {...(s.blockRate == null
+              ? {}
+              : { target: "target <2%", targetMet: s.blockRate < 0.02 })}
             hint={`${s.blocked} blocked · ${s.revised} revised · ${s.abstained} abstained`}
           />
           <StatTile
