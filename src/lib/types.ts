@@ -456,8 +456,8 @@ export interface Metrics {
      *  as a reply that took no time. */
     samples?: number;
   };
-  cacheHitRate: number;
-  answeredRate: number;
+  cacheHitRate: number | null;
+  answeredRate: number | null;
   actionsCommitted: number;
   actionsRolledBack: number;
 }
@@ -823,9 +823,9 @@ export interface AnalyticsOverview {
     asked: number;
     /** Null when nothing was asked — the backend sends null, not zero. */
     answeredRate: number | null;
-    abstainedRate: number;
+    abstainedRate: number | null;
     blocked: number;
-    editedRate: number;
+    editedRate: number | null;
     autoReply: "allow-listed" | "never";
   }[];
   perShow: {
@@ -913,8 +913,8 @@ export interface PrdMetrics {
     /** Null below 15 minutes: a rate extrapolated from four minutes is noise
      *  wearing a decimal point. */
     perShowHourCents: number | null;
-    answeredQuestionRate: number;
-    timeToAnswerP95Ms: number;
+    answeredQuestionRate: number | null;
+    timeToAnswerP95Ms: number | null;
     sellThroughWithAnswer: { withAnswer: number; total: number; rate: number };
   };
   operatorLoad: {
@@ -925,8 +925,8 @@ export interface PrdMetrics {
   trust: {
     /** Null when nothing reached a verdict. */
     blockRate: number | null;
-    editRate: number;
-    rollbackRate: number;
+    editRate: number | null;
+    rollbackRate: number | null;
     /** The nearest machine proxy for "a wrong reply reached a buyer", and
      *  deliberately NOT the same thing. */
     sentThenContradicted: number;
@@ -954,7 +954,7 @@ export interface ShowReport {
     answeredRate: number | null;
     medianLatencyMs: number;
     p95LatencyMs: number;
-    cacheHitRate: number;
+    cacheHitRate: number | null;
   };
   safety: {
     blocked: number;

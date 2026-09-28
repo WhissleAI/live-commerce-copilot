@@ -525,7 +525,12 @@ function Topics({ o, failed }: { o: AnalyticsOverview | null; failed?: string | 
       </Card>
     );
   }
-  const worstAbstain = [...o.byIntent].sort((a, b) => b.abstainedRate - a.abstainedRate)[0];
+  // A topic nobody asked about has no abstain rate, and null sorts as 0 —
+  // which would quietly rank it alongside a topic that never abstained.
+  // Measured topics only.
+  const worstAbstain = [...o.byIntent]
+    .filter((b): b is typeof b & { abstainedRate: number } => b.abstainedRate != null)
+    .sort((a, b) => b.abstainedRate - a.abstainedRate)[0];
   return (
     <>
       <SectionHeading hint="By topic, across every finished session. The last column is what L3 auto-sends; the rest is the evidence for it.">
@@ -554,7 +559,7 @@ function Topics({ o, failed }: { o: AnalyticsOverview | null; failed?: string | 
                   <td
                     className={cn(
                       "num px-3 py-2 text-right",
-                      r.abstainedRate > 0.25 && "text-warn",
+                      r.abstainedRate != null && r.abstainedRate > 0.25 && "text-warn",
                     )}
                   >
                     {pctText(r.abstainedRate)}

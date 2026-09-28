@@ -123,7 +123,7 @@ function LatencyMeter({ metrics }: { metrics: Metrics }) {
           </div>
           <div className="flex justify-between">
             <span>cache hit rate</span>
-            <span className="num text-text">{formatPct(metrics.cacheHitRate)}</span>
+            <span className="num text-text">{metrics.cacheHitRate == null ? "—" : formatPct(metrics.cacheHitRate)}</span>
           </div>
         </div>
       }
