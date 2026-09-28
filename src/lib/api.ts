@@ -62,7 +62,7 @@ import type {
   Listing,
 } from "./types";
 
-const BASE = (import.meta.env["VITE_API_BASE"] as string | undefined) ?? "http://localhost:8790";
+const BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8790";
 /** Exported so the console can link to backend-served pages (the audio bridge). */
 export const API_BASE = BASE;
 /** For the two places a header cannot go: EventSource and the bridge page. */
@@ -74,7 +74,7 @@ export function tokenQuery(): string {
 // set — a preview, a fresh clone — shipped the scripted stream as if it were
 // a product. In dev with nothing set you still get mocks; a build never does.
 export const USE_MOCKS =
-  ((import.meta.env["VITE_USE_MOCKS"] as string | undefined) ??
+  (import.meta.env.VITE_USE_MOCKS ??
     (import.meta.env.DEV ? "true" : "false")) === "true";
 
 const url = (path: string) => `${BASE}${path}`;
