@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   Radio,
   Sliders,
+  TriangleAlert,
   Wallet,
   X,
 } from "lucide-react";
@@ -725,6 +726,28 @@ export function Console() {
         </div>
 
         <div className="relative flex min-h-0 flex-col overflow-hidden rounded-md bg-panel z1">
+          {/* One fact that explains every card under it.
+              A session attached without a catalog answers nothing: retrieval
+              has no listings to ground on, so every draft comes back deferring
+              to the host. On screen that is indistinguishable from a copilot
+              that is simply unhelpful — eleven cards reading "the host will
+              cover that shortly", a Copy button on each, and nothing saying
+              why. The rail cannot carry it: an empty lot QUEUE is normal for a
+              show with a full catalog, so its silence already means something
+              else.
+
+              Inside this column, not beside it. As a sibling it became another
+              flex child of the column row and shoved the queue into the rail. */}
+          {show && listings.length === 0 ? (
+            <div className="flex shrink-0 items-start gap-2 border-b border-hairline bg-warn/10 px-3 py-2 text-[12px] text-warn">
+              <TriangleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+              <span>
+                This session has no catalog, so the copilot has nothing to answer from and will
+                defer every question to you. Attach one from Knowledge, or prepare the show from
+                Home.
+              </span>
+            </div>
+          ) : null}
           <ProposalQueue
             leading={
               <button
