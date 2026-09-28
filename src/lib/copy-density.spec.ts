@@ -104,3 +104,38 @@ describe("operator-facing copy stays inside its ceiling", () => {
     expect(long).toEqual([]);
   });
 });
+
+/**
+ * A number on the landing page says where it came from.
+ *
+ * The console screenshot is captioned "A screenshot, not a mock" with its real
+ * figures. The report section's three statistics had no such note, and sat
+ * under copy reading "The counts are measured" — which reads as a measurement
+ * of a real show. It was not one.
+ *
+ * "Answered" is also this product's most overloaded word: the console defines
+ * it as a reply the seller actually SENT, which across the first fourteen
+ * production sessions is 7%, while the share the copilot could ground is 76%.
+ * A bare "77% answered" claims the flattering reading of a word the product
+ * defines the other way — the one thing this page is otherwise careful about.
+ */
+describe("landing-page figures carry their provenance", () => {
+  const landing = readFileSync(
+    join(import.meta.dirname, "..", "components", "pages", "LandingPage.tsx"),
+    "utf8",
+  );
+
+  it("keeps the screenshot's real-not-mock caption", () => {
+    expect(landing).toContain("A screenshot, not a mock");
+  });
+
+  it("says the report figures are a shape, not a show", () => {
+    // JSX wraps the sentence across lines; compare on collapsed whitespace.
+    expect(landing.replace(/\s+/g, " ")).toMatch(/not a measurement of a particular show/);
+  });
+
+  it("does not claim a bare 'answered' percentage", () => {
+    // The flattering reading of a word the console defines as "sent".
+    expect(landing).not.toMatch(/"answered, last session"/);
+  });
+});
