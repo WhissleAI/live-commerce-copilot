@@ -390,12 +390,24 @@ function Player({ t, showId, onDescribe }: { t: ShowTimeline; showId: string; on
                         className="group flex min-w-0 flex-1 items-start gap-3 text-left"
                         title="See this frame large"
                       >
-                        <img
-                          src={mediaToken ? api.frameUrl(showId, r.f.seq, mediaToken) : undefined}
-                          alt={r.f.reading}
-                          loading="lazy"
-                          className="h-[54px] w-24 shrink-0 rounded-sm bg-elevated object-cover ring-1 ring-hairline transition-transform group-hover:scale-[1.03]"
-                        />
+                        {/* Mounted only once the token exists, never mounted
+                            empty and given a src later: Chrome decides whether
+                            a `loading="lazy"` image is deferred when the
+                            element gets its source, and an element that had
+                            none at mount is simply never evaluated again. The
+                            timeline rendered 34 thumbnails that never loaded.
+                            The placeholder holds the same box so nothing
+                            shifts when they arrive. */}
+                        {mediaToken ? (
+                          <img
+                            src={api.frameUrl(showId, r.f.seq, mediaToken)}
+                            alt={r.f.reading}
+                            loading="lazy"
+                            className="h-[54px] w-24 shrink-0 rounded-sm bg-elevated object-cover ring-1 ring-hairline transition-transform group-hover:scale-[1.03]"
+                          />
+                        ) : (
+                          <div className="h-[54px] w-24 shrink-0 rounded-sm bg-elevated ring-1 ring-hairline" />
+                        )}
                         <span className="min-w-0 flex-1">
                           <span className="flex items-center gap-1.5 text-[12.5px] leading-snug">
                             <Eye className="size-3 shrink-0 text-text-muted" aria-hidden />
@@ -423,7 +435,11 @@ function Player({ t, showId, onDescribe }: { t: ShowTimeline; showId: string; on
           <div className="px-4 py-2.5 text-[12px] text-text-muted shadow-[0_1px_0_var(--hairline)]">On camera at the playhead</div>
           {currentFrame ? (
             <button type="button" onClick={() => setOpen(frames.findIndex((f) => f.seq === currentFrame.seq))} className="block w-full px-4 pb-4 pt-3 text-left">
-              <img src={mediaToken ? api.frameUrl(showId, currentFrame.seq, mediaToken) : undefined} alt={currentFrame.reading} className="w-full rounded-sm bg-elevated object-cover ring-1 ring-hairline" />
+              {mediaToken ? (
+                <img src={api.frameUrl(showId, currentFrame.seq, mediaToken)} alt={currentFrame.reading} className="w-full rounded-sm bg-elevated object-cover ring-1 ring-hairline" />
+              ) : (
+                <div className="aspect-video w-full rounded-sm bg-elevated ring-1 ring-hairline" />
+              )}
               <p className="mt-2 text-[12.5px] font-medium leading-snug">{currentFrame.reading}</p>
               {currentFrame.description ? (
                 <p className="mt-1 text-[11.5px] leading-snug text-text-secondary">{currentFrame.description}</p>
@@ -503,7 +519,11 @@ function Lightbox({
             </button>
           </div>
         </div>
-        <img src={mediaToken ? api.frameUrl(showId, frame.seq, mediaToken) : undefined} alt={frame.reading} className="max-h-[60vh] w-full bg-black object-contain" />
+        {mediaToken ? (
+          <img src={api.frameUrl(showId, frame.seq, mediaToken)} alt={frame.reading} className="max-h-[60vh] w-full bg-black object-contain" />
+        ) : (
+          <div className="aspect-video w-full bg-black" />
+        )}
         <div className="px-4 py-3">
           <p className="flex items-center gap-1.5 text-[13.5px] font-medium">
             <Eye className="size-3.5 text-text-muted" aria-hidden /> {frame.reading}
