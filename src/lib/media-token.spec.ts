@@ -53,21 +53,22 @@ describe("media URLs carry a scoped token, never the session", () => {
   });
 });
 
-describe("a lazy image is never mounted without its src", () => {
+describe("a media image is never mounted without its src", () => {
   /**
-   * Caught on production, an hour after shipping the scoped token.
+   * Mounting an `<img>` with no source and giving it one when the token lands
+   * flashes alt text and is a state worth not having; the element is rendered
+   * only once the token exists.
    *
-   * Gating the attribute — `src={token ? url : undefined}` — renders the
-   * element first and gives it a source later. Chrome decides whether a
-   * `loading="lazy"` image is deferred when the element GETS its source; one
-   * that had none at mount is never evaluated again. The report showed 34
-   * thumbnails that never loaded, and nothing looked wrong: no error, no
-   * broken-image icon, `complete: false` and `currentSrc: ""` forever.
-   * Proven by removing `loading="lazy"` and re-setting the identical src,
-   * which loaded it immediately.
-   *
-   * So the element is mounted only once the token exists. This test reads the
-   * source because the failure has no runtime signal to assert on.
+   * The stronger claim this comment used to make — that a `loading="lazy"`
+   * image given its source late is never loaded at all — was wrong, and the
+   * investigation behind it is worth leaving here so nobody repeats it. The
+   * thumbnails looked permanently unloaded on production: `complete: false`,
+   * `currentSrc: ""`, no error, across fourteen seconds. The tab was
+   * BACKGROUNDED. Chrome runs no rAF and computes no intersections in a
+   * hidden tab, so nothing lazy ever resolves and it reads exactly like a
+   * broken image. Forcing a paint loaded the visible frame and left the rest
+   * correctly deferred. Check `document.visibilityState` before believing a
+   * lazy-loading bug.
    */
   it("gates the element, not the attribute", () => {
     const src = readFileSync(

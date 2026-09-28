@@ -20,7 +20,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, ChevronLeft, ChevronRight, Eye, Mic, Pause, Play, Sparkles, X } from "lucide-react";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { useInView } from "@/lib/useInView";
 import type { ShowTimeline, SignalDistribution, TimelineFrame, Utterance } from "@/lib/types";
 import { Badge, Button, Card, EmptyState, Skeleton } from "@/components/ui/kit";
 
@@ -88,42 +87,6 @@ export function ReportTimeline({ showId }: { showId: string }) {
 type Row =
   | { kind: "say"; at: number; u: Utterance }
   | { kind: "see"; at: number; f: TimelineFrame; repeat: boolean };
-
-/**
- * One frame thumbnail, fetched when it comes near the viewport.
- *
- * Not `loading="lazy"`: measured on production, the native attribute never
- * resolves inside this feed's scroll container — 34 thumbnails, one visible,
- * nothing fetched after fourteen seconds, and no error anywhere to say so.
- * `useInView` is the same deferral, done where it can be tested.
- */
-function FrameThumb({
-  showId,
-  mediaToken,
-  seq,
-  reading,
-}: {
-  showId: string;
-  mediaToken: string | null;
-  seq: number;
-  reading: string;
-}) {
-  const [ref, near] = useInView();
-  const box = "h-[54px] w-24 shrink-0 rounded-sm bg-elevated ring-1 ring-hairline";
-  // Mounted with its src or not at all: an <img> that appears empty and is
-  // given a source later is the other way these never load.
-  return near && mediaToken ? (
-    <img
-      ref={ref}
-      src={api.frameUrl(showId, seq, mediaToken)}
-      alt={reading}
-      decoding="async"
-      className={cn(box, "object-cover transition-transform group-hover:scale-[1.03]")}
-    />
-  ) : (
-    <div ref={ref} className={box} aria-hidden />
-  );
-}
 
 function Player({ t, showId, onDescribe }: { t: ShowTimeline; showId: string; onDescribe: () => void }) {
   // `<img>` and `<audio>` cannot send a bearer header, so whatever is in these
@@ -427,7 +390,30 @@ function Player({ t, showId, onDescribe }: { t: ShowTimeline; showId: string; on
                         className="group flex min-w-0 flex-1 items-start gap-3 text-left"
                         title="See this frame large"
                       >
-                        <FrameThumb showId={showId} mediaToken={mediaToken} seq={r.f.seq} reading={r.f.reading} />
+                        {/* Mounted with its src or not at all, rather than as
+                            an <img> with no source that gets one when the
+                            token lands — which flashes alt text and is a
+                            needless state to have. The placeholder holds the
+                            same box so nothing shifts when frames arrive.
+
+                            `loading="lazy"` is correct here and works; if you
+                            are ever looking at this because the thumbnails
+                            appear not to load, check `document.visibilityState`
+                            first. A backgrounded tab runs no rAF and computes
+                            no intersections, so every frame stays at
+                            `complete: false` with `currentSrc: ""` and no error
+                            anywhere — which reads exactly like a broken image
+                            and is not one. */}
+                        {mediaToken ? (
+                          <img
+                            src={api.frameUrl(showId, r.f.seq, mediaToken)}
+                            alt={r.f.reading}
+                            loading="lazy"
+                            className="h-[54px] w-24 shrink-0 rounded-sm bg-elevated object-cover ring-1 ring-hairline transition-transform group-hover:scale-[1.03]"
+                          />
+                        ) : (
+                          <div className="h-[54px] w-24 shrink-0 rounded-sm bg-elevated ring-1 ring-hairline" />
+                        )}
                         <span className="min-w-0 flex-1">
                           <span className="flex items-center gap-1.5 text-[12.5px] leading-snug">
                             <Eye className="size-3 shrink-0 text-text-muted" aria-hidden />
