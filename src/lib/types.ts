@@ -793,7 +793,12 @@ export interface AnalyticsOverview {
     flaggedWrong: number;
     byGuard: Record<string, number>;
     blockRate: number;
+    /** Chains that verified something. An empty chain verifies trivially, so
+     *  it is not counted here. */
     chainsIntact: number;
+    /** Sessions whose chain was empty — nothing to verify, so nothing
+     *  verified. Not a failure, and not evidence. */
+    chainsEmpty: number;
   };
   actions: { proposed: number; committed: number; rolledBack: number; failed: number };
   gmv: {
