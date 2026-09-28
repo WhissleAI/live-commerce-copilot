@@ -760,7 +760,11 @@ export interface AnalyticsOverview {
     questionsAsked: number;
     answered: number;
     sent: number;
+    /** Sent ÷ asked. The PRD's row, and at L1 a measure of whether the seller
+     *  pressed Send rather than of what the copilot could do. */
     answeredRate: number;
+    /** Answered ÷ asked — the copilot's own share, before the seller decides. */
+    groundedRate: number | null;
     /** A median of per-show medians — a shape, not a median. */
     medianOfMediansMs: number;
     worstP95Ms: number;
