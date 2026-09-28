@@ -966,8 +966,8 @@ export class MockDriver {
         p99: Math.max(p95 + 200, jitter(l.p99, 140)),
         breaches: p95 > l.budgetMs ? l.breaches + 1 : l.breaches,
       },
-      cacheHitRate: Math.min(0.85, Math.max(0.1, this.metrics.cacheHitRate + rnd(-0.03, 0.03))),
-      answeredRate: Math.min(0.99, Math.max(0.4, this.metrics.answeredRate + rnd(-0.02, 0.02))),
+      cacheHitRate: Math.min(0.85, Math.max(0.1, (this.metrics.cacheHitRate ?? 0.4) + rnd(-0.03, 0.03))),
+      answeredRate: Math.min(0.99, Math.max(0.4, (this.metrics.answeredRate ?? 0.8) + rnd(-0.02, 0.02))),
       proposals: this.metrics.proposals + (Math.random() < 0.4 ? 1 : 0),
     };
     this.emit({ type: "metrics", data: this.metrics });

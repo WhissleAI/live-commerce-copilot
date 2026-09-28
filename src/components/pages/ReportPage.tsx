@@ -431,15 +431,17 @@ export function ReportPage({ showId }: { showId: string }) {
                 <StatTile
                   label="Edit rate"
                   value={pct(prd.trust.editRate)}
-                  target="target <20%"
-                  targetMet={prd.trust.editRate < 0.2}
+                  {...(prd.trust.editRate == null
+                    ? {}
+                    : { target: "target <20%", targetMet: prd.trust.editRate < 0.2 })}
                   hint="your revealed opinion of draft quality"
                 />
                 <StatTile
                   label="Rollback rate"
                   value={pct(prd.trust.rollbackRate)}
-                  target="target <10%"
-                  targetMet={prd.trust.rollbackRate < 0.1}
+                  {...(prd.trust.rollbackRate == null
+                    ? {}
+                    : { target: "target <10%", targetMet: prd.trust.rollbackRate < 0.1 })}
                   hint="higher means preflight is too permissive"
                 />
                 <StatTile
