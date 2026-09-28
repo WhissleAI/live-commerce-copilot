@@ -176,6 +176,26 @@ function Overview({ o, failed }: { o: AnalyticsOverview | null; failed?: string 
         Did it help
       </SectionHeading>
       <div className="mt-3 grid gap-3 sm:grid-cols-4">
+        {/* Two questions that were one number.
+            `answeredRate` is sent ÷ asked, which is right for the PRD's row —
+            a draft nobody sent reached no buyer. But the >85% target belongs
+            to sellers at L3, where the copilot sends for itself, and every
+            show here has run at L1_SUGGEST. So this read "7% · target >85%"
+            over a period in which the copilot grounded 34 of 45: the failing
+            number was the seller's send rate wearing the copilot's label.
+            The target stays on the row the PRD put it on; the copilot's own
+            share now sits beside it instead of inside it. */}
+        <StatTile
+          label="Grounded by the copilot"
+          /* Null when nothing was asked. A 0% there would read as "it could
+             answer none of them", which is a different and worse claim. */
+          value={e.groundedRate == null ? "—" : pctText(e.groundedRate)}
+          hint={
+            e.questionsAsked
+              ? `${e.answered} of ${e.questionsAsked} had an answer to give`
+              : "nobody asked anything in this window"
+          }
+        />
         <StatTile
           label="Answered rate"
           value={pctText(e.answeredRate)}
