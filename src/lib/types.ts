@@ -780,8 +780,11 @@ export interface AnalyticsOverview {
     groundedRate: number | null;
     /** A median of per-show medians — a shape, not a median. */
     medianOfMediansMs: number;
-    worstP95Ms: number;
-    cacheHitRate: number;
+    /** Null when nothing in the window answered. Zero would read as the
+     *  fastest possible reply, and used to award a met target. */
+    worstP95Ms: number | null;
+    /** Null on an empty window — 0% reads as a cache that never hits. */
+    cacheHitRate: number | null;
   };
   safety: {
     blocked: number;
