@@ -102,6 +102,34 @@ export function Console() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  /**
+   * Opening the bridge, once, for both places that offer it.
+   *
+   * It used to live only inside `TranscriptPanel`, which renders only in the
+   * left rail — and that rail is `hidden` below xl (2xl with the cost column
+   * out). So on a narrower window the chat folded into a sheet, the transcript
+   * panel was not rendered at all, and there was no way to open the audio
+   * bridge from anywhere in the product. Reported from a live eBay Live
+   * session: the seller could see chat and proposals and had no host audio.
+   */
+  const openBridge = USE_MOCKS
+    ? null
+    : () => {
+        if (!show) return;
+        void openAudioBridge(show.id).then((r) => {
+          if (r.ok) return;
+          // Mid-show, a button that does nothing reads as the product being
+          // broken. Setup says which of the two things went wrong; so does this.
+          toasts.push({
+            tone: "bad",
+            text:
+              r.reason === "blocked"
+                ? "Your browser blocked the bridge tab — allow pop-ups for this site and press it again"
+                : "Could not open the bridge — the session may have ended",
+          });
+        });
+      };
   /** Below 1024 the session rail is a drawer rather than a column. */
   const [railOpen, setRailOpen] = useState(false);
   // Shown once per browser, the first time a card could possibly appear.
@@ -641,6 +669,15 @@ export function Console() {
         account={account}
         latencyMeter={layout.latencyMeter}
         surface={{ id: surfaceId, label: surfaceLabel(surfaceId) }}
+        {...(openBridge && layout.hostAudio
+          ? {
+              onOpenBridge: openBridge,
+              // Only where the transcript panel is not rendered; above that
+              // breakpoint the panel carries it and two buttons for one action
+              // is worse than none.
+              bridgeClassName: sidePanel ? "2xl:hidden" : "xl:hidden",
+            }
+          : {})}
       />
 
       {/* The cost rail is a COLUMN, not an overlay: it is read against the
@@ -698,24 +735,7 @@ export function Console() {
                 context={store.context}
                 listen={store.listen}
                 surface={surfaceId}
-                {...(USE_MOCKS
-                  ? {}
-                  : {
-                      onOpenBridge: () =>
-                        void openAudioBridge(show.id).then((r) => {
-                          if (r.ok) return;
-                          // Mid-show, a button that does nothing reads as the
-                          // product being broken. Setup says which of the two
-                          // things went wrong; so does this.
-                          toasts.push({
-                            tone: "bad",
-                            text:
-                              r.reason === "blocked"
-                                ? "Your browser blocked the bridge tab — allow pop-ups for this site and press it again"
-                                : "Could not open the bridge — the session may have ended",
-                          });
-                        }),
-                    })}
+                {...(openBridge ? { onOpenBridge: openBridge } : {})}
               />
             </div>
           ) : layout.threadPanel ? (
