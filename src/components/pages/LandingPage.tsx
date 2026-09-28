@@ -833,9 +833,26 @@ export function LandingPage() {
                 Drafts.
               </TempoNote>
               </div>
-              <div className="mt-10 grid gap-8 sm:grid-cols-3">
+              {/* Where these came from, because the page says so everywhere else.
+                  The console screenshot above is captioned "A screenshot, not a
+                  mock" with its real figures; this trio had no such note and sat
+                  under copy reading "The counts are measured", which reads as a
+                  measurement of a real show. It is not one.
+
+                  "Answered" is also the product's most overloaded word. The
+                  console defines it as a reply you actually SENT; across the
+                  first fourteen production sessions that is 7%, while the share
+                  the copilot could ground is 76%. A bare "77% answered" claims
+                  the flattering reading of a word the product defines the other
+                  way, which is the one thing this page has been careful not to
+                  do about sending. */}
+              <p className="mt-10 text-[13px] text-text-muted">
+                What one report looks like — the shape of the numbers, not a
+                measurement of a particular show.
+              </p>
+              <div className="mt-4 grid gap-8 sm:grid-cols-3">
                 {[
-                  ["77%", "answered, last session"],
+                  ["77%", "grounded from the catalog — what the copilot could answer"],
                   ["23/31", "sold lots that had a question answered"],
                   ["11", "gaps, each with an Answer button"],
                 ].map(([n, l]) => (
