@@ -275,11 +275,32 @@ function Overview({ o, failed }: { o: AnalyticsOverview | null; failed?: string 
             value={String(o.actions.rolledBack)}
             hint={`${o.actions.committed} committed · ${o.actions.failed} failed`}
           />
+          {/* Counted over the sessions that RECORDED something. `verify()`
+              returns ok for an empty chain — correct as a fact, vacuous as a
+              claim — so this read "13/13" in green, "hash-verified end to
+              end", when eleven of the thirteen held no entries. That is the
+              strongest assurance the product gives, and it was true of
+              sessions that wrote nothing down. */}
           <StatTile
             label="Audit chains intact"
-            value={`${s.chainsIntact}/${o.shows.finished - o.shows.withoutReport}`}
-            tone={s.chainsIntact === o.shows.finished - o.shows.withoutReport ? "ok" : "bad"}
-            hint="hash-verified end to end, per session"
+            value={
+              o.shows.finished - o.shows.withoutReport - s.chainsEmpty === 0
+                ? "—"
+                : `${s.chainsIntact}/${o.shows.finished - o.shows.withoutReport - s.chainsEmpty}`
+            }
+            {...(o.shows.finished - o.shows.withoutReport - s.chainsEmpty === 0
+              ? {}
+              : {
+                  tone:
+                    s.chainsIntact === o.shows.finished - o.shows.withoutReport - s.chainsEmpty
+                      ? ("ok" as const)
+                      : ("bad" as const),
+                })}
+            hint={
+              s.chainsEmpty
+                ? `hash-verified end to end · ${s.chainsEmpty} session${s.chainsEmpty === 1 ? "" : "s"} recorded nothing to verify`
+                : "hash-verified end to end, per session"
+            }
           />
         </div>
 
