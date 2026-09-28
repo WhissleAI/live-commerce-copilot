@@ -14,11 +14,25 @@ const show = {
   viewers: 10, listings: 4, proposals: 2,
 } as never;
 
-const metrics = (p95: number) =>
+const metrics = (p95: number, samples = 12) =>
   ({
-    latency: { p50: 400, p95, p99: p95 + 200, budgetMs: 2000, breaches: 0 },
+    latency: { p50: 400, p95, p99: p95 + 200, budgetMs: 2000, breaches: 0, samples },
     cacheHitRate: 0.1,
   }) as never;
+
+const renderBar = (m: unknown) =>
+  render(
+    <TopBar
+      show={show}
+      metrics={m as never}
+      connection="open"
+      viewerDelta={0}
+      onAutonomy={() => {}}
+      onToggleCost={() => {}}
+      costOpen={false}
+      latencyMeter
+    />,
+  );
 
 const bar = () => screen.getByLabelText(/p95 latency/).querySelector("[class*='text-']");
 const toneOf = (p95: number): string => {
@@ -55,5 +69,55 @@ describe("the live p95 meter", () => {
   it("only goes red once the answer stops converting", () => {
     expect(toneOf(P95_ANSWER_MS + 1)).toBe("bad");
     expect(toneOf(15_000)).toBe("bad");
+  });
+});
+
+/**
+ * Seen on a live eBay Live show, 46 seconds in, queue empty: "p95 0ms" in
+ * green.
+ *
+ * A percentile of an empty window is 0, and the bar could not tell that from a
+ * reply that took no time — `0 / 2000` is under every threshold. So the one
+ * moment an operator most wants to know the copilot has not spoken yet was
+ * reported as answering instantly.
+ */
+describe("before anything has been answered", () => {
+  it("shows no number, rather than a perfect one", () => {
+    const { unmount } = renderBar(metrics(0, 0));
+    const el = screen.getByLabelText(/p95 latency/);
+    expect(el.querySelector(".num")?.textContent).toBe("—");
+    unmount();
+  });
+
+  it("is not green", () => {
+    const { unmount } = renderBar(metrics(0, 0));
+    const cls = screen.getByLabelText(/p95 latency/).querySelector(".num")?.className ?? "";
+    expect(cls).not.toContain("text-ok");
+    unmount();
+  });
+
+  it("says so to a screen reader too", () => {
+    const { unmount } = renderBar(metrics(0, 0));
+    expect(screen.getByLabelText(/nothing answered yet/)).toBeTruthy();
+    unmount();
+  });
+
+  it("a real 0ms with samples is still graded normally", () => {
+    // Only an EMPTY window is unmeasured. A cache hit that genuinely returned
+    // in under a millisecond is a measurement and keeps its colour.
+    const { unmount } = renderBar(metrics(0, 5));
+    const cls = screen.getByLabelText(/p95 latency/).querySelector(".num")?.className ?? "";
+    expect(cls).toContain("text-ok");
+    unmount();
+  });
+
+  it("an older backend that sends no sample count keeps the old behaviour", () => {
+    const { unmount } = renderBar({
+      latency: { p50: 400, p95: 900, p99: 1100, budgetMs: 2000, breaches: 0 },
+      cacheHitRate: 0.1,
+    });
+    const cls = screen.getByLabelText(/p95 latency/).querySelector(".num")?.className ?? "";
+    expect(cls).toContain("text-ok");
+    unmount();
   });
 });
