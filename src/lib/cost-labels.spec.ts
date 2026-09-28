@@ -76,3 +76,29 @@ describe("the Analytics page says what it measures", () => {
     expect(analytics).toMatch(/\$\{e\.sent\} sent/);
   });
 });
+
+/**
+ * "Sent" is a box the seller ticks, on every surface this product is for.
+ *
+ * eBay Live, Whatnot and TikTok Live are all draft-only; only Twitch and
+ * YouTube Live can post. So a reply is copied into the platform's own chat by
+ * hand, and the sent count records what the seller told us rather than a
+ * delivery. Read without that, 7% against a >85% target looks like a failing
+ * copilot — while the copilot had grounded 34 of 45.
+ */
+describe("the answered rate says what it can and cannot see", () => {
+  it("says sent is the seller's mark where nothing can post", () => {
+    expect(analytics).toMatch(/marked sent/);
+    expect(analytics).toMatch(/cannot post/);
+    expect(analytics).toMatch(/seller's own mark/);
+  });
+
+  it("drops the caveat where delivery is real", () => {
+    // On Twitch the send IS a delivery; the qualifier would be false there.
+    expect(analytics).toMatch(/o\.shows\.draftOnly\s*\n?\s*\?/);
+  });
+
+  it("still reports the copilot's own share separately", () => {
+    expect(analytics).toContain("Grounded by the copilot");
+  });
+});

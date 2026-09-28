@@ -207,7 +207,17 @@ function Overview({ o, failed }: { o: AnalyticsOverview | null; failed?: string 
              headline of 7%. Both numbers were right and the pair was not. The
              funnel is the more useful thing anyway: 34 drafted, 3 sent is the
              actual finding on this page. */
-          hint={`${e.sent} sent · ${e.answered} drafted · ${e.questionsAsked} asked`}
+          /* On a draft-only surface nothing here delivers a reply — the seller
+             copies it into the platform's own chat — so "sent" is a box they
+             ticked, not a delivery we saw. Every live-commerce surface is
+             draft-only; only Twitch and YouTube Live can post. Without this the
+             7% read as a failing copilot, when the copilot had grounded 34 of
+             45 and the rest is bookkeeping nobody does mid-show. */
+          hint={
+            o.shows.draftOnly
+              ? `${e.sent} marked sent · ${e.answered} drafted · ${e.questionsAsked} asked — ${o.shows.draftOnly} of ${o.shows.finished} sessions ran where we cannot post, so sent is the seller's own mark`
+              : `${e.sent} sent · ${e.answered} drafted · ${e.questionsAsked} asked`
+          }
         />
         <StatTile
           label="Worst p95"

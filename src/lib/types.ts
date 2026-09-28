@@ -754,6 +754,9 @@ export interface AnalyticsOverview {
     /** Time ATTACHED. A room stays attached while nothing is broadcasting, so
      *  this is not airtime and is never a rate's denominator on its own. */
     hoursAttached: number;
+    /** Of those, how many ran on a surface this app cannot post to. On those,
+     *  "sent" is what the seller marked, not what we delivered. */
+    draftOnly: number;
   };
   engagement: {
     commentsSeen: number;
