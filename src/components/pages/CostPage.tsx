@@ -36,6 +36,13 @@ import {
   StatTile,
 } from "@/components/ui/kit";
 
+/** Minutes as `1h 05m`, or `05m` under the hour. */
+const hm = (min: number): string => {
+  const h = Math.floor(min / 60);
+  const m = Math.round(min % 60);
+  return h ? `${h}h ${String(m).padStart(2, "0")}m` : `${m}m`;
+};
+
 const usd = (n: number | null | undefined, dp = 2) =>
   n == null ? "—" : `$${n.toFixed(n !== 0 && Math.abs(n) < 0.01 ? 4 : dp)}`;
 
@@ -210,17 +217,26 @@ export function CostPage() {
             <StatTile
               label={`Your spend, ${days} days`}
               value={usd(t?.estimatedUsd)}
-              hint={`${t?.shows ?? 0} sessions · ${Math.floor((t?.minutes ?? 0) / 60)}h ${(t?.minutes ?? 0) % 60}m on air${
+              /* "attached" is what this is. A room stays attached while
+                 nothing is broadcasting, and calling that airtime is what let
+                 two overnight rooms hold 98% of the clock. */
+              hint={`${t?.shows ?? 0} sessions · ${hm(t?.minutes ?? 0)} attached${
                 t?.metered ? ` · ${t.metered} priced from calls` : ""
               }`}
             />
             <StatTile
-              label="Per hour on air"
+              label="Per hour, sessions that answered"
               value={usd(t?.perHourUsd)}
+              /* Named for what it is a rate over. Spend ÷ time attached blends
+                 in rooms left open overnight, which answer nobody and cost
+                 almost nothing: in production that read $0.05 an hour where
+                 the working rate was $2.95. */
               hint={
                 t?.showsWithoutWallet
                   ? `${t.showsWithoutWallet} session${t.showsWithoutWallet === 1 ? "" : "s"} could not be priced`
-                  : "your spend over your time on air"
+                  : t?.workingShows
+                    ? `over ${t.workingShows} session${t.workingShows === 1 ? "" : "s"} · ${hm(t.workingMinutes ?? 0)}`
+                    : "no session has answered anyone yet"
               }
             />
             <StatTile
@@ -258,7 +274,7 @@ export function CostPage() {
                   <tr className="text-left text-[11.5px] text-text-muted shadow-[0_1px_0_var(--hairline)]">
                     <th className="px-4 py-2.5 font-medium">Session</th>
                     <th className="px-4 py-2.5 font-medium">Ended</th>
-                    <th className="px-4 py-2.5 text-right font-medium">On air</th>
+                    <th className="px-4 py-2.5 text-right font-medium" title="Attach to detach. A room stays attached while nothing is broadcasting.">Attached</th>
                     <th className="px-4 py-2.5 text-right font-medium">Calls</th>
                     <th className="px-4 py-2.5 text-right font-medium">Context chars</th>
                     <th className="px-4 py-2.5 text-right font-medium">Cost</th>

@@ -1540,8 +1540,17 @@ export interface CostSnapshot {
     /** How many rows were priced by the metered estimate. */
     metered: number;
     answered: number;
+    /** Time ATTACHED across every session. A room stays attached while nothing
+     *  is broadcasting, so this is not airtime and is not the rate's basis. */
     minutes: number;
+    /** The sessions that answered at least one buyer — what `perHourUsd` is a
+     *  rate over, on both sides of the division. */
+    workingShows: number;
+    workingMinutes: number;
+    workingUsd: number;
     perAnsweredUsd: number | null;
+    /** Spend ÷ time, over the working sessions only. Null when none have
+     *  answered anyone yet, which must never render as a price. */
     perHourUsd: number | null;
     showsWithoutWallet: number;
   };
