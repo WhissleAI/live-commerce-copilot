@@ -436,6 +436,7 @@ export function Band({
   title,
   hint,
   hintOpen,
+  action,
   children,
 }: {
   eyebrow: string;
@@ -444,6 +445,8 @@ export function Band({
   /** See `lib/experience`. Undefined keeps the explainer open, which is what
    *  every band did before and what an untouched caller still gets. */
   hintOpen?: boolean;
+  /** A way out of a band that only shows the first few. */
+  action?: ReactNode;
   children: ReactNode;
 }) {
   return (
@@ -451,13 +454,16 @@ export function Band({
       <div className="text-[11px] font-semibold tracking-[0.09em] text-text-faint uppercase">
         {eyebrow}
       </div>
-      <SectionHeading
-        className="mt-1"
-        {...(hint ? { hint } : {})}
-        {...(hintOpen === undefined ? {} : { hintOpen })}
-      >
-        {title}
-      </SectionHeading>
+      <div className="flex items-end justify-between gap-3">
+        <SectionHeading
+          className="mt-1 flex-1"
+          {...(hint ? { hint } : {})}
+          {...(hintOpen === undefined ? {} : { hintOpen })}
+        >
+          {title}
+        </SectionHeading>
+        {action ? <div className="shrink-0 pb-1">{action}</div> : null}
+      </div>
       {children}
     </section>
   );
@@ -577,6 +583,11 @@ function LiveRow({ session, onOpen }: { session: HomeLiveSession; onOpen: () => 
 
 // ── BEHIND YOU ──────────────────────────────────────────────────────────────
 
+/** How many finished sessions lead the band. The rest are one click away —
+ *  the home query returns fifty, and there is no other list to send anyone to
+ *  (/reports redirects here). */
+const SHOWN_BY_DEFAULT = 6;
+
 export function BehindBand({
   reports,
   followups,
@@ -588,12 +599,28 @@ export function BehindBand({
   loading?: boolean;
   exp?: Experience;
 }) {
+  const [showAll, setShowAll] = useState(false);
   return (
     <Band
       eyebrow="Behind you"
       title="What finished"
       hint="Each session leaves a report: what it answered, what it blocked, what it could not ground."
       hintOpen={teachOpen(exp, { hasContent: reports.length > 0 })}
+      /* The band showed six and said nothing about the rest, and there is no
+         other list — /reports redirects here — so a session older than the
+         sixth was unreachable from anywhere in the product, report and all.
+         Six still lead; the rest are one click away rather than gone. */
+      action={
+        reports.length > SHOWN_BY_DEFAULT ? (
+          <button
+            type="button"
+            onClick={() => setShowAll((v) => !v)}
+            className="text-[12px] text-text-muted underline-offset-2 hover:text-text hover:underline"
+          >
+            {showAll ? "Show fewer" : `All ${reports.length} sessions`}
+          </button>
+        ) : null
+      }
     >
       <div className="mt-3 flex flex-col gap-1.5">
         {loading ? (
@@ -603,7 +630,7 @@ export function BehindBand({
             {NO_FINISHED_SESSIONS.title} {NO_FINISHED_SESSIONS.home}
           </Card>
         ) : (
-          reports.map((r) => (
+          (showAll ? reports : reports.slice(0, SHOWN_BY_DEFAULT)).map((r) => (
             <Card key={r.showId} className="flex items-center gap-3 px-3 py-2.5">
               <FileText className="size-3.5 shrink-0 text-text-muted" aria-hidden />
               <span className="min-w-0 flex-1">
