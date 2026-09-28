@@ -102,14 +102,27 @@ function Player({ t, showId, onDescribe }: { t: ShowTimeline; showId: string; on
   const [mediaDenied, setMediaDenied] = useState(false);
   useEffect(() => {
     let stop = false;
+    const mint = () => {
+      api
+        .mediaToken(showId)
+        .then((r) => {
+          if (stop) return;
+          setMediaToken(r.token);
+          setMediaDenied(false);
+        })
+        .catch(() => !stop && setMediaDenied(true));
+    };
     setMediaToken(null);
     setMediaDenied(false);
-    api
-      .mediaToken(showId)
-      .then((r) => !stop && setMediaToken(r.token))
-      .catch(() => !stop && setMediaDenied(true));
+    mint();
+    // The token lasts an hour. A report is a page someone leaves open — on a
+    // second monitor, across a lunch — and without this the stills and the
+    // scrubber would start 403ing partway through an afternoon with nothing
+    // on screen to explain it. Re-minted well inside the hour instead.
+    const timer = setInterval(mint, 45 * 60_000);
     return () => {
       stop = true;
+      clearInterval(timer);
     };
   }, [showId]);
 
@@ -269,7 +282,11 @@ function Player({ t, showId, onDescribe }: { t: ShowTimeline; showId: string; on
           <button
             type="button"
             onClick={toggle}
-            disabled={!chunks.length}
+            // Without the token `seek` cannot set a src, but `toggle` sets
+            // `playing` regardless — the button flipped to Pause and nothing
+            // played. Sub-second on load, and a control that lies is worse
+            // than one that waits.
+            disabled={!chunks.length || !mediaToken}
             aria-label={playing ? "Pause" : "Play"}
             className="grid size-8 shrink-0 place-items-center rounded-full bg-accent text-accent-foreground transition-transform hover:scale-105 active:scale-95 disabled:opacity-40"
           >
