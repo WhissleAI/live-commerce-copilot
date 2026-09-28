@@ -499,20 +499,48 @@ export const GUARD_ROWS: { guard: GuardName; name: string; checks: string; knob:
     {
       guard: "claim_grounding",
       name: "Grounding",
+      // Rewritten against the guard. The old line made three claims the code
+      // does not make, on the page whose whole job is telling a seller what
+      // protects them:
+      //
+      //   "whose text supports it" — support is a token-overlap and trigram
+      //   test (ratio >= 0.25 or cosine >= 0.18), and `guards.ts` says so in
+      //   as many words: "not an entailment model — a guard that needs an LLM
+      //   to decide is not a guard". Reading it as verified meaning is the one
+      //   misunderstanding that costs trust.
+      //
+      //   "No citation, no send" — a reply that asserts nothing sends with no
+      //   citation at all, by design. That is the hole the follow-up drafts
+      //   went through ("the host will cover it shortly").
+      //
+      //   "abstains instead of guessing" — an uncited assertion comes back
+      //   `revise`, not abstained. Abstention happens upstream in retrieval,
+      //   and pointing at this guard sends an operator to the wrong place.
       checks:
-        "Every claim cites a real fact id whose text supports it. No citation, no send — the copilot abstains instead of guessing.",
+        "Every claim cites a real fact and shares its wording — overlap, not a judgement of meaning. Assert something uncited and it comes back rewritten, not sent. Greetings and deferrals may go uncited.",
       knob: "Automation · confidence floor",
     },
     {
       guard: "tone",
       name: "Tone",
-      checks: "Length, markdown, emoji and the voice you set for the agent.",
+      // An empty reply and profanity are BLOCKS, not voice preferences, and
+      // were not mentioned at all. The rest — length, markdown, emoji, caps,
+      // hype — come back to be rewritten.
+      checks:
+        "An empty reply or profanity is blocked. Length, markdown, emoji, all-caps and unsupported hype come back rewritten.",
       knob: "Voice",
     },
     {
       guard: "pii",
       name: "PII",
-      checks: "E-mail, phone and card-like runs are masked before anything reaches public chat.",
+      // "Masked" was the gateway's behaviour printed against this guard.
+      // `piiGuard` reads no policy and always BLOCKS — the reply is stopped,
+      // not scrubbed and sent — and `redactPii` only travels to the agent's
+      // own content_guardrails, for channels this app is not in front of. So
+      // the knob beside this row changes nothing about the row. Street
+      // addresses were missing from the list too.
+      checks:
+        "An e-mail, phone, card-like run or street address stops the reply here — blocked, not scrubbed. The redact setting reaches the agent, not this check.",
       knob: "Voice · redact PII",
     },
     // The two that enforce somebody ELSE's rules. They were missing from this
