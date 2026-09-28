@@ -285,7 +285,7 @@ function Overview({ o, failed }: { o: AnalyticsOverview | null; failed?: string 
             value={o.gmv.hours ? formatMoney(Math.round(o.gmv.grossCents / o.gmv.hours)) : "—"}
             hint={
               o.gmv.hours
-                ? `gross ÷ ${o.gmv.hours}h across ${o.gmv.showsWithGmv} sessions that sold`
+                ? `gross ÷ ${o.gmv.hours}h across ${o.gmv.showsThatSold} session${o.gmv.showsThatSold === 1 ? "" : "s"} that sold`
                 : "nothing has sold in this window"
             }
           />
