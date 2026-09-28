@@ -309,6 +309,8 @@ export function TopBar({
   account,
   latencyMeter = true,
   surface,
+  onOpenBridge,
+  bridgeClassName,
 }: {
   show: ShowState;
   seller?: SellerProfile | null;
@@ -329,6 +331,21 @@ export function TopBar({
    *  bar has never said "eBay Live" and adding it now would be noise on the
    *  only surface where the title already tells you. */
   surface?: { id: SurfaceId; label: string } | null;
+  /**
+   * Opening the audio bridge, for the widths where the transcript panel that
+   * normally carries it is not rendered.
+   *
+   * That panel lives in the left rail, and the rail is `hidden` below xl. So
+   * on a narrower window chat folded into a sheet, the panel was not rendered
+   * at all, and the bridge could not be opened from anywhere — reported from a
+   * live eBay Live session with chat and proposals on screen and no host audio.
+   * The bar is the one row that survives every width, and host audio is a
+   * session-level thing like Watch and End session already beside it.
+   */
+  onOpenBridge?: (() => void) | undefined;
+  /** Hides this where the transcript panel IS rendered, so the two do not both
+   *  offer it. Passed from the console, which owns the breakpoint. */
+  bridgeClassName?: string | undefined;
 }) {
   const now = useNow();
   const elapsed = (now - new Date(show.startedAt).getTime()) / 1000;
@@ -383,6 +400,19 @@ export function TopBar({
           >
             <ExternalLink className="size-2.5" aria-hidden /> Watch
           </a>
+        ) : null}
+        {onOpenBridge ? (
+          <button
+            type="button"
+            onClick={onOpenBridge}
+            title="Open the audio bridge — the tab that shares this show's sound so the copilot can hear the host"
+            className={cn(
+              "shrink-0 items-center gap-1 rounded-[4px] border border-hairline-strong px-1.5 py-0.5 text-[10px] text-text-muted hover:text-text flex",
+              bridgeClassName,
+            )}
+          >
+            <Radio className="size-2.5" aria-hidden /> Host audio
+          </button>
         ) : null}
         {surface && surface.id !== "ebaylive" && surface.id !== "simulated" ? (
           <span className="hidden shrink-0 rounded-[4px] bg-elevated px-1.5 py-0.5 text-[10px] text-text-muted sm:inline">
