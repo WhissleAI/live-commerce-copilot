@@ -13,12 +13,27 @@
 // blocked. The tab is therefore opened SYNCHRONOUSLY inside the gesture and
 // pointed at the URL once it arrives; a failure closes the tab it opened rather
 // than leaving a blank one behind.
+//
+// The gesture was right and the feature string was not: see `openAudioBridge`.
 import { api, API_BASE } from "./api";
 
 export type BridgeOpenResult = { ok: true } | { ok: false; reason: "blocked" | "failed" };
 
 export async function openAudioBridge(showId: string): Promise<BridgeOpenResult> {
-  const tab = window.open("", "_blank", "noopener,noreferrer");
+  // No `noopener` here, and that is the whole fix.
+  //
+  // `window.open(..., "noopener")` returns NULL by specification — the flag
+  // exists to sever the handle, and `noreferrer` implies it. So
+  // `window.open("", "_blank", "noopener,noreferrer")` always returned null,
+  // the guard below always fired, and every click reported "your browser
+  // blocked the bridge tab" no matter what the browser did. Host audio has
+  // never opened from this path.
+  //
+  // Nothing is given up. The tab is opened on `about:blank` and navigated to
+  // the API origin, which is ours, and the bridge page sends its own
+  // `referrer-policy: no-referrer` (routes.ts) — so the referrer half was
+  // already handled where it can be enforced rather than requested.
+  const tab = window.open("", "_blank");
   if (!tab) return { ok: false, reason: "blocked" };
   try {
     const { url } = await api.bridgeToken(showId);
