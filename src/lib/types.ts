@@ -784,6 +784,9 @@ export interface AnalyticsOverview {
      *  for a per-hour rate. Dividing by `shows.hoursAttached` instead counted
      *  every room that sold nothing and every hour one sat idle. */
     hours: number;
+    /** Shows that took money. `showsWithGmv` counts a session whose gross is
+     *  zero too, so it is a reporting count and not this rate's basis. */
+    showsThatSold: number;
   };
   operator: { medianDecisionMs: number | null; editRate: number | null };
   /** Where it is strong and where it is not, by topic — the evidence the
