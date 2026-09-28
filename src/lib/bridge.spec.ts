@@ -58,3 +58,48 @@ describe("opening the audio bridge", () => {
     expect(tab.location.replace).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * `window.open(..., "noopener")` returns NULL by specification.
+ *
+ * The flag exists to sever the handle, and `noreferrer` implies it. So
+ * `window.open("", "_blank", "noopener,noreferrer")` always returned null, the
+ * "blocked" guard always fired, and every click reported "your browser blocked
+ * the bridge tab" regardless of what the browser did. Host audio never opened.
+ *
+ * The tests above could not see it: they mock `window.open` to return a fake
+ * tab, so the one behaviour that mattered — what the real function does with
+ * THAT argument — was mocked away. This asserts the argument instead.
+ */
+describe("the window.open call itself", () => {
+  it("passes no feature string that makes the browser return null", async () => {
+    const tab = fakeTab();
+    const open = vi.spyOn(window, "open").mockReturnValue(tab as unknown as Window);
+    vi.spyOn(api, "bridgeToken").mockResolvedValue({ url: "/audio-bridge?token=sbt_x" } as never);
+
+    await openAudioBridge("show_1");
+
+    const features = open.mock.calls[0]?.[2];
+    expect(features ?? "").not.toMatch(/noopener/);
+    expect(features ?? "").not.toMatch(/noreferrer/);
+  });
+
+  it("still opens a blank tab first, inside the gesture", async () => {
+    // A popup opened after an await is a popup blocked. That half was always
+    // right; only the feature string was wrong.
+    const tab = fakeTab();
+    const open = vi.spyOn(window, "open").mockReturnValue(tab as unknown as Window);
+    vi.spyOn(api, "bridgeToken").mockResolvedValue({ url: "/audio-bridge?token=sbt_x" } as never);
+
+    await openAudioBridge("show_1");
+
+    expect(open.mock.calls[0]?.[0]).toBe("");
+    expect(open.mock.calls[0]?.[1]).toBe("_blank");
+  });
+
+  it("reports blocked only when the browser really refused", async () => {
+    vi.spyOn(window, "open").mockReturnValue(null);
+    const r = await openAudioBridge("show_1");
+    expect(r).toEqual({ ok: false, reason: "blocked" });
+  });
+});
