@@ -85,6 +85,14 @@ export const USE_MOCKS =
 
 const url = (path: string) => `${BASE}${path}`;
 
+/** The same base every other call uses. Exported for the error reporter, which
+ *  cannot import `get`/`post` — those throw, and a reporter inside an error
+ *  boundary must not. */
+export const apiUrl = url;
+
+/** The bearer header, for the same reason. */
+export const authHeader = (): Record<string, string> => bearer();
+
 // ── session ─────────────────────────────────────────────────────────────────
 //
 // The backend attributes every write to an account, so the console holds a
