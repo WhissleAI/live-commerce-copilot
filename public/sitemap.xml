@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The three pages a stranger is meant to find. Everything else this app serves
+  is behind a session and carries `noindex` — see `noindexMeta` in lib/meta.ts,
+  and `routes-are-indexed-on-purpose.spec.ts` which keeps the two lists in step.
+
+  No <lastmod>. A build-stamped date would say every page changed on every
+  deploy, which is not true and is exactly the signal a crawler learns to
+  discount; a hand-written one goes stale the first time nobody remembers it.
+  Three URLs need no prioritising either, so <priority> and <changefreq> are
+  left out rather than invented.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://sidestage.whissle.ai/</loc></url>
+  <url><loc>https://sidestage.whissle.ai/privacy</loc></url>
+  <url><loc>https://sidestage.whissle.ai/terms</loc></url>
+</urlset>

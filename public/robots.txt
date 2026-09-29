@@ -1,3 +1,11 @@
+# Every crawler is allowed in, deliberately.
+#
+# The pages behind a session say `noindex` in their own head, and a crawler has
+# to be able to FETCH a page to be told that. A Disallow here would block the
+# fetch instead, which leaves any URL that is linked from anywhere eligible to
+# be indexed with no snippet — a worse search result than no result. So: allow
+# the crawl, and let each page say whether it belongs in an index.
+
 User-agent: Googlebot
 Allow: /
 
@@ -12,3 +20,5 @@ Allow: /
 
 User-agent: *
 Allow: /
+
+Sitemap: https://sidestage.whissle.ai/sitemap.xml

@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { noindexMeta } from "@/lib/meta";
 import { SetupPage } from "@/components/pages/SetupPage";
 
 export const Route = createFileRoute("/setup")({
-  head: () => ({ meta: [{ title: "SideStage — Monitor a session" }] }),
+  head: () => ({ meta: [{ title: "SideStage — Monitor a session" }, ...noindexMeta()] }),
   validateSearch: (search: Record<string, unknown>): { showId?: string } =>
     typeof search["showId"] === "string" ? { showId: search["showId"] } : {},
   component: function SetupRoute() {

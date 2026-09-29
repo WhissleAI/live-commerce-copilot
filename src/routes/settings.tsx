@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { noindexMeta } from "@/lib/meta";
 import { SettingsPage, type SettingsTab, SETTINGS_TABS } from "@/components/pages/SettingsPage";
 
 export const Route = createFileRoute("/settings")({
-  head: () => ({ meta: [{ title: "SideStage — Settings" }] }),
+  head: () => ({ meta: [{ title: "SideStage — Settings" }, ...noindexMeta()] }),
   // `/settings?tab=ebay` opens straight onto a tab, so a "Connect" link from
   // Shows lands on the eBay panel rather than on Guardrails.
   validateSearch: (s: Record<string, unknown>): { tab?: SettingsTab } =>
