@@ -395,6 +395,12 @@ export function Console() {
         else if (editingId) setEditingId(null);
         else if (inspect) setInspect(null);
         else if (costOpen) setCostOpen(false);
+        // The two overlay drawers, last: they are the least modal thing on
+        // screen, so anything genuinely on top of them gets Escape first. Before
+        // this they could not be closed with the keyboard at all, in a console
+        // whose whole keymap is printed on the card.
+        else if (drawerOpen) setDrawerOpen(false);
+        else if (railOpen) setRailOpen(false);
         return;
       }
       // `?` is the console's own overlay, so it must be able to close itself
@@ -522,6 +528,10 @@ export function Console() {
     closeLegend,
     costOpen,
     decidable,
+    // Both read by the Escape chain. Missing here they would be captured stale,
+    // and the symptom would be Escape silently not closing a drawer — the exact
+    // thing this change is for.
+    drawerOpen,
     editingId,
     failed,
     focusedId,
@@ -531,6 +541,7 @@ export function Console() {
     openInspect,
     paletteOpen,
     pushToast,
+    railOpen,
     send,
     shortcutsOpen,
   ]);
@@ -887,6 +898,24 @@ export function Console() {
             onInspect={(id) => openInspect({ kind: "proposal", id })}
             guardOrder={guardOrder}
           />
+          {/* One scrim, behind whichever drawer is open.
+              Without it a 300px panel simply sat on top of the queue with no
+              edge and nothing to click to get rid of it — reported as "overlays
+              in an ugly manner on top and no way to close". A scrim does three
+              things at once: it separates the drawer from what it covers, it
+              says the thing underneath is not currently the subject, and it is
+              the target every person tries first. */}
+          {drawerOpen ? (
+            <button
+              type="button"
+              aria-label="Close the incoming panel"
+              onClick={() => setDrawerOpen(false)}
+              className={cn(
+                "anim-in absolute inset-0 z-20 cursor-default bg-canvas/55",
+                sidePanel ? "2xl:hidden" : "xl:hidden",
+              )}
+            />
+          ) : null}
           {drawerOpen ? (
             // The drawer carries BOTH halves of the incoming rail, in the same
             // proportions the wide layout uses.
@@ -900,11 +929,29 @@ export function Console() {
             // simply unreachable at that window width.
             <div
               className={cn(
-                "anim-in absolute inset-y-0 left-0 z-30 flex w-[300px] flex-col z3",
+                "anim-in absolute inset-y-0 left-0 z-30 flex w-[300px] flex-col overflow-hidden rounded-r-md bg-panel shadow-[2px_0_12px_rgba(0,0,0,0.18)] z3",
                 sidePanel ? "2xl:hidden" : "xl:hidden",
               )}
+              role="dialog"
+              aria-label="Incoming: buyer chat and the host"
             >
-              <div className={cn("flex min-h-0 flex-col", layout.hostAudio ? "flex-[3]" : "flex-1")}>
+              {/* Its own close row, the same shape the session rail uses.
+                  This drawer had none: it covered the very button that opened it,
+                  so the only way out was to find that button underneath. */}
+              <div className="flex h-[26px] shrink-0 items-center justify-between px-3 shadow-[0_1px_0_var(--hairline)]">
+                <span className="section-header">{layout.hostAudio ? "Chat & host" : "Chat"}</span>
+                <button
+                  type="button"
+                  onClick={() => setDrawerOpen(false)}
+                  aria-label="Close the incoming panel"
+                  className="text-text-muted hover:text-text"
+                >
+                  <X className="size-3.5" aria-hidden />
+                </button>
+              </div>
+              <div
+                className={cn("flex min-h-0 flex-col", layout.hostAudio ? "flex-[3]" : "flex-1")}
+              >
                 <ChatColumn
                   chat={chat}
                   onInject={(text) => void api.injectChat("you", text)}
@@ -915,6 +962,10 @@ export function Console() {
               </div>
               {layout.hostAudio ? (
                 <div className="flex min-h-0 flex-[2] flex-col">
+                  {/* No `onOpenBridge` here on purpose: the header already carries
+                      Host audio, and two buttons for one action inside 300px of
+                      drawer is noise. The wide rail keeps its copy, because there
+                      the header can be scrolled away. */}
                   <TranscriptPanel
                     transcript={transcript}
                     levels={levels}
@@ -922,7 +973,6 @@ export function Console() {
                     listen={store.listen}
                     surface={surfaceId}
                     {...(frameSrc ? { frameSrc } : {})}
-                    {...(openBridge ? { onOpenBridge: openBridge } : {})}
                   />
                 </div>
               ) : layout.threadPanel ? (
@@ -934,6 +984,15 @@ export function Console() {
           ) : null}
         </PanelBoundary>
 
+        {/* The session rail's scrim, for the same reason as the incoming one. */}
+        {railOpen ? (
+          <button
+            type="button"
+            aria-label="Close the session rail"
+            onClick={() => setRailOpen(false)}
+            className="anim-in absolute inset-0 z-20 cursor-default bg-canvas/55 lg:hidden"
+          />
+        ) : null}
         {/* One instance, two layouts: a column at ≥1024, an overlay below it.
             Two instances would mean two subscriptions to the verify-chain
             event and two chains verified on one click. */}
