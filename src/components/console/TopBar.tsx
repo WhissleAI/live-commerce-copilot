@@ -231,6 +231,10 @@ function AutonomyLadder({
       {open && (
         <div
           role="menu"
+          // A menu with no accessible name is announced as just "menu". This one
+          // changes what the copilot may do without a human, which is the last
+          // control that should be anonymous.
+          aria-label="Autonomy level"
           onKeyDown={(e) => {
             const items = Array.from(
               box.current?.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]') ?? [],
