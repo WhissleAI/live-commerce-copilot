@@ -301,17 +301,17 @@ export function ReportPage({ showId }: { showId: string }) {
               label="Time to answer p95"
               // Question typed → sendable reply on screen. A session with no
               // answerable question has no latency, not a zero-millisecond one.
-              value={e.answered && e.p95LatencyMs > 0 ? ms(e.p95LatencyMs) : "—"}
+              value={e.answered && e.p95LatencyMs != null && e.p95LatencyMs > 0 ? ms(e.p95LatencyMs) : "—"}
               // PRD §4 sets this at 10 s, not the 2 s the original brief asked
               // for: past roughly a minute the buyer has scrolled, and the
               // number that matters is whether the answer still converts. This
               // tile graded against the brief long after the PRD moved, so a
               // 3 s p95 — comfortably inside target — rendered as a miss.
-              {...(e.answered && e.p95LatencyMs > 0
+              {...(e.answered && e.p95LatencyMs != null && e.p95LatencyMs > 0
                 ? { target: targetLabel(P95_ANSWER_MS), targetMet: e.p95LatencyMs < P95_ANSWER_MS }
                 : {})}
               hint={
-                e.answered && e.p95LatencyMs > 0
+                e.answered && e.p95LatencyMs != null && e.p95LatencyMs > 0
                   ? `median ${ms(e.medianLatencyMs)} · cache hit ${pct(e.cacheHitRate)} · ${e.sent} sent`
                   : "nothing was answerable, so there is no time to report"
               }

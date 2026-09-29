@@ -850,7 +850,8 @@ export interface AnalyticsOverview {
     durationMin: number;
     /** Null when nothing was asked — the backend sends null, not zero. */
     answeredRate: number | null;
-    p95LatencyMs: number;
+    /** Null when the session answered nothing. */
+    p95LatencyMs: number | null;
     blocked: number;
     flaggedWrong: number;
     gmvCents: number | null;
@@ -952,8 +953,10 @@ export interface ShowReport {
     sent: number;
     /** Null when nothing was asked — the backend sends null, not zero. */
     answeredRate: number | null;
-    medianLatencyMs: number;
-    p95LatencyMs: number;
+    /** Null when the session answered nothing. */
+    medianLatencyMs: number | null;
+    /** Null when the session answered nothing. */
+    p95LatencyMs: number | null;
     cacheHitRate: number | null;
   };
   safety: {

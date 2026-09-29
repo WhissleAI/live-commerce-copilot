@@ -469,7 +469,7 @@ export function BySession({ rows }: { rows: AnalyticsOverview["perShow"] }) {
                   <td
                     className={cn(
                       "num px-3 py-2 text-right",
-                      measured && r.p95LatencyMs > P95_ANSWER_MS && "text-bad",
+                      measured && r.p95LatencyMs != null && r.p95LatencyMs > P95_ANSWER_MS && "text-bad",
                     )}
                   >
                     {measured && r.p95LatencyMs ? ms(r.p95LatencyMs) : "—"}
