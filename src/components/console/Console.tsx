@@ -28,6 +28,7 @@ import {
   streamTitle,
 } from "@/lib/copy";
 import { useShowStream } from "@/hooks/useShowStream";
+import { useDialog } from "@/hooks/useDialog";
 import {
   capabilitiesOf,
   consoleLayout,
@@ -119,6 +120,7 @@ export function Console() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const incomingDrawer = useRef<HTMLDivElement | null>(null);
 
   /**
    * A show-scoped token, so the console can render the camera frame the vision
@@ -190,6 +192,7 @@ export function Console() {
       };
   /** Below 1024 the session rail is a drawer rather than a column. */
   const [railOpen, setRailOpen] = useState(false);
+  const sessionDrawer = useRef<HTMLDivElement | null>(null);
   // Shown once per browser, the first time a card could possibly appear.
   const [legendOpen, setLegendOpen] = useState(() => !legendSeen());
   const closeLegend = useCallback(() => {
@@ -214,6 +217,41 @@ export function Console() {
   // Something is open on the right, so the chat column gives up its width
   // one breakpoint later than usual.
   const sidePanel = inspect !== null || costOpen;
+
+  // A drawer is the narrow-layout form of a column that is resident when there
+  // is room for it — but nothing tied the state to the width. Open the chat
+  // sheet at 1200, widen to 1400, and the drawer was still "open": invisible
+  // behind its own `xl:hidden`, with the toggle that would close it hidden at
+  // that width too, so there was no way to put it away. Narrow the window and
+  // it reappeared, unasked, over a queue the seller was reading.
+  //
+  // Closing at the breakpoint is also what makes it safe to hold focus inside
+  // one: a trap on a `display:none` element has nothing to focus.
+  //
+  // The thresholds follow the classNames on the drawers themselves — the
+  // incoming sheet gives way at 2xl while a side panel is open, xl otherwise.
+  useEffect(() => {
+    const incoming = window.matchMedia(sidePanel ? "(min-width: 1536px)" : "(min-width: 1280px)");
+    const session = window.matchMedia("(min-width: 1024px)");
+    const sync = () => {
+      if (incoming.matches) setDrawerOpen(false);
+      if (session.matches) setRailOpen(false);
+    };
+    sync();
+    incoming.addEventListener("change", sync);
+    session.addEventListener("change", sync);
+    return () => {
+      incoming.removeEventListener("change", sync);
+      session.removeEventListener("change", sync);
+    };
+  }, [sidePanel]);
+
+  // Both drawers cover the work area behind a scrim, so both are modal in
+  // behaviour and both now say so. `useDialog` gives them what the app's other
+  // six dialogs already had: focus on open, Tab kept inside, focus given back
+  // on close. Escape stays in the console's own ordered chain above.
+  useDialog(incomingDrawer, drawerOpen);
+  useDialog(sessionDrawer, railOpen);
 
   // Who this console is acting as. Minted on first load so the audit chain can
   // answer "who approved that markdown" — it could not, when every write was
@@ -941,7 +979,9 @@ export function Console() {
               "anim-in absolute inset-y-2 left-2 z-30 flex w-[300px] flex-col overflow-hidden rounded-md bg-panel shadow-[2px_0_12px_rgba(0,0,0,0.18)] z3",
               sidePanel ? "2xl:hidden" : "xl:hidden",
             )}
+            ref={incomingDrawer}
             role="dialog"
+            aria-modal="true"
             aria-label="Incoming: buyer chat and the host"
           >
             {/* Its own close row, the same shape the session rail uses.
@@ -1001,14 +1041,22 @@ export function Console() {
         ) : null}
         {/* One instance, two layouts: a column at ≥1024, an overlay below it.
             Two instances would mean two subscriptions to the verify-chain
-            event and two chains verified on one click. */}
+            event and two chains verified on one click.
+
+            It is a dialog only in the second form. A permanent `role="dialog"`
+            would announce the show rail as a modal to every screen-reader user
+            at every width, including the one where it is simply a column. */}
         <div
+          ref={sessionDrawer}
           className={cn(
             "flex min-h-0 flex-col overflow-hidden rounded-md bg-panel",
             railOpen
               ? "absolute inset-y-2 right-2 z-30 w-[340px] z3 lg:static lg:inset-auto lg:z-auto lg:w-auto lg:z1"
               : "hidden lg:flex lg:z1",
           )}
+          {...(railOpen
+            ? { role: "dialog", "aria-modal": true, "aria-label": "Session: the show" }
+            : {})}
         >
           {railOpen ? (
             // The drawer gets its own close row rather than a floating ✕: the

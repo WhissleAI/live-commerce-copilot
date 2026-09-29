@@ -10,6 +10,9 @@ import { useRef, useState } from "react";
 import { describe, expect, it } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { useDialog } from "./useDialog";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { globSync } from "node:fs";
 
 function Harness({ initial }: { initial?: string }) {
   const ref = useRef<HTMLDivElement | null>(null);
@@ -89,5 +92,46 @@ describe("useDialog", () => {
     behind.focus();
     fireEvent.keyDown(document, { key: "Tab" });
     expect(document.activeElement).toBe(behind);
+  });
+});
+
+describe("every dialog in the app actually uses it", () => {
+  // The hook's own note names the dialogs it was written for. `ReportTimeline`
+  // was on that list and was never wired: the frame viewer opened with focus
+  // still behind it, Tab walked the report underneath, and closing it dropped
+  // focus onto <body>. A docstring is not a call site.
+  //
+  // The two console drawers were added later. Both cover the work area behind
+  // a scrim, so both are modal in behaviour and both belong here too.
+  const callers = [
+    "src/components/app/DeleteShowDialog.tsx",
+    "src/components/app/CommandBar.tsx",
+    "src/components/console/CommandPalette.tsx",
+    "src/components/console/ShortcutsOverlay.tsx",
+    "src/components/console/LegendOverlay.tsx",
+    "src/components/pages/ReportTimeline.tsx",
+    "src/components/console/Console.tsx",
+  ];
+
+  it.each(callers)("%s calls useDialog", (file) => {
+    expect(readFileSync(join(process.cwd(), file), "utf8")).toMatch(/\buseDialog\(/);
+  });
+
+  it("nothing declares itself a dialog without taking focus", () => {
+    // Anything that says `role="dialog"` is promising the three behaviours this
+    // hook provides. The check is the promise, not a list someone remembers to
+    // keep up to date.
+    const declaring = globSync("src/components/**/*.tsx").filter((f) => {
+      if (f.endsWith(".spec.tsx")) return false;
+      const src = readFileSync(join(process.cwd(), f), "utf8");
+      return /role[:=]\s*"dialog"/.test(src);
+    });
+    expect(declaring.length, "no dialogs found — the glob is wrong").toBeGreaterThan(3);
+    for (const f of declaring) {
+      expect(
+        readFileSync(join(process.cwd(), f), "utf8"),
+        `${f} is a dialog that never takes focus`,
+      ).toMatch(/\buseDialog\(/);
+    }
   });
 });

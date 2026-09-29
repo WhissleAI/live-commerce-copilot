@@ -99,6 +99,33 @@ describe("a drawer can always be closed", () => {
     }
   });
 
+  it("both drawers say they are modal, and the rail only while it is one", () => {
+    // A full-width scrim makes a panel modal in fact; `aria-modal` is it
+    // saying so. The session rail is the same element twice over — a resident
+    // column at >=1024, an overlay below — so it claims to be a dialog only in
+    // the second form, or every screen-reader user is told the show rail is a
+    // modal at every width.
+    expect(drawerSource()).toContain('aria-modal="true"');
+    expect(code).toMatch(/railOpen\s*\n?\s*\?\s*\{\s*role: "dialog"/);
+  });
+
+  it("a drawer does not survive the width that replaces it", () => {
+    // Open the chat sheet at 1200, widen to 1400: the drawer was still open,
+    // invisible behind its own `xl:hidden`, with the toggle that would close it
+    // hidden at that width too. Narrowing again brought it back unasked.
+    // It is also what makes holding focus inside one safe — a trap on a
+    // `display:none` element has nothing to focus.
+    expect(code).toContain("(min-width: 1536px)");
+    expect(code).toContain("(min-width: 1280px)");
+    expect(code).toContain("(min-width: 1024px)");
+    const sync = code.slice(code.indexOf("(min-width: 1536px)"));
+    expect(sync).toContain("setDrawerOpen(false)");
+    expect(sync).toContain("setRailOpen(false)");
+    // The incoming sheet gives way at 2xl while a side panel is open and xl
+    // otherwise — the same condition its own className carries.
+    expect(code).toMatch(/sidePanel \? "\(min-width: 1536px\)" : "\(min-width: 1280px\)"/);
+  });
+
   it("the drawer is inset from the work area's edge, like the session rail", () => {
     // Flush against the viewport edge it read as a torn-off strip rather than a
     // panel; the rail opposite it is already inset by the grid's own padding.

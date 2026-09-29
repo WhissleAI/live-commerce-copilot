@@ -22,6 +22,7 @@ import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { ShowTimeline, SignalDistribution, TimelineFrame, Utterance } from "@/lib/types";
 import { Badge, Button, Card, EmptyState, Skeleton } from "@/components/ui/kit";
+import { useDialog } from "@/hooks/useDialog";
 
 /** `EMOTION_HAPPY` → `happy`. */
 export function pretty(raw: string): string {
@@ -500,11 +501,21 @@ function Lightbox({
   onNext: () => void;
   onPlay: () => void;
 }) {
+  // `useDialog`'s own note lists this as one of the six dialogs it fixed. It was
+  // never wired: the frame viewer opened with focus still behind it, Tab walked
+  // the report underneath, and closing it dropped focus onto <body>. Prev/Next
+  // is the first control, which is what someone opening a frame wants, so there
+  // is no reason to override the default.
+  const dialog = useRef<HTMLDivElement | null>(null);
+  useDialog(dialog, true);
   return (
     <div
+      ref={dialog}
       role="dialog"
       aria-modal="true"
-      aria-label="Frame"
+      // "Frame" named the element, not the thing. What is on screen is a moment
+      // of the show and what the copilot read in it.
+      aria-label={`Frame ${index + 1} of ${count} — ${frame.reading}`}
       className="anim-fade fixed inset-0 z-50 grid place-items-center bg-black/70 p-4"
       onClick={onClose}
     >
