@@ -47,3 +47,35 @@ describe("the audio bridge is reachable at every width", () => {
     expect(consoleSrc).toMatch(/USE_MOCKS\s*\n?\s*\?\s*null/);
   });
 });
+
+/**
+ * Starting host audio was four actions.
+ *
+ * Watch, then Host audio, then Start capture, then pick the tab. The first two
+ * are the same intent — "let the copilot hear this show" — so one button does
+ * both now.
+ *
+ * The picker is the floor and stays: `getDisplayMedia` needs a gesture in the
+ * tab that calls it, and Chrome draws the chooser itself, so no page can pick a
+ * tab or tick "Share tab audio" for anyone. Only an extension gets past that.
+ */
+describe("one click to start host audio", () => {
+  it("opens the bridge BEFORE the show, so a blocked popup cannot cost the capture", () => {
+    const src = readFileSync(join(process.cwd(), "src/components/console/TopBar.tsx"), "utf8");
+    const handler = src.slice(src.indexOf("onOpenBridge();"), src.indexOf("title=\"Open the audio bridge"));
+    // The bridge call must come first in the handler.
+    expect(src.indexOf("onOpenBridge();")).toBeLessThan(src.indexOf('window.open(liveUrl'));
+    // And the show tab's failure must be swallowed, never thrown.
+    expect(handler).toContain("catch");
+  });
+
+  it("hands the third-party tab no reference back to the console", () => {
+    const src = readFileSync(join(process.cwd(), "src/components/console/TopBar.tsx"), "utf8");
+    expect(src).toContain('window.open(liveUrl, "_blank", "noopener")');
+  });
+
+  it("still keeps Watch, which is the fallback when the popup is refused", () => {
+    const src = readFileSync(join(process.cwd(), "src/components/console/TopBar.tsx"), "utf8");
+    expect(src).toContain("> Watch");
+  });
+});

@@ -431,8 +431,32 @@ export function TopBar({
         {onOpenBridge ? (
           <button
             type="button"
-            onClick={onOpenBridge}
-            title="Open the audio bridge — the tab that shares this show's sound so the copilot can hear the host"
+            onClick={() => {
+              // The bridge FIRST, and the show second.
+              //
+              // Starting host audio was four actions: Watch, Host audio, Start
+              // capture, then pick the tab. The first two are the same intent, so
+              // this does both — but in this order, because a popup blocker that
+              // refuses the second window must never be the one that costs the
+              // capture. If the show tab is refused, `Watch` is still right there;
+              // if the BRIDGE were refused there would be nothing to click.
+              //
+              // The picker cannot go. `getDisplayMedia` needs a gesture in the tab
+              // that calls it and Chrome draws the chooser itself — a page cannot
+              // pick a tab or tick "Share tab audio" for anyone. Only an extension
+              // gets past that.
+              onOpenBridge();
+              if (liveUrl) {
+                // `noopener`: this hands a third-party origin a tab, and it has no
+                // business holding a reference back to the console.
+                try {
+                  window.open(liveUrl, "_blank", "noopener");
+                } catch {
+                  /* a blocked popup is why `Watch` stays */
+                }
+              }
+            }}
+            title="Open the audio bridge and this show's stream — then click Start capture and pick that tab"
             className={cn(
               "shrink-0 items-center gap-1 rounded-[4px] border border-hairline-strong px-1.5 py-0.5 text-[10px] text-text-muted hover:text-text flex",
               bridgeClassName,
