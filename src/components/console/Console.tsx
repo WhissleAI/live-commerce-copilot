@@ -338,16 +338,20 @@ export function Console() {
         return;
       }
       // `?` is the console's own overlay, so it must be able to close itself
-      // while it is the thing on screen. It is still a character, though.
-      if (e.key === "?" && !isTypingIn(document.activeElement)) {
+      // while it is the thing on screen. It is still a character, though — and
+      // still not ours with a modifier held.
+      if (e.key === "?" && !cmd && !e.altKey && !isTypingIn(document.activeElement)) {
         if (!shortcutsOpen && modalOpen()) return;
         e.preventDefault();
         setShortcutsOpen((o) => !o);
         return;
       }
-      // One rule, in `lib/keys`: no modal up, not typing, and — for Enter
-      // only — no button already claiming the key.
-      if (!shortcutActs(e.key)) return;
+      // One rule, in `lib/keys`: no modifier, not mid-IME, no modal up, not
+      // typing, and — for Enter only — no button already claiming the key. It
+      // takes the event because the modifier is a fact about the event: passing
+      // `e.key` alone is how ⌘R came to regenerate a draft and swallow the
+      // reload, and ⌘A to approve an action instead of selecting all.
+      if (!shortcutActs(e)) return;
 
       const focused = decidable.find((p) => p.id === focusedId);
       switch (e.key) {

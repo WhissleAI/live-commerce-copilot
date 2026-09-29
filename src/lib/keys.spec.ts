@@ -12,6 +12,8 @@
  */
 
 import { afterEach, describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { activatesOnEnter, isTypingIn, modalOpen, shortcutActs } from "./keys";
 
 function mount(html: string): HTMLElement {
@@ -78,31 +80,89 @@ describe("shortcutActs", () => {
     const host = mount(`<button id="b">Edit</button>`);
     host.querySelector<HTMLButtonElement>("#b")!.focus();
     for (const key of ["j", "k", "e", "x", "r", "a", "u", "i"]) {
-      expect(shortcutActs(key)).toBe(true);
+      expect(shortcutActs({ key: key })).toBe(true);
     }
   });
 
   it("still refuses Enter while a button holds it, so it cannot double-fire", () => {
     const host = mount(`<button id="b">Edit</button>`);
     host.querySelector<HTMLButtonElement>("#b")!.focus();
-    expect(shortcutActs("Enter")).toBe(false);
+    expect(shortcutActs({ key: "Enter" })).toBe(false);
   });
 
   it("refuses every key while the legend is up, so Enter cannot send (CONTENT-35)", () => {
     mount(`<div role="dialog" aria-label="What the pills mean"></div>`);
     for (const key of ["Enter", "j", "k", "x", "r"]) {
-      expect(shortcutActs(key)).toBe(false);
+      expect(shortcutActs({ key: key })).toBe(false);
     }
   });
 
   it("refuses every key while the operator is editing a draft", () => {
     const host = mount(`<textarea id="t"></textarea>`);
     host.querySelector<HTMLTextAreaElement>("#t")!.focus();
-    expect(shortcutActs("j")).toBe(false);
-    expect(shortcutActs("Enter")).toBe(false);
+    expect(shortcutActs({ key: "j" })).toBe(false);
+    expect(shortcutActs({ key: "Enter" })).toBe(false);
   });
 
   it("acts on a bare document", () => {
-    expect(shortcutActs("Enter")).toBe(true);
+    expect(shortcutActs({ key: "Enter" })).toBe(true);
+  });
+});
+
+describe("a modifier is not ours", () => {
+  /** What the console's switch does with each of these, bare. */
+  const HARM: Record<string, string> = {
+    r: "regenerates the focused draft, and swallows the reload",
+    a: "approves a marketplace action instead of selecting all",
+    x: "dismisses the focused card instead of cutting",
+    k: "moves the queue selection while the command bar opens",
+    e: "opens the editor",
+    u: "rolls a committed action back",
+    i: "opens the inspector",
+    Enter: "sends the focused reply",
+  };
+
+  it("refuses every shortcut key while ⌘ or Ctrl is held", () => {
+    for (const [key, what] of Object.entries(HARM)) {
+      expect(shortcutActs({ key, metaKey: true }), `⌘${key} ${what}`).toBe(false);
+      expect(shortcutActs({ key, ctrlKey: true }), `Ctrl+${key} ${what}`).toBe(false);
+    }
+  });
+
+  it("refuses Alt too, which types a character on a Mac", () => {
+    expect(shortcutActs({ key: "u", altKey: true })).toBe(false);
+  });
+
+  it("still acts on Shift, because the keymap is case-insensitive", () => {
+    // `case "x": case "X":` — Shift+X is the same shortcut, deliberately, and
+    // `?` cannot be typed without Shift at all.
+    for (const key of ["J", "K", "E", "X", "R", "A", "U", "I"]) {
+      expect(shortcutActs({ key, shiftKey: true } as never)).toBe(true);
+    }
+  });
+
+  it("refuses a keypress that belongs to an IME candidate", () => {
+    // Enter while composing commits the candidate. It must not also send.
+    expect(shortcutActs({ key: "Enter", isComposing: true })).toBe(false);
+  });
+
+  it("takes a real KeyboardEvent unchanged", () => {
+    // The call site passes `e`. If the shape drifted from the DOM's, this fails.
+    expect(shortcutActs(new KeyboardEvent("keydown", { key: "j" }))).toBe(true);
+    expect(shortcutActs(new KeyboardEvent("keydown", { key: "j", metaKey: true }))).toBe(false);
+  });
+});
+
+describe("the console passes the event, not the key", () => {
+  it("calls shortcutActs(e)", () => {
+    // The whole fix is in the argument. `shortcutActs(e.key)` typechecks as
+    // never again, but the `?` branch has its own inline guard and that one can
+    // only be held here.
+    const src = readFileSync(join(process.cwd(), "src/components/console/Console.tsx"), "utf8");
+    expect(src).toContain("shortcutActs(e)");
+    expect(src).not.toContain("shortcutActs(e.key)");
+    // `?` is checked inline rather than through the rule, so it needs the same
+    // two exclusions written out.
+    expect(src).toMatch(/e\.key === "\?" && !cmd && !e\.altKey/);
   });
 });

@@ -14,6 +14,15 @@
  *    is an Enter problem, so it is fixed at Enter (`activatesOnEnter`) and
  *    nowhere else.
  *
+ *  - A modifier was not part of the rule at all. `shortcutActs` took a KEY, so
+ *    it could not tell ⌘R from R, and the console's switch ran for both —
+ *    `preventDefault()` included. ⌘R regenerated the focused draft and the page
+ *    did not reload; ⌘A approved a marketplace action instead of selecting all;
+ *    ⌘X dismissed the focused card instead of cutting; ⌘K opened the command bar
+ *    AND moved the queue's selection. Universal keystrokes, doing product work,
+ *    silently. It takes the EVENT now, because "bare key" is a fact about the
+ *    event and cannot be inferred from `key` alone.
+ *
  *  - Only the research palette was treated as a modal. The legend opens by
  *    itself on a new browser, and Enter — the reflex that dismisses a modal —
  *    reached the queue and approved a reply the operator had not read. Modals
@@ -57,17 +66,40 @@ export function modalOpen(doc: Document = document): boolean {
   return doc.querySelector('[role="dialog"]') !== null;
 }
 
+/** What the rule needs off a keydown. A real `KeyboardEvent` satisfies it. */
+export interface Keypress {
+  key: string;
+  metaKey?: boolean;
+  ctrlKey?: boolean;
+  altKey?: boolean;
+  /** Mid-IME composition: the keypress belongs to the candidate, not to us. */
+  isComposing?: boolean;
+}
+
 /**
  * Should a bare single-key shortcut act right now?
  *
- * `key` matters for exactly one reason: Enter is the key a focused button has
- * a prior claim on. Everything else is the queue's while no modal is up and
- * nothing is being typed into.
+ * Four refusals, in the order they cost something:
+ *
+ *  a modifier is held   ⌘/Ctrl/Alt means the keystroke belongs to the browser or
+ *                       the OS. SHIFT does not: the console's own keymap is
+ *                       case-insensitive (`case "x": case "X":`) and `?` needs
+ *                       Shift to type at all.
+ *  mid-composition      an IME's Enter commits a candidate. Composition happens
+ *                       inside a text field, which the typing check already
+ *                       covers, but the flag is one line and is the correct
+ *                       reason rather than a lucky one.
+ *  a modal is up        see `modalOpen`.
+ *  something is typed into  see `isTypingIn`.
+ *
+ * And then Enter alone, which a focused button has a prior claim on.
  */
-export function shortcutActs(key: string, doc: Document = document): boolean {
+export function shortcutActs(e: Keypress, doc: Document = document): boolean {
+  if (e.metaKey || e.ctrlKey || e.altKey) return false;
+  if (e.isComposing) return false;
   if (modalOpen(doc)) return false;
   const el = doc.activeElement;
   if (isTypingIn(el)) return false;
-  if (key === "Enter" && activatesOnEnter(el)) return false;
+  if (e.key === "Enter" && activatesOnEnter(el)) return false;
   return true;
 }
