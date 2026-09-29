@@ -46,6 +46,7 @@ import type {
   SurfaceInfo,
 } from "@/lib/types";
 import { TopBar } from "./TopBar";
+import { PanelBoundary } from "./PanelBoundary";
 import { ChatColumn } from "./ChatColumn";
 import { ProposalQueue } from "./ProposalQueue";
 import { ShowRail } from "./ShowRail";
@@ -714,7 +715,7 @@ export function Console() {
             sidePanel ? "2xl:flex" : "xl:flex",
           )}
         >
-          <div className="flex min-h-0 flex-[3] flex-col">
+          <PanelBoundary name="Buyer chat" className="flex min-h-0 flex-[3] flex-col">
             <ChatColumn
               chat={chat}
               onInject={(text) => void api.injectChat("you", text).catch(failed("Not injected"))}
@@ -722,13 +723,13 @@ export function Console() {
               linkedProposalIds={new Set(live.map((p) => p.id))}
               onAnswerDropped={answerDropped}
             />
-          </div>
+          </PanelBoundary>
           {/* The lower half of the incoming rail is whatever this surface
               actually carries: the host's voice where there is one, the branch
               above the comment where the conversation is a tree, and nothing at
               all where it is neither — in which case chat takes the column. */}
           {layout.hostAudio ? (
-            <div className="flex min-h-0 flex-[2] flex-col">
+            <PanelBoundary name="The host" className="flex min-h-0 flex-[2] flex-col">
               <TranscriptPanel
                 transcript={transcript}
                 levels={levels}
@@ -737,7 +738,7 @@ export function Console() {
                 surface={surfaceId}
                 {...(openBridge ? { onOpenBridge: openBridge } : {})}
               />
-            </div>
+            </PanelBoundary>
           ) : layout.threadPanel ? (
             <div className="flex min-h-0 flex-[2] flex-col">
               <ThreadPanel thread={focusedThread} room={show.room ?? null} />
@@ -745,7 +746,7 @@ export function Console() {
           ) : null}
         </div>
 
-        <div className="relative flex min-h-0 flex-col overflow-hidden rounded-md bg-panel z1">
+        <PanelBoundary name="Proposals" className="relative flex min-h-0 flex-col overflow-hidden rounded-md bg-panel z1">
           {/* One fact that explains every card under it.
               A session attached without a catalog answers nothing: retrieval
               has no listings to ground on, so every draft comes back deferring
@@ -824,7 +825,7 @@ export function Console() {
               />
             </div>
           ) : null}
-        </div>
+        </PanelBoundary>
 
         {/* One instance, two layouts: a column at ≥1024, an overlay below it.
             Two instances would mean two subscriptions to the verify-chain
@@ -853,23 +854,25 @@ export function Console() {
               </button>
             </div>
           ) : null}
-          <ShowRail
-            pinned={pinned}
-            queue={queue}
-            flashed={flashed}
-            actions={actions}
-            audit={audit}
-            onApprove={(id) => void api.approveAction(id).catch(failed("Not approved"))}
-            onReject={(id) => void api.rejectAction(id).catch(failed("Not rejected"))}
-            onRollback={(id) => void api.rollbackAction(id).catch(failed("Not rolled back"))}
-            onRename={(id, title) => {
-              void api
-                .nameLot(id, title)
-                .then((l) => toasts.push({ tone: "ok", text: `Lot named · ${l.title}` }));
-            }}
-            onInspect={(seq) => openInspect({ kind: "audit", seq })}
-            showLots={layout.lotRail}
-          />
+          <PanelBoundary name="The show" className="flex min-h-0 flex-1 flex-col">
+            <ShowRail
+              pinned={pinned}
+              queue={queue}
+              flashed={flashed}
+              actions={actions}
+              audit={audit}
+              onApprove={(id) => void api.approveAction(id).catch(failed("Not approved"))}
+              onReject={(id) => void api.rejectAction(id).catch(failed("Not rejected"))}
+              onRollback={(id) => void api.rollbackAction(id).catch(failed("Not rolled back"))}
+              onRename={(id, title) => {
+                void api
+                  .nameLot(id, title)
+                  .then((l) => toasts.push({ tone: "ok", text: `Lot named · ${l.title}` }));
+              }}
+              onInspect={(seq) => openInspect({ kind: "audit", seq })}
+              showLots={layout.lotRail}
+            />
+          </PanelBoundary>
         </div>
 
         {/* Opened on demand rather than resident: cost is a question the seller

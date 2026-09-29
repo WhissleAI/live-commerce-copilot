@@ -46,10 +46,20 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
+          This page didn&apos;t load
         </h1>
+        {/* Scaffolding copy until now: "Something went wrong on our end. You can
+            try refreshing or head back home." Two problems for the one person
+            who ever sees this. It said nothing about what survives, and it
+            offered to LEAVE — and a seller reading it may be on air, where
+            navigating away is the expensive move. It is also the last boundary
+            now rather than the first: the console's four panels each catch their
+            own (`PanelBoundary`), so reaching this one means the shell itself
+            failed, and reloading really is the answer. */}
         <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
+          The app failed to draw this page. Nothing you were doing was lost — your session, any
+          show on air and everything already recorded are untouched, and a reload picks up where
+          this left off.
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
@@ -61,12 +71,13 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
           >
             Try again
           </button>
-          <a
-            href="/"
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
             className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
           >
-            Go home
-          </a>
+            Reload the page
+          </button>
         </div>
       </div>
     </div>
