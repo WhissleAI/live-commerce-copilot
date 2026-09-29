@@ -22,6 +22,20 @@ const code = console_
   .replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, " "))
   .replace(/\/\/[^\n]*/g, (c) => " ".repeat(c.length));
 
+/**
+ * The incoming drawer's own source, from its `role="dialog"` to the close of
+ * the element that carries it.
+ */
+function drawerSource(): string {
+  // Anchored on the label, then widened back to the opening tag: the element's
+  // className sits ABOVE `role="dialog"`, so a slice starting at the role
+  // attribute silently excludes every class this file asserts on.
+  const label = code.indexOf('aria-label="Incoming: buyer chat and the host"');
+  expect(label, "no incoming dialog in the console").toBeGreaterThan(-1);
+  const start = code.lastIndexOf("<div", label);
+  return code.slice(start, code.indexOf("\n        ) : null}", label));
+}
+
 describe("a drawer can always be closed", () => {
   it("the incoming drawer has its own close button", () => {
     expect(code).toContain('aria-label="Close the incoming panel"');
@@ -31,7 +45,10 @@ describe("a drawer can always be closed", () => {
   });
 
   it("both drawers close on Escape", () => {
-    const esc = code.slice(code.indexOf('if (e.key === "Escape")'), code.indexOf('if (e.key === "?"'));
+    const esc = code.slice(
+      code.indexOf('if (e.key === "Escape")'),
+      code.indexOf('if (e.key === "?"'),
+    );
     expect(esc, "the incoming drawer is not in the Escape chain").toContain("setDrawerOpen(false)");
     expect(esc, "the session rail is not in the Escape chain").toContain("setRailOpen(false)");
     // Last in the chain: anything genuinely on top of them gets Escape first.
@@ -50,12 +67,45 @@ describe("a drawer can always be closed", () => {
   it("the drawer does not repeat the header's Host audio button", () => {
     // `onOpenBridge` is what draws it. The wide rail keeps its copy because there
     // the header can scroll away; inside 300px of drawer it is noise.
-    const drawer = code.slice(code.indexOf("Close the incoming panel"), code.indexOf("</PanelBoundary>", code.indexOf("Close the incoming panel")));
-    expect(drawer).not.toContain("onOpenBridge");
+    //
+    // Sliced by the dialog's own bounds. It used to slice to the next
+    // `</PanelBoundary>`, which silently meant "the rest of the session rail"
+    // the moment the drawer moved out of the proposals column.
+    expect(drawerSource()).not.toContain("onOpenBridge");
   });
 
   it("the drawer announces itself as a dialog", () => {
     expect(code).toContain('aria-label="Incoming: buyer chat and the host"');
+  });
+
+  it("both drawers are siblings of the columns, not children of one", () => {
+    // A scrim is `absolute inset-0`, so it covers its nearest positioned
+    // ancestor and nothing more. The incoming drawer sat INSIDE the proposals
+    // column: measured in the browser, its scrim came out 300x674 — exactly the
+    // drawer's own box — so it dimmed nothing, swallowed no click, and that
+    // column's `overflow-hidden` clipped the drawer it was meant to reveal.
+    // Both drawers belong to the grid row, which is the element that means
+    // "the work area".
+    const proposals = code.indexOf('name="Proposals"');
+    const columnCloses = code.indexOf("</PanelBoundary>", proposals);
+    expect(proposals, "the proposals column is gone").toBeGreaterThan(-1);
+    expect(columnCloses).toBeGreaterThan(proposals);
+
+    for (const label of ["Close the incoming panel", "Close the session rail"]) {
+      expect(
+        code.indexOf(`aria-label="${label}"`),
+        `${label} is nested inside the proposals column, so its scrim covers only that column`,
+      ).toBeGreaterThan(columnCloses);
+    }
+  });
+
+  it("the drawer is inset from the work area's edge, like the session rail", () => {
+    // Flush against the viewport edge it read as a torn-off strip rather than a
+    // panel; the rail opposite it is already inset by the grid's own padding.
+    expect(drawerSource()).toMatch(/inset-y-2 left-2/);
+    expect(drawerSource(), "a half-rounded panel that is not touching an edge").not.toMatch(
+      /rounded-r-md/,
+    );
   });
 });
 
