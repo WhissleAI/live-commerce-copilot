@@ -89,12 +89,28 @@ export function Console() {
   // Every write goes through here. A 409 (the guards refused), 404 (not your
   // session), 403 (you cannot write here) or 500 used to be an unhandled
   // rejection: the button did nothing and the operator learned nothing.
+  // `toasts.push`, not `toasts`.
+  //
+  // `useToasts` memoises on `[items, push, dismiss]`, so the OBJECT's identity
+  // changes every time a toast is pushed or dismissed — while `push` itself is
+  // `useCallback(…, [dismiss])` over a `useCallback(…, [])`, and so is stable for
+  // the life of the provider. Depending on the object made `failed` unstable, and
+  // five hooks below then had it as a missing dependency: four `useCallback`s and
+  // the keyboard effect.
+  //
+  // Harmless in the end — a stale `failed` still called the same stable `push`, so
+  // the seller's error toast always appeared — which is why this is a cleanup and
+  // not a bug fix. But it is the correct cleanup rather than a suppression: with
+  // `failed` stable, listing it in those five dependency arrays costs nothing, and
+  // four callbacks in a live console stop being rebuilt every time a toast comes
+  // or goes.
+  const pushToast = toasts.push;
   const failed = useCallback(
     (what: string) => (e: unknown) => {
       const msg = e instanceof Error ? e.message : String(e);
-      toasts.push({ tone: "bad", text: `${what} — ${msg}` });
+      pushToast({ tone: "bad", text: `${what} — ${msg}` });
     },
-    [toasts],
+    [pushToast],
   );
 
   const [focusedId, setFocusedId] = useState<string | null>(null);
@@ -122,7 +138,7 @@ export function Console() {
           if (r.ok) return;
           // Mid-show, a button that does nothing reads as the product being
           // broken. Setup says which of the two things went wrong; so does this.
-          toasts.push({
+          pushToast({
             tone: "bad",
             text:
               r.reason === "blocked"
@@ -258,7 +274,7 @@ export function Console() {
         .sendProposal(id, text)
         .then((p) => {
           const who = p.message.author;
-          toasts.push({
+          pushToast({
             tone: "ok",
             text:
               deliveryOf(p) === "api"
@@ -270,7 +286,7 @@ export function Console() {
         })
         .catch(failed(via === "copy" ? "Not recorded" : "Not sent"));
     },
-    [toasts],
+    [failed, pushToast],
   );
 
   /** The operator copied the draft on a surface where that is how a reply goes
@@ -284,11 +300,11 @@ export function Console() {
       void api
         .flagProposal(id, reason)
         .then(() => {
-          toasts.push({ tone: "warn", text: `Flagged as wrong · ${reason}` });
+          pushToast({ tone: "warn", text: `Flagged as wrong · ${reason}` });
         })
         .catch(failed("Not flagged"));
     },
-    [toasts],
+    [failed, pushToast],
   );
 
   /** The gate dropped it and the operator disagrees. */
@@ -297,11 +313,11 @@ export function Console() {
       void api
         .answerDropped(messageId)
         .then(() => {
-          toasts.push({ tone: "neutral", text: "Drafting an answer for a dropped comment" });
+          pushToast({ tone: "neutral", text: "Drafting an answer for a dropped comment" });
         })
         .catch(failed("Could not answer"));
     },
-    [toasts],
+    [failed, pushToast],
   );
 
   const research = useCallback(
@@ -310,9 +326,12 @@ export function Console() {
     [show],
   );
 
-  const setAutonomy = useCallback((level: AutonomyLevel) => {
-    void api.setAutonomy(level).catch(failed("Autonomy unchanged"));
-  }, []);
+  const setAutonomy = useCallback(
+    (level: AutonomyLevel) => {
+      void api.setAutonomy(level).catch(failed("Autonomy unchanged"));
+    },
+    [failed],
+  );
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -379,13 +398,13 @@ export function Console() {
             send(focused.id);
           } else if (focused && focused.status === "needs_review") {
             e.preventDefault();
-            toasts.push({
+            pushToast({
               tone: "warn",
               text: "This reply was revised by a guard — use Send anyway to send it",
             });
           } else if (focused && focused.status === "blocked") {
             e.preventDefault();
-            toasts.push({ tone: "warn", text: heldReplyAdvice(focused.guards) });
+            pushToast({ tone: "warn", text: heldReplyAdvice(focused.guards) });
           }
           break;
         case "e":
@@ -433,7 +452,7 @@ export function Console() {
             e.preventDefault();
             void api
               .rollbackAction(undoable.id)
-              .then(() => toasts.push({ tone: "neutral", text: "Rolled back" }))
+              .then(() => pushToast({ tone: "neutral", text: "Rolled back" }))
               .catch(failed("Not rolled back"));
           }
           break;
@@ -453,18 +472,24 @@ export function Console() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
+    // `failed` and `pushToast` are both stable (see `pushToast` above), so listing
+    // them costs this effect nothing — and an effect that re-binds a keydown
+    // listener is exactly where a silently missing dependency would be a stale
+    // handler acting on a stale queue.
   }, [
     actions,
     closeLegend,
     costOpen,
     decidable,
     editingId,
+    failed,
     focusedId,
     inspect,
     legendOpen,
     move,
     openInspect,
     paletteOpen,
+    pushToast,
     send,
     shortcutsOpen,
   ]);
@@ -750,7 +775,10 @@ export function Console() {
           ) : null}
         </div>
 
-        <PanelBoundary name="Proposals" className="relative flex min-h-0 flex-col overflow-hidden rounded-md bg-panel z1">
+        <PanelBoundary
+          name="Proposals"
+          className="relative flex min-h-0 flex-col overflow-hidden rounded-md bg-panel z1"
+        >
           {/* One fact that explains every card under it.
               A session attached without a catalog answers nothing: retrieval
               has no listings to ground on, so every draft comes back deferring
@@ -871,7 +899,7 @@ export function Console() {
               onRename={(id, title) => {
                 void api
                   .nameLot(id, title)
-                  .then((l) => toasts.push({ tone: "ok", text: `Lot named · ${l.title}` }));
+                  .then((l) => pushToast({ tone: "ok", text: `Lot named · ${l.title}` }));
               }}
               onInspect={(seq) => openInspect({ kind: "audit", seq })}
               showLots={layout.lotRail}
