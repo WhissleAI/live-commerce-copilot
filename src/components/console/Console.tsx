@@ -811,7 +811,11 @@ export function Console() {
                   sidePanel ? "2xl:hidden" : "xl:hidden",
                 )}
               >
-                <PanelLeft className="size-3" aria-hidden /> Chat
+                <PanelLeft className="size-3" aria-hidden />
+                {/* The label names what is behind it. It said "Chat" while the
+                    drawer also holds the host's timeline, so a seller looking for
+                    the transcript had no reason to open it. */}
+                {layout.hostAudio ? "Chat & host" : "Chat"}
               </button>
             }
             trailing={
@@ -842,19 +846,47 @@ export function Console() {
             guardOrder={guardOrder}
           />
           {drawerOpen ? (
+            // The drawer carries BOTH halves of the incoming rail, in the same
+            // proportions the wide layout uses.
+            //
+            // It used to carry chat alone, so below `xl` the host's timeline —
+            // the transcript, the emotion and intent reading, what the camera is
+            // showing — had nowhere to appear and no control to reveal it.
+            // Reported from a live show: the bridge was plainly working, the
+            // seller could watch host speech scrolling past in the bridge tab,
+            // and the console showed none of it. The panel existed; it was
+            // simply unreachable at that window width.
             <div
               className={cn(
-                "anim-in absolute inset-y-0 left-0 z-30 w-[300px] z3",
+                "anim-in absolute inset-y-0 left-0 z-30 flex w-[300px] flex-col z3",
                 sidePanel ? "2xl:hidden" : "xl:hidden",
               )}
             >
-              <ChatColumn
-                chat={chat}
-                onInject={(text) => void api.injectChat("you", text)}
-                onHoverProposal={setHighlightedId}
-                linkedProposalIds={new Set(live.map((p) => p.id))}
-                onAnswerDropped={answerDropped}
-              />
+              <div className={cn("flex min-h-0 flex-col", layout.hostAudio ? "flex-[3]" : "flex-1")}>
+                <ChatColumn
+                  chat={chat}
+                  onInject={(text) => void api.injectChat("you", text)}
+                  onHoverProposal={setHighlightedId}
+                  linkedProposalIds={new Set(live.map((p) => p.id))}
+                  onAnswerDropped={answerDropped}
+                />
+              </div>
+              {layout.hostAudio ? (
+                <div className="flex min-h-0 flex-[2] flex-col">
+                  <TranscriptPanel
+                    transcript={transcript}
+                    levels={levels}
+                    context={store.context}
+                    listen={store.listen}
+                    surface={surfaceId}
+                    {...(openBridge ? { onOpenBridge: openBridge } : {})}
+                  />
+                </div>
+              ) : layout.threadPanel ? (
+                <div className="flex min-h-0 flex-[2] flex-col">
+                  <ThreadPanel thread={focusedThread} room={show.room ?? null} />
+                </div>
+              ) : null}
             </div>
           ) : null}
         </PanelBoundary>
