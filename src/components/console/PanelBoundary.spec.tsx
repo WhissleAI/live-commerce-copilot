@@ -134,9 +134,21 @@ describe("a panel that throws", () => {
 describe("the console's panels are each inside one", () => {
   const src = readFileSync(join(process.cwd(), "src/components/console/Console.tsx"), "utf8");
 
+  /**
+   * The opening tag of the boundary named `name`, wherever its attributes sit.
+   *
+   * Matched across newlines on purpose: prettier splits
+   * `<PanelBoundary name="Proposals" className="…">` over four lines the moment
+   * the line grows, and a test that only matches the one-line form fails on a
+   * reformat while the wiring is perfectly intact. It did — this test caught its
+   * own author running the formatter.
+   */
+  const boundaryAt = (name: string): number =>
+    src.search(new RegExp(`<PanelBoundary[\\s\\S]{0,200}?name="${name}"`));
+
   it("wraps buyer chat, the host, proposals and the show rail", () => {
     for (const name of ["Buyer chat", "The host", "Proposals", "The show"]) {
-      expect(src, `no PanelBoundary named ${name}`).toContain(`<PanelBoundary name="${name}"`);
+      expect(boundaryAt(name), `no PanelBoundary named ${name}`).toBeGreaterThanOrEqual(0);
     }
   });
 
@@ -148,7 +160,7 @@ describe("the console's panels are each inside one", () => {
       ["<ProposalQueue", "Proposals"],
       ["<ShowRail", "The show"],
     ] as const) {
-      const opens = src.indexOf(`<PanelBoundary name="${boundary}"`);
+      const opens = boundaryAt(boundary);
       const closes = src.indexOf("</PanelBoundary>", opens);
       const at = src.indexOf(panel);
       expect(at, `${panel} is not inside the ${boundary} boundary`).toBeGreaterThan(opens);
