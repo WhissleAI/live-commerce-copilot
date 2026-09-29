@@ -263,11 +263,15 @@ export function PrivacyPage() {
       account deletes that account&apos;s tokens. Any session exports as JSON from its report.
     </p>
       <p>
-        Two things outlive the session they came from, and this page would rather say so than be
-        accurate only in general: the style references described above, which are attached to the
-        operator&apos;s account and carry the question each reply answered; and the record eBay
-        sends us when one of its members closes their account, which we keep in order to be able to
-        show that we acted on it.
+        Three things outlive the session they came from, and this page would rather say so than be
+        accurate only in general. The style references described above, which are attached to the
+        operator&apos;s account and carry the question each reply answered. The record eBay sends us
+        when one of its members closes their account, which we keep in order to be able to show that
+        we acted on it. And an operational log of what the system itself did during a session — a
+        watcher that gave up, a listen session that was cut, a spend cap that tripped — which is
+        kept so that &ldquo;it stopped answering mid-show&rdquo; has an answer other than asking the
+        operator what they saw. It carries the session&apos;s id, timings and counts. It carries
+        nothing anybody said: not a comment, not a draft, not a word of transcript.
       </p>
       <p>
         <strong>Not decided yet.</strong> A retention period, the legal basis for reading public
