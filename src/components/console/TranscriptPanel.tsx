@@ -60,10 +60,18 @@ export function TranscriptPanel({
   onOpenBridge,
   listen,
   surface = "ebaylive",
+  frameSrc,
 }: {
   transcript: TranscriptSegment[];
   levels: number[];
   context: ShowContext | null;
+  /**
+   * The camera frame the current reading came from, already signed.
+   *
+   * Built by the console, not here: the URL needs a show-scoped media token and
+   * this panel has no business minting one.
+   */
+  frameSrc?: string | undefined;
   /** Mints a show-scoped token and opens the tab. Absent where there is no
    *  bridge to open (the scripted source). */
   onOpenBridge?: () => void;
@@ -240,10 +248,30 @@ export function TranscriptPanel({
             {context.onScreen && (
               <div className="flex items-start gap-1.5">
                 <Eye className="mt-[2px] size-3 shrink-0 text-text-muted" aria-hidden />
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="text-[10px] text-text-muted">on camera</div>
                   <div className="text-[11px] leading-snug text-text">{context.onScreen.text}</div>
                 </div>
+                {/* The picture the reading came from.
+                    The backend has kept the frame WITH its reading from the start
+                    — "what the agent saw and what it said it saw are one record"
+                    — and emitted a `frame` event nobody subscribed to, so the
+                    console showed the reading with no way to check it. A wrong
+                    reading is only catchable against the frame: a white sneaker
+                    came back as "smartphone" once, and from the text alone that
+                    is indistinguishable from a right answer. */}
+                {frameSrc ? (
+                  <img
+                    src={frameSrc}
+                    alt={`The camera frame this reading came from: ${context.onScreen.text}`}
+                    className="h-10 w-16 shrink-0 rounded-[3px] border border-hairline object-cover"
+                    // The next frame replaces this one every few seconds; a
+                    // broken one must not leave a torn icon in the rail.
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                ) : null}
               </div>
             )}
             <div className="flex flex-wrap items-center gap-1">

@@ -342,6 +342,12 @@ const STREAM_EVENTS = [
   // why the strip said "no audio yet" while transcripts streamed in beside it:
   // the server emitted every frame and the browser had never asked for them.
   "levels",
+  // Emitted by the backend since frames were first kept, and never subscribed
+  // to — so the console showed the vision model's READING with no way to check
+  // it against the picture it came from. The third event in this list to have
+  // been written and never read; `levels` and `budget` are the other two, and
+  // both have their own note above.
+  "frame",
   "shows",
   "show",
   // Ingest health, and the server's refusal when the show id is unknown. Both

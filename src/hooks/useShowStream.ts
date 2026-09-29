@@ -7,6 +7,7 @@ import type {
   ActionProposal,
   AuditEntry,
   ChatMessage,
+  LiveFrame,
   ConnectionState,
   Listing,
   Metrics,
@@ -39,6 +40,8 @@ export interface ShowStore {
   /** Host speech from the Whissle listen-only session, oldest first. */
   transcript: TranscriptSegment[];
   levels: number[];
+  /** The most recent camera frame the vision model read, with its reading. */
+  frame: LiveFrame | null;
   /** Who is selling, from the catalog loaded at setup. */
   seller: SellerProfile | null;
   /** Every show this backend is watching. */
@@ -75,6 +78,7 @@ export function useShowStream(showId?: string | null) {
   const [context, setContext] = useState<ShowContext | null>(null);
   const [transcript, setTranscript] = useState<TranscriptSegment[]>([]);
   const [levels, setLevels] = useState<number[]>([]);
+  const [frame, setFrame] = useState<LiveFrame | null>(null);
   const [seller, setSeller] = useState<SellerProfile | null>(null);
   const [shows, setShows] = useState<ShowSummary[]>([]);
   const [flashed, setFlashed] = useState<Record<string, number>>({});
@@ -126,6 +130,11 @@ export function useShowStream(showId?: string | null) {
         // A rolling window, not a log. This is 10 Hz and its only consumer is a
         // strip showing the last couple of minutes.
         setLevels((prev) => [...prev, ...e.data.levels].slice(-MAX_LEVELS));
+        break;
+      case "frame":
+        // Only the latest matters here: the panel shows what is on camera NOW.
+        // The report's timeline is where the whole sequence lives.
+        setFrame(e.data);
         break;
       case "chat":
         setChat((prev) => upsert(prev, e.data).slice(-MAX_CHAT));
@@ -208,6 +217,7 @@ export function useShowStream(showId?: string | null) {
     context,
     transcript,
     levels,
+    frame,
     seller,
     shows,
     flashed,
