@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { noindexMeta } from "@/lib/meta";
 import { KnowledgePage } from "@/components/pages/KnowledgePage";
 
 /**
@@ -15,7 +16,7 @@ import { KnowledgePage } from "@/components/pages/KnowledgePage";
 export const Route = createFileRoute("/knowledge")({
   validateSearch: (s: Record<string, unknown>): { id?: string } =>
     typeof s["id"] === "string" && s["id"] ? { id: s["id"] } : {},
-  head: () => ({ meta: [{ title: "SideStage — Knowledge" }] }),
+  head: () => ({ meta: [{ title: "SideStage — Knowledge" }, ...noindexMeta()] }),
   component: function KnowledgeRoute() {
     const { id } = Route.useSearch();
     return <KnowledgePage initialId={id} />;

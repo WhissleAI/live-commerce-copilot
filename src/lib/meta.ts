@@ -71,6 +71,30 @@ export const SITE_IMAGE_ALT =
   "The SideStage console on a live show: buyer chat on the left, drafted replies with their guard verdicts in the middle, the pinned lot on the right";
 
 /**
+ * Keep this page out of the index.
+ *
+ * CONTENT-15. Until `/` server-rendered, a crawler saw an empty body on every
+ * route and there was nothing to keep out. Now every route returns real markup
+ * — and for the thirteen behind a session that markup is the loading shell:
+ * "Console connecting to the session stream…", "Settings reading the policy…".
+ * Thin, near-identical pages, competing with the one page that is meant to be
+ * found, and liable to surface in a search result as a seller's app chrome.
+ *
+ * `noindex` rather than a `Disallow` in robots.txt, because the two do
+ * different things and the difference is the usual mistake: `Disallow` stops
+ * the FETCH, which leaves a URL that is linked from anywhere eligible to be
+ * indexed with no snippet at all — a worse result than none. A crawler has to
+ * be allowed in to be told to leave, so robots.txt keeps allowing the crawl and
+ * the directive travels with the page.
+ *
+ * `noarchive` goes with it: an app shell has no version worth serving from a
+ * cache after the app has moved on.
+ */
+export function noindexMeta(): { name: string; content: string }[] {
+  return [{ name: "robots", content: "noindex, nofollow, noarchive" }];
+}
+
+/**
  * The tags every route head shares. A route may add to these; nothing should
  * restate them.
  *
