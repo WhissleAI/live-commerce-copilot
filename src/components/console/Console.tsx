@@ -121,6 +121,47 @@ export function Console() {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   /**
+   * A show-scoped token, so the console can render the camera frame the vision
+   * model read — the picture beside the reading, which is the only way to catch
+   * the reading being wrong.
+   *
+   * Minted here rather than in the panel: the panel is handed a finished URL and
+   * never learns there is a token. Refreshed well inside the hour these last,
+   * because a token that expires mid-show turns every frame into a broken image.
+   */
+  const [mediaToken, setMediaToken] = useState<string | null>(null);
+  useEffect(() => {
+    if (!show?.id) return setMediaToken(null);
+    let alive = true;
+    const mint = () =>
+      void api
+        .mediaToken(show.id)
+        .then((t) => alive && setMediaToken(t.token))
+        // No token, no picture. The reading still shows, which is the part the
+        // copilot acts on.
+        .catch(() => alive && setMediaToken(null));
+    mint();
+    const t = setInterval(mint, 30 * 60_000);
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
+  }, [show?.id]);
+
+  /**
+   * The frame the CURRENT reading came from.
+   *
+   * Both halves must be present: a frame with no reading is a picture of nothing
+   * in particular, and a reading whose frame was not kept (the vision call
+   * succeeded, the write did not) must not show a stale picture beside fresh
+   * text — which would be worse than showing none.
+   */
+  const frameSrc =
+    show?.id && mediaToken && store.frame && store.context?.onScreen
+      ? api.frameUrl(show.id, store.frame.seq, mediaToken)
+      : undefined;
+
+  /**
    * Opening the bridge, once, for both places that offer it.
    *
    * It used to live only inside `TranscriptPanel`, which renders only in the
@@ -765,6 +806,7 @@ export function Console() {
                 context={store.context}
                 listen={store.listen}
                 surface={surfaceId}
+                {...(frameSrc ? { frameSrc } : {})}
                 {...(openBridge ? { onOpenBridge: openBridge } : {})}
               />
             </PanelBoundary>
@@ -879,6 +921,7 @@ export function Console() {
                     context={store.context}
                     listen={store.listen}
                     surface={surfaceId}
+                    {...(frameSrc ? { frameSrc } : {})}
                     {...(openBridge ? { onOpenBridge: openBridge } : {})}
                   />
                 </div>

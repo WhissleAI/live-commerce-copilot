@@ -462,6 +462,21 @@ export interface Metrics {
   actionsRolledBack: number;
 }
 
+/**
+ * A camera frame the vision model read, and what it read.
+ *
+ * The backend has emitted this since frames were kept — "what the agent saw and
+ * what it said it saw are one record" — and nothing subscribed, so the console
+ * showed the READING with no way to check it against the picture.
+ */
+export interface LiveFrame {
+  showId: string;
+  seq: number;
+  at: string;
+  offsetMs: number;
+  reading: string;
+}
+
 export interface ShowContext {
   currentTopic: string;
   listingInFocus: string | null;
@@ -530,6 +545,7 @@ export type StreamEvent =
   | { type: "shows"; data: ShowSummary[] }
   | { type: "show"; data: ShowState }
   | { type: "levels"; data: AudioLevels }
+  | { type: "frame"; data: LiveFrame }
   | { type: "chat"; data: ChatMessage }
   | { type: "proposal"; data: ReplyProposal }
   | { type: "action"; data: ActionProposal }
