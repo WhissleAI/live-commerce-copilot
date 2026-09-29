@@ -168,7 +168,9 @@ function LatencyMeter({ metrics }: { metrics: Metrics }) {
  * The confirmation on the auto rungs survives the change: L3 and L4 let the
  * copilot act without a human, and that is not a thing to enable by mis-click.
  */
-function AutonomyLadder({
+/** Exported for its own test: the ladder's keyboard behaviour is the point of
+ *  it, and reaching it through `TopBar` would mean fixturing a whole session. */
+export function AutonomyLadder({
   level,
   onChange,
 }: {
@@ -199,6 +201,34 @@ function AutonomyLadder({
     return () => {
       document.removeEventListener("mousedown", away);
       document.removeEventListener("keydown", esc);
+    };
+  }, [open]);
+
+  // Opening a menu has to put focus inside it. The arrow keys below are handled
+  // on the menu element, not on the document, so until focus was in there they
+  // did nothing at all: a keyboard user who pressed Enter on the trigger was
+  // still standing on the trigger, with a menu open in front of them and no way
+  // into it but Tab. On the control that decides what the copilot may do
+  // without a human, that is the wrong place to make someone guess.
+  //
+  // Focus lands on the level currently in force, so up and down move relative
+  // to where the copilot actually is.
+  useEffect(() => {
+    if (!open) return;
+    // Captured here: by the time the cleanup runs the menu is unmounted and
+    // `box.current` is no longer a safe thing to read.
+    const root = box.current;
+    const menu = root?.querySelector<HTMLElement>('[role="menu"]');
+    const items = menu?.querySelectorAll<HTMLElement>('[role="menuitemradio"]');
+    const checked = menu?.querySelector<HTMLElement>('[role="menuitemradio"][aria-checked="true"]');
+    (checked ?? items?.[0])?.focus();
+    return () => {
+      // The menu unmounts with focus still inside it, which leaves focus on
+      // <body> — which is also how the console's keymap comes back to life by
+      // accident. Hand it back to the trigger.
+      if (document.activeElement === document.body) {
+        root?.querySelector<HTMLElement>("#autonomy-picker")?.focus();
+      }
     };
   }, [open]);
 

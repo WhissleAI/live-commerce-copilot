@@ -139,7 +139,11 @@ describe("a drawer can always be closed", () => {
 describe("the autonomy menu is named", () => {
   it("says what it changes, rather than being announced as 'menu'", () => {
     const top = readFileSync(join(process.cwd(), "src/components/console/TopBar.tsx"), "utf8");
-    const menu = top.slice(top.indexOf('role="menu"'), top.indexOf('role="menu"') + 300);
-    expect(menu).toContain('aria-label="Autonomy level"');
+    // The JSX attribute, on its own line — not the `'[role="menu"]'` selector
+    // string that the focus effect above it also contains. Slicing to the first
+    // match in the file found the selector and reported the menu unnamed.
+    const attr = top.search(/\n\s+role="menu"\n/);
+    expect(attr, 'no role="menu" attribute in TopBar').toBeGreaterThan(-1);
+    expect(top.slice(attr, attr + 300)).toContain('aria-label="Autonomy level"');
   });
 });
