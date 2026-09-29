@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { SITE_TITLE, siteMeta } from "@/lib/meta";
+import { absoluteUrl, SITE_TITLE, siteMeta } from "@/lib/meta";
 import { useEffect, useState } from "react";
 import { LandingPage } from "@/components/pages/LandingPage";
 import { HomePage } from "@/components/pages/HomePage";
@@ -14,7 +14,11 @@ export const Route = createFileRoute("/")({
   // These were two divergent copies and the older one was the one most link
   // previews resolved.
   head: () => ({
-    meta: [{ title: SITE_TITLE }, ...siteMeta()],
+    meta: [{ title: SITE_TITLE }, ...siteMeta("/")],
+    // The front door is the one page with a canonical URL worth stating: it is
+    // reachable as `/`, as `/?view=discover`, and behind every marketing link
+    // that adds a tracking parameter, and each of those is the same page.
+    links: [{ rel: "canonical", href: absoluteUrl("/") }],
   }),
   component: function Home() {
     // The front door. A visitor sees the landing page; a signed-in seller
