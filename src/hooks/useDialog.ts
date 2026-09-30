@@ -4,7 +4,16 @@
  * CONTENT-40. Six dialogs — the command bar, the research palette, the
  * shortcuts card, the legend, the delete confirmation and the report timeline
  * — each set `role="dialog"` and then did none of the three things that makes
- * a dialog a dialog:
+ * a dialog a dialog.
+ *
+ * Five of them were wired. The report timeline was named here and missed, and
+ * went on opening with focus behind it for as long as this note claimed
+ * otherwise; the console's two drawers arrived later and are modal in fact,
+ * since each covers the work area behind a scrim. All of them are wired now,
+ * and `useDialog.spec` asserts it of anything that says `role="dialog"` rather
+ * than of a list in this comment.
+ *
+ * The three things:
  *
  *  · nothing was focused when it opened, so a screen-reader user was not told
  *    one had appeared. `DeleteShowDialog` is the worst case: a destructive
