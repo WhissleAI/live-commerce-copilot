@@ -5,6 +5,23 @@ import type { ChatMessage } from "@/lib/types";
 import { Hover, IntentBadge, SectionHeader } from "./primitives";
 import { BadgeButton } from "@/components/ui/kit";
 
+/**
+ * What the "answer" button promises, in the words of what actually happened.
+ *
+ * It said "the gate dropped this one" on every un-admitted message. That is
+ * true of most of them and not true of the backlog: a message already on screen
+ * when the console attached was never judged by the gate at all — nobody was
+ * listening yet. Telling a seller the gate dropped the question they are
+ * looking at is a small lie on the one surface whose whole claim is that it
+ * says where a thing came from.
+ */
+function answerHint(dropReason?: string): string {
+  if (dropReason === "asked before you attached") {
+    return "Answer it anyway — this was asked before you attached, so nothing drafted for it";
+  }
+  return "Draft a reply anyway — the gate dropped this one";
+}
+
 export function ChatColumn({
   chat,
   onInject,
@@ -117,7 +134,7 @@ export function ChatColumn({
                   {!m.admitted ? (
                     <BadgeButton
                       className="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-                      title="Draft a reply anyway — the gate dropped this one"
+                      title={answerHint(m.dropReason)}
                       onClick={(ev) => {
                         ev.stopPropagation();
                         onAnswerDropped(m.id);
